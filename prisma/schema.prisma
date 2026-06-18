@@ -1,0 +1,212 @@
+// Web Development Agency Portfolio Platform
+// Prisma schema (SQLite provider for shared-hosting friendly deployment)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Portfolio {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  summary     String
+  description String
+  coverImage  String
+  gallery     String   // JSON array of image URLs
+  liveUrl     String?
+  repoUrl     String?
+  clientName  String?
+  year        Int
+  featured    Boolean  @default(false)
+  published   Boolean  @default(true)
+  views       Int      @default(0)
+
+  // Overview
+  problem     String?
+  solution    String?
+  result      String?
+
+  // Case study
+  challenge      String?
+  architecture   String?
+  implementation String?
+  outcome        String?
+
+  // Features (JSON array of strings)
+  features    String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoryId String?
+  category   PortfolioCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  technologies Technology[]
+}
+
+model PortfolioCategory {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String     @unique
+  icon      String?
+  createdAt DateTime   @default(now())
+  portfolios Portfolio[]
+}
+
+model Technology {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String     @unique
+  icon      String?
+  color     String?
+  createdAt DateTime   @default(now())
+  portfolios Portfolio[]
+}
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  excerpt     String
+  content     String   // markdown
+  coverImage  String
+  readingTime Int      @default(5)
+  authorName  String   @default("Editorial Team")
+  authorAvatar String?
+  published   Boolean  @default(true)
+  featured    Boolean  @default(false)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  categoryId String?
+  category   BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  tags Tag[]
+}
+
+model BlogCategory {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String     @unique
+  icon      String?
+  createdAt DateTime   @default(now())
+  posts     BlogPost[]
+}
+
+model Tag {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String     @unique
+  createdAt DateTime   @default(now())
+  posts     BlogPost[]
+}
+
+model CaseStudy {
+  id           String   @id @default(cuid())
+  title        String
+  slug         String   @unique
+  clientName   String
+  industry     String
+  coverImage   String
+  summary      String
+  problem      String
+  analysis     String
+  architecture String
+  process      String
+  challenges   String
+  results      String
+  lessons      String
+  metrics      String   // JSON array of {label, value}
+  published    Boolean  @default(true)
+  featured     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Testimonial {
+  id         String   @id @default(cuid())
+  clientName String
+  role       String
+  company    String
+  avatar     String?
+  rating     Int      @default(5)
+  quote      String
+  published  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  bio       String
+  avatar    String
+  linkedin  String?
+  github    String?
+  twitter   String?
+  order     Int      @default(0)
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  icon        String
+  features    String   // JSON array
+  order       Int      @default(0)
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  phone       String?
+  company     String?
+  projectType String?
+  budget      String?
+  description String?
+  answers     String   // JSON of estimate answers
+  estimatedCost String?
+  status      String   @default("new")
+  createdAt   DateTime @default(now())
+}
+
+model ContactRequest {
+  id        String   @id @default(cuid())
+  fullName  String
+  company   String?
+  email     String
+  phone     String?
+  budget    String?
+  message   String
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+}
+
+model Faq {
+  id        String   @id @default(cuid())
+  question String
+  answer   String
+  category String   @default("General")
+  order    Int      @default(0)
+  published Boolean @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
