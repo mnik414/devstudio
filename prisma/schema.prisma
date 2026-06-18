@@ -210,3 +210,11 @@ model Setting {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+model Newsletter {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  source    String   @default("footer")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}

@@ -89,6 +89,7 @@ type ModelKey =
   | 'lead'
   | 'contactRequest'
   | 'setting'
+  | 'newsletter'
 
 type FieldType = 'text' | 'textarea' | 'number' | 'switch' | 'json' | 'select'
 
@@ -409,6 +410,22 @@ const MODEL_CONFIGS: Record<ModelKey, ModelConfig> = {
       { key: 'value', label: 'Value', type: 'textarea' },
     ],
   },
+  newsletter: {
+    label: 'Newsletter',
+    singular: 'Subscriber',
+    icon: Mail,
+    description: 'Newsletter email subscribers.',
+    listColumns: [
+      { key: 'email', label: 'Email' },
+      { key: 'source', label: 'Source' },
+      { key: 'active', label: 'Active', boolean: true },
+    ],
+    formFields: [
+      { key: 'email', label: 'Email', type: 'text', required: true },
+      { key: 'source', label: 'Source', type: 'text' },
+      { key: 'active', label: 'Active', type: 'switch' },
+    ],
+  },
 }
 
 const MODEL_ORDER: ModelKey[] = [
@@ -426,6 +443,7 @@ const MODEL_ORDER: ModelKey[] = [
   'lead',
   'contactRequest',
   'setting',
+  'newsletter',
 ]
 
 // ---------------------------------------------------------------------------

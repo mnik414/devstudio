@@ -24,6 +24,7 @@ const MODELS = [
   'lead',
   'contactRequest',
   'setting',
+  'newsletter',
 ] as const
 
 type ModelName = (typeof MODELS)[number]
@@ -44,6 +45,7 @@ function getDelegate(name: string) {
     lead: db.lead,
     contactRequest: db.contactRequest,
     setting: db.setting,
+    newsletter: db.newsletter,
   }
   return map[name as ModelName] as Record<string, (...args: unknown[]) => Promise<unknown>>
 }

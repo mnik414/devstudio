@@ -443,8 +443,11 @@ export function BlogDetailView() {
   const lang = useLang((s) => s.lang)
 
   const articleRef = useRef<HTMLElement>(null)
+  const item = data?.item
+  // Only track scroll when the article is actually rendered (avoids
+  // framer-motion "Target ref is defined but not hydrated" crash during loading)
   const { scrollYProgress } = useScroll({
-    target: articleRef,
+    target: item ? articleRef : undefined,
     offset: ['start start', 'end end'],
   })
   const scaleX = useSpring(scrollYProgress, {
@@ -453,7 +456,6 @@ export function BlogDetailView() {
     restDelta: 0.001,
   })
 
-  const item = data?.item
   const related = data?.related ?? []
   const content = item?.content ?? ''
   const toc = useMemo(() => extractTOC(content), [content])

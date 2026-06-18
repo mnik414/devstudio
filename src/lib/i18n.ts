@@ -426,6 +426,42 @@ const en: Dict = {
   'common.retry': 'Retry',
   'common.yes': 'Yes',
   'common.no': 'No',
+
+  // ---------- Newsletter ----------
+  'newsletter.title': 'Stay in the loop',
+  'newsletter.desc': 'Get our latest articles, case studies, and dev insights. No spam, unsubscribe anytime.',
+  'newsletter.placeholder': 'Enter your email',
+  'newsletter.subscribe': 'Subscribe',
+  'newsletter.subscribing': 'Subscribing...',
+  'newsletter.success': 'You\'re subscribed! Check your inbox to confirm.',
+  'newsletter.alreadySubscribed': 'You\'re already on the list!',
+  'newsletter.invalidEmail': 'Please enter a valid email address.',
+  'newsletter.privacy': 'We respect your privacy. Read our',
+
+  // ---------- Command Palette ----------
+  'cmd.placeholder': 'Search or jump to...',
+  'cmd.navigation': 'Navigation',
+  'cmd.pages': 'Pages',
+  'cmd.projects': 'Projects',
+  'cmd.articles': 'Articles',
+  'cmd.noResults': 'No results found.',
+  'cmd.hint': 'Press',
+  'cmd.or': 'or',
+
+  // ---------- Back to top ----------
+  'backToTop': 'Back to top',
+
+  // ---------- Favorites ----------
+  'favorites.title': 'Saved Projects',
+  'favorites.empty': 'No saved projects yet. Browse our work and bookmark the ones you love.',
+  'favorites.clear': 'Clear all',
+  'favorites.count': '{count} saved',
+  'favorites.save': 'Save',
+  'favorites.saved': 'Saved',
+  'favorites.viewAll': 'View saved ({count})',
+
+  // ---------- Admin: newsletter resource ----------
+  'admin.r.newsletter': 'Newsletter',
 }
 
 const fa: Dict = {
@@ -842,6 +878,42 @@ const fa: Dict = {
   'common.retry': 'تلاش مجدد',
   'common.yes': 'بله',
   'common.no': 'خیر',
+
+  // ---------- خبرنامه ----------
+  'newsletter.title': 'در جریان باشید',
+  'newsletter.desc': 'آخرین مقالات، مطالعات موردی و بینش‌های توسعه ما را دریافت کنید. بدون اسپم، لغو در هر زمان.',
+  'newsletter.placeholder': 'ایمیل خود را وارد کنید',
+  'newsletter.subscribe': 'عضویت',
+  'newsletter.subscribing': 'در حال عضویت...',
+  'newsletter.success': 'عضو شدید! صندوق ورودی خود را برای تأیید بررسی کنید.',
+  'newsletter.alreadySubscribed': 'شما از قبل در لیست هستید!',
+  'newsletter.invalidEmail': 'لطفاً یک آدرس ایمیل معتبر وارد کنید.',
+  'newsletter.privacy': 'ما به حریم خصوصی شما احترام می‌گذاریم. بخوانید',
+
+  // ---------- پالت فرمان ----------
+  'cmd.placeholder': 'جستجو یا پرش به...',
+  'cmd.navigation': 'ناوبری',
+  'cmd.pages': 'صفحات',
+  'cmd.projects': 'پروژه‌ها',
+  'cmd.articles': 'مقالات',
+  'cmd.noResults': 'نتیجه‌ای یافت نشد.',
+  'cmd.hint': 'فشار دهید',
+  'cmd.or': 'یا',
+
+  // ---------- بازگشت به بالا ----------
+  'backToTop': 'بازگشت به بالا',
+
+  // ---------- پروژه‌های ذخیره‌شده ----------
+  'favorites.title': 'پروژه‌های ذخیره‌شده',
+  'favorites.empty': 'هنوز پروژه‌ای ذخیره نشده. کارهای ما را مرور کنید و آن‌هایی را که دوست دارید نشانه‌گذاری کنید.',
+  'favorites.clear': 'پاک کردن همه',
+  'favorites.count': '{count} ذخیره‌شده',
+  'favorites.save': 'ذخیره',
+  'favorites.saved': 'ذخیره‌شده',
+  'favorites.viewAll': 'مشاهده ذخیره‌شده‌ها ({count})',
+
+  // ---------- مدیریت: خبرنامه ----------
+  'admin.r.newsletter': 'خبرنامه',
 }
 
 export const dictionaries: Record<Lang, Dict> = { en, fa }

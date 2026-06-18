@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Logo } from './logo'
 import { ThemeToggle } from './theme-toggle'
 import { LanguageToggle } from './language-toggle'
+import { CommandPalette } from './command-palette'
 import { useNav, type ViewKey } from '@/lib/store'
 import { useT, useLang } from '@/lib/lang-store'
 import { cn } from '@/lib/utils'
@@ -77,6 +78,7 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-1.5">
+          <CommandPalette />
           <LanguageToggle />
           <ThemeToggle />
           <Button

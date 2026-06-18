@@ -3,6 +3,7 @@
 import { Navbar } from '@/components/site/navbar'
 import { Footer } from '@/components/site/footer'
 import { ScrollProgress } from '@/components/site/scroll-progress'
+import { BackToTop } from '@/components/site/back-to-top'
 import { useNav } from '@/lib/store'
 import { HomeView } from '@/components/views/home-view'
 import { PortfolioView } from '@/components/views/portfolio-view'
@@ -63,6 +64,7 @@ export default function Page() {
         </AnimatePresence>
       </main>
       <Footer />
+      <BackToTop />
     </>
   )
 }

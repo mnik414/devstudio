@@ -11,6 +11,7 @@ import {
   Sparkles,
   FolderOpen,
   SlidersHorizontal,
+  Bookmark,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/select'
 import { Reveal } from '@/components/site/reveal'
 import { SectionHeading } from '@/components/site/section-heading'
+import { FavoriteButton } from '@/components/site/favorite-button'
 import {
   usePortfolios,
   usePortfolioFilters,
@@ -34,6 +36,7 @@ import {
 import { useNav } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { useT, useLang } from '@/lib/lang-store'
+import { useFavorites } from '@/lib/favorites-store'
 import { tc } from '@/lib/content-i18n'
 
 type SortKey = 'newest' | 'oldest' | 'title' | 'views'
@@ -55,6 +58,8 @@ export function PortfolioView() {
   const [category, setCategory] = useState<string>('')
   const [tech, setTech] = useState<string>('')
   const [sort, setSort] = useState<SortKey>('newest')
+  const [savedOnly, setSavedOnly] = useState(false)
+  const favoriteIds = useFavorites((s) => s.ids)
 
   const params = useMemo(
     () => ({
@@ -69,7 +74,8 @@ export function PortfolioView() {
   const { data, isLoading, isError } = usePortfolios(params)
   const filtersQuery = usePortfolioFilters()
 
-  const items: Portfolio[] = data?.items ?? []
+  const allItems: Portfolio[] = data?.items ?? []
+  const items: Portfolio[] = savedOnly ? allItems.filter((p) => favoriteIds.includes(p.id)) : allItems
   const categories = filtersQuery.data?.categories ?? []
   const technologies = filtersQuery.data?.technologies ?? []
 
@@ -122,8 +128,26 @@ export function PortfolioView() {
               />
             </div>
 
-            {/* Sort */}
+            {/* Sort + Saved */}
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSavedOnly((v) => !v)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition',
+                  savedOnly
+                    ? 'border-accent/40 bg-accent/10 text-accent'
+                    : 'border-border/60 bg-background text-muted-foreground hover:text-foreground hover:border-foreground/20',
+                )}
+                aria-pressed={savedOnly}
+              >
+                <Bookmark className={cn('h-4 w-4', savedOnly && 'fill-current')} />
+                <span className="hidden sm:inline">{t('favorites.saved')}</span>
+                {favoriteIds.length > 0 && (
+                  <span className="ltr-num rounded-full bg-accent/20 px-1.5 text-xs font-bold">
+                    {favoriteIds.length}
+                  </span>
+                )}
+              </button>
               <span className="hidden items-center gap-2 text-sm font-medium text-muted-foreground sm:inline-flex">
                 <SlidersHorizontal className="size-4" />
                 {t('portfolio.sort')}
@@ -307,12 +331,19 @@ function PortfolioCard({
   const title = tc('portfolio', item.slug, 'title', item.title, lang)
   const summary = tc('portfolio', item.slug, 'summary', item.summary, lang)
   return (
-    <motion.button
-      type="button"
+    <motion.div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="group block h-full w-full cursor-pointer text-left focus-visible:outline-none"
+      className="group block h-full w-full cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl"
     >
       <Card className="h-full overflow-hidden p-0 transition-shadow duration-300 hover:shadow-soft">
         {/* Cover */}
@@ -329,6 +360,9 @@ function PortfolioCard({
               {item.category.name}
             </Badge>
           )}
+          <div className="absolute top-3 right-3">
+            <FavoriteButton id={item.id} />
+          </div>
           <div className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
             <Eye className="size-3" />
             <span className="ltr-num">{item.views}</span>
@@ -388,7 +422,7 @@ function PortfolioCard({
           </div>
         </div>
       </Card>
-    </motion.button>
+    </motion.div>
   )
 }
 

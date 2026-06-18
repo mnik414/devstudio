@@ -1,6 +1,7 @@
 'use client'
 
 import { Logo } from './logo'
+import { Newsletter } from './newsletter'
 import { useNav, type ViewKey } from '@/lib/store'
 import { useT } from '@/lib/lang-store'
 import { Github, Linkedin, Twitter, Mail, MapPin, Phone, ArrowUpRight } from 'lucide-react'
@@ -64,6 +65,14 @@ export function Footer() {
                   <Icon className="h-4 w-4" />
                 </a>
               ))}
+            </div>
+            {/* Newsletter signup */}
+            <div className="mt-6 max-w-sm">
+              <p className="text-sm font-semibold text-secondary-foreground">{t('newsletter.title')}</p>
+              <p className="mt-1 text-xs leading-relaxed text-secondary-foreground/60">{t('newsletter.desc')}</p>
+              <div className="mt-3 [&_input]:bg-white/5 [&_input]:border-white/10 [&_input]:text-secondary-foreground [&_input]:placeholder:text-secondary-foreground/40">
+                <Newsletter source="footer" />
+              </div>
             </div>
           </div>
 
