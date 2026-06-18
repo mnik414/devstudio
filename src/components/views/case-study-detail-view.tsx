@@ -23,6 +23,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { type CaseStudy, parseList, useCaseStudy } from '@/lib/hooks'
 import { useNav } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { useT, useLang } from '@/lib/lang-store'
+import { tc } from '@/lib/content-i18n'
 
 interface CaseStudyMetric {
   label: string
@@ -31,7 +33,7 @@ interface CaseStudyMetric {
 
 interface SectionDef {
   id: string
-  label: string
+  labelKey: string
   icon: LucideIcon
   field: keyof Pick<
     CaseStudy,
@@ -41,13 +43,13 @@ interface SectionDef {
 }
 
 const SECTIONS: SectionDef[] = [
-  { id: 'problem', label: 'The Problem', icon: AlertCircle, field: 'problem' },
-  { id: 'analysis', label: 'Analysis', icon: Search, field: 'analysis' },
-  { id: 'architecture', label: 'Architecture', icon: Network, field: 'architecture' },
-  { id: 'process', label: 'Development Process', icon: GitBranch, field: 'process' },
-  { id: 'challenges', label: 'Challenges', icon: AlertTriangle, field: 'challenges' },
-  { id: 'results', label: 'Results', icon: TrendingUp, field: 'results', highlight: true },
-  { id: 'lessons', label: 'Lessons Learned', icon: Lightbulb, field: 'lessons' },
+  { id: 'problem', labelKey: 'caseStudyDetail.problem', icon: AlertCircle, field: 'problem' },
+  { id: 'analysis', labelKey: 'caseStudyDetail.analysis', icon: Search, field: 'analysis' },
+  { id: 'architecture', labelKey: 'caseStudyDetail.architecture', icon: Network, field: 'architecture' },
+  { id: 'process', labelKey: 'caseStudyDetail.process', icon: GitBranch, field: 'process' },
+  { id: 'challenges', labelKey: 'caseStudyDetail.challenges', icon: AlertTriangle, field: 'challenges' },
+  { id: 'results', labelKey: 'caseStudyDetail.results', icon: TrendingUp, field: 'results', highlight: true },
+  { id: 'lessons', labelKey: 'caseStudyDetail.lessons', icon: Lightbulb, field: 'lessons' },
 ]
 
 function Paragraphs({ text }: { text: string }) {
@@ -80,6 +82,7 @@ function MetricStat({ metric }: { metric: CaseStudyMetric }) {
 }
 
 function SectionBlock({ section, content }: { section: SectionDef; content: string }) {
+  const t = useT()
   const Icon = section.icon
   const highlight = section.highlight
 
@@ -106,7 +109,7 @@ function SectionBlock({ section, content }: { section: SectionDef; content: stri
               <Icon className="h-5 w-5" />
             </span>
             <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
-              {section.label}
+              {t(section.labelKey)}
             </h2>
           </div>
           <Paragraphs text={content} />
@@ -123,6 +126,7 @@ function StickyToc({
   activeId: string
   onJump: (id: string) => void
 }) {
+  const t = useT()
   return (
     <nav
       aria-label="On this page"
@@ -146,7 +150,7 @@ function StickyToc({
                 )}
               >
                 <s.icon className="h-3.5 w-3.5 shrink-0" />
-                {s.label}
+                {t(s.labelKey)}
               </button>
             </li>
           )
@@ -182,26 +186,30 @@ function DetailSkeleton() {
 }
 
 function NotFoundState({ onBack }: { onBack: () => void }) {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-32 text-center sm:px-6 lg:px-8">
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
         <AlertTriangle className="h-7 w-7" />
       </div>
       <h1 className="mt-5 text-2xl font-bold tracking-tight sm:text-3xl">
-        Case study not found
+        {t('caseStudyDetail.notFound')}
       </h1>
       <p className="mt-3 text-sm text-muted-foreground">
         The case study you&apos;re looking for may have been moved or removed.
       </p>
       <Button onClick={onBack} variant="outline" className="mt-6">
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Case Studies
+        <ArrowLeft className={cn('mr-2 h-4 w-4', lang === 'fa' && 'rtl-flip mr-0 ml-2')} />
+        {t('caseStudyDetail.back')}
       </Button>
     </div>
   )
 }
 
 export function CaseStudyDetailView() {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
   const slug = useNav((s) => s.detailSlug)
   const setView = useNav((s) => s.setView)
   const openDetail = useNav((s) => s.openDetail)
@@ -254,6 +262,7 @@ export function CaseStudyDetailView() {
 
   const item = data.item
   const metrics = parseList<CaseStudyMetric>(item.metrics)
+  const title = tc('caseStudy', item.slug, 'title', item.title, lang)
 
   return (
     <div className="relative">
@@ -266,8 +275,8 @@ export function CaseStudyDetailView() {
             onClick={handleBack}
             className="group inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-            Back to Case Studies
+            <ArrowLeft className={cn('h-4 w-4 transition-transform group-hover:-translate-x-0.5', lang === 'fa' && 'rtl-flip group-hover:translate-x-0.5')} />
+            {t('caseStudyDetail.back')}
           </button>
 
           <Reveal delay={0.05} className="mt-8">
@@ -279,7 +288,7 @@ export function CaseStudyDetailView() {
               {item.industry}
             </Badge>
             <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-balance sm:text-4xl md:text-5xl">
-              {item.title}
+              {title}
             </h1>
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
@@ -296,7 +305,7 @@ export function CaseStudyDetailView() {
               {item.coverImage ? (
                 <img
                   src={item.coverImage}
-                  alt={`${item.title} — cover`}
+                  alt={`${title} — cover`}
                   className="aspect-video w-full object-cover"
                 />
               ) : (
@@ -348,7 +357,7 @@ export function CaseStudyDetailView() {
             <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
             <div className="relative">
               <h2 className="text-2xl font-bold tracking-tight text-secondary-foreground sm:text-3xl">
-                Let&apos;s build your success story
+                {t('caseStudyDetail.ctaTitle')}
               </h2>
               <p className="mx-auto mt-3 max-w-xl text-sm text-secondary-foreground/70 sm:text-base">
                 Tell us about your problem. We&apos;ll bring the architecture,
@@ -359,8 +368,8 @@ export function CaseStudyDetailView() {
                 size="lg"
                 className="mt-7"
               >
-                Start a conversation
-                <ArrowRight className="ml-2 h-4 w-4" />
+                {t('caseStudyDetail.ctaButton')}
+                <ArrowRight className={cn('ml-2 h-4 w-4', lang === 'fa' && 'rtl-flip ml-0 mr-2')} />
               </Button>
             </div>
           </div>

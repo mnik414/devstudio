@@ -207,3 +207,30 @@
   -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
   mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
 }
+
+/* ---- Bilingual / RTL support ---- */
+/* Use Vazirmatn font for body when in Persian mode */
+html.lang-fa body {
+  font-family: var(--font-vazirmatn), var(--font-geist-sans), system-ui, sans-serif;
+}
+html.lang-fa {
+  font-family: var(--font-vazirmatn), var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Numbers: keep LTR digits readable inside RTL flow */
+html.lang-fa .ltr-num {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* RTL-aware utility: mirror transforms that use translateX */
+html[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Ensure code blocks stay LTR even in RTL layout */
+html[dir="rtl"] pre,
+html[dir="rtl"] code {
+  direction: ltr;
+  text-align: left;
+}

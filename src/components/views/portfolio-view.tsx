@@ -33,19 +33,23 @@ import {
 } from '@/lib/hooks'
 import { useNav } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { useT, useLang } from '@/lib/lang-store'
+import { tc } from '@/lib/content-i18n'
 
 type SortKey = 'newest' | 'oldest' | 'title' | 'views'
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: 'newest', label: 'Newest' },
-  { value: 'oldest', label: 'Oldest' },
-  { value: 'title', label: 'Title A-Z' },
-  { value: 'views', label: 'Most Viewed' },
-]
-
 export function PortfolioView() {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
   const openDetail = useNav((s) => s.openDetail)
   const setView = useNav((s) => s.setView)
+
+  const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+    { value: 'newest', label: t('portfolio.sortNewest') },
+    { value: 'oldest', label: t('portfolio.sortOldest') },
+    { value: 'title', label: t('portfolio.sortTitle') },
+    { value: 'views', label: t('portfolio.sortViews') },
+  ]
 
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string>('')
@@ -76,19 +80,22 @@ export function PortfolioView() {
         <div className="bg-grid pointer-events-none absolute inset-0 opacity-50" />
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
           <SectionHeading
-            eyebrow="Our Work"
+            eyebrow={t('portfolio.eyebrow')}
             title={
               <>
-                Crafted with precision.{' '}
-                <span className="text-gradient">Built to perform.</span>
+                {t('portfolio.title').split('. ')[0]}.{' '}
+                <span className="text-gradient">
+                  {t('portfolio.title').split('. ')[1] || t('portfolio.title')}
+                </span>
               </>
             }
-            description="Explore a curated selection of products we've shipped for startups and enterprises — from first MVP to full-scale platform."
+            description={t('portfolio.desc')}
           />
           <Reveal delay={0.15} className="mx-auto mt-8 flex max-w-2xl flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2">
               <Sparkles className="size-4 text-accent" />
-              {items.length || 0} live projects
+              <span className="ltr-num">{items.length || 0}</span>{' '}
+              live projects
             </span>
             <span className="hidden h-1 w-1 rounded-full bg-muted-foreground/40 sm:inline-block" />
             <span className="inline-flex items-center gap-2">
@@ -109,9 +116,9 @@ export function PortfolioView() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search projects..."
+                placeholder={t('portfolio.search')}
                 className="pl-9"
-                aria-label="Search projects"
+                aria-label={t('portfolio.search')}
               />
             </div>
 
@@ -119,7 +126,7 @@ export function PortfolioView() {
             <div className="flex items-center gap-3">
               <span className="hidden items-center gap-2 text-sm font-medium text-muted-foreground sm:inline-flex">
                 <SlidersHorizontal className="size-4" />
-                Sort by
+                {t('portfolio.sort')}
               </span>
               <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
                 <SelectTrigger className="w-[180px]" aria-label="Sort projects">
@@ -146,7 +153,7 @@ export function PortfolioView() {
                 active={category === ''}
                 onClick={() => setCategory('')}
               >
-                All
+                {t('portfolio.allCategories')}
               </FilterChip>
               {categories.map((c) => (
                 <FilterChip
@@ -167,19 +174,19 @@ export function PortfolioView() {
                 Tech
               </span>
               <FilterChip active={tech === ''} onClick={() => setTech('')}>
-                All
+                {t('portfolio.allTech')}
               </FilterChip>
-              {technologies.map((t) => (
+              {technologies.map((techItem) => (
                 <FilterChip
-                  key={t.id}
-                  active={tech === t.slug}
-                  onClick={() => setTech(t.slug)}
+                  key={techItem.id}
+                  active={tech === techItem.slug}
+                  onClick={() => setTech(techItem.slug)}
                 >
                   <span
                     className="inline-block size-2 rounded-full"
-                    style={{ background: t.color ?? 'var(--accent)' }}
+                    style={{ background: techItem.color ?? 'var(--accent)' }}
                   />
-                  {t.name}
+                  {techItem.name}
                 </FilterChip>
               ))}
             </div>
@@ -219,6 +226,7 @@ export function PortfolioView() {
               <Reveal key={item.id} delay={Math.min(idx * 0.05, 0.4)}>
                 <PortfolioCard
                   item={item}
+                  lang={lang}
                   onClick={() => openDetail('portfolio', item.slug)}
                 />
               </Reveal>
@@ -235,11 +243,10 @@ export function PortfolioView() {
             <div className="relative flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
               <div className="max-w-xl">
                 <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                  Have a project in mind?
+                  {t('portfolio.ctaTitle')}
                 </h3>
                 <p className="mt-2 text-sm text-primary-foreground/80 sm:text-base">
-                  Tell us what you're building. We'll get back within 48 hours
-                  with a tailored plan and quote.
+                  {t('portfolio.ctaDesc')}
                 </p>
               </div>
               <Button
@@ -248,8 +255,8 @@ export function PortfolioView() {
                 className="group shrink-0"
                 onClick={() => setView('contact')}
               >
-                Request a project
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                {t('portfolio.ctaButton')}
+                <ArrowRight className={cn('size-4 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
               </Button>
             </div>
           </div>
@@ -289,11 +296,16 @@ function FilterChip({
 
 function PortfolioCard({
   item,
+  lang,
   onClick,
 }: {
   item: Portfolio
+  lang: 'en' | 'fa'
   onClick: () => void
 }) {
+  const t = useT()
+  const title = tc('portfolio', item.slug, 'title', item.title, lang)
+  const summary = tc('portfolio', item.slug, 'summary', item.summary, lang)
   return (
     <motion.button
       type="button"
@@ -307,7 +319,7 @@ function PortfolioCard({
         <div className="relative aspect-video overflow-hidden">
           <img
             src={item.coverImage}
-            alt={`${item.title} cover image`}
+            alt={`${title} cover image`}
             loading="lazy"
             className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
@@ -319,7 +331,7 @@ function PortfolioCard({
           )}
           <div className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
             <Eye className="size-3" />
-            {item.views}
+            <span className="ltr-num">{item.views}</span>
           </div>
         </div>
 
@@ -327,33 +339,33 @@ function PortfolioCard({
         <div className="flex flex-col gap-3 p-5">
           <div className="flex items-center justify-between gap-3">
             <h3 className="line-clamp-1 text-lg font-semibold tracking-tight">
-              {item.title}
+              {title}
             </h3>
-            <ArrowUpRight className="size-5 shrink-0 text-muted-foreground transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+            <ArrowUpRight className={cn('size-5 shrink-0 text-muted-foreground transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary', lang === 'fa' && 'rtl-flip')} />
           </div>
 
           <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-            {item.summary}
+            {summary}
           </p>
 
           {item.technologies && item.technologies.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {item.technologies.slice(0, 4).map((t) => (
+              {item.technologies.slice(0, 4).map((tech) => (
                 <Badge
-                  key={t.id}
+                  key={tech.id}
                   variant="secondary"
                   className="inline-flex items-center gap-1.5 font-normal"
                 >
                   <span
                     className="inline-block size-1.5 rounded-full"
-                    style={{ background: t.color ?? 'var(--accent)' }}
+                    style={{ background: tech.color ?? 'var(--accent)' }}
                   />
-                  {t.name}
+                  {tech.name}
                 </Badge>
               ))}
               {item.technologies.length > 4 && (
                 <Badge variant="outline" className="font-normal">
-                  +{item.technologies.length - 4}
+                  +<span className="ltr-num">{item.technologies.length - 4}</span>
                 </Badge>
               )}
             </div>
@@ -361,7 +373,7 @@ function PortfolioCard({
 
           <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
             <Calendar className="size-3.5" />
-            {item.year}
+            <span className="ltr-num">{item.year}</span>
             {item.clientName && (
               <>
                 <span className="text-muted-foreground/40">•</span>
@@ -371,8 +383,8 @@ function PortfolioCard({
           </div>
 
           <div className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-            View Project
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            {t('portfolio.viewProject')}
+            <ArrowRight className={cn('size-4 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
           </div>
         </div>
       </Card>
@@ -406,6 +418,7 @@ function EmptyState({
   hasFilters: boolean
   onClear: () => void
 }) {
+  const t = useT()
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/30 px-6 py-20 text-center">
       <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -413,13 +426,11 @@ function EmptyState({
       </div>
       <h3 className="mt-5 text-lg font-semibold">No projects found</h3>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        {hasFilters
-          ? "We couldn't find projects matching your filters. Try adjusting your search."
-          : 'Projects will appear here once published.'}
+        {hasFilters ? t('portfolio.noResults') : 'Projects will appear here once published.'}
       </p>
       {hasFilters && (
         <Button variant="outline" className="mt-5" onClick={onClear}>
-          Clear filters
+          {t('portfolio.clearFilters')}
         </Button>
       )}
     </div>

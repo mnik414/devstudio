@@ -17,6 +17,8 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useNav } from '@/lib/store'
 import { useBlogPosts, useBlogFilters, type BlogPost } from '@/lib/hooks'
+import { useT, useLang } from '@/lib/lang-store'
+import { tc } from '@/lib/content-i18n'
 import { cn } from '@/lib/utils'
 
 /* ------------------------------ helpers ------------------------------ */
@@ -133,6 +135,10 @@ function Chip({
 
 function BlogCard({ post, index }: { post: BlogPost; index: number }) {
   const openDetail = useNav((s) => s.openDetail)
+  const t = useT()
+  const lang = useLang((s) => s.lang)
+  const title = tc('blogPost', post.slug, 'title', post.title, lang)
+  const excerpt = tc('blogPost', post.slug, 'excerpt', post.excerpt, lang)
   return (
     <Reveal delay={Math.min(index * 0.06, 0.36)}>
       <article
@@ -142,7 +148,7 @@ function BlogCard({ post, index }: { post: BlogPost; index: number }) {
         <div className="relative aspect-video overflow-hidden">
           <img
             src={post.coverImage}
-            alt={post.title}
+            alt={title}
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
@@ -155,10 +161,10 @@ function BlogCard({ post, index }: { post: BlogPost; index: number }) {
         </div>
         <div className="flex flex-1 flex-col gap-3 p-5">
           <h3 className="line-clamp-2 text-lg font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary">
-            {post.title}
+            {title}
           </h3>
           <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-            {post.excerpt}
+            {excerpt}
           </p>
           <div className="mt-auto flex items-center gap-3 pt-3">
             <AuthorAvatar post={post} />
@@ -166,9 +172,11 @@ function BlogCard({ post, index }: { post: BlogPost; index: number }) {
               <p className="truncate text-xs font-medium">{post.authorName}</p>
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
-                <span>{post.readingTime} min read</span>
+                <span>
+                  <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
+                </span>
                 <span aria-hidden>·</span>
-                <span>{formatDate(post.createdAt)}</span>
+                <span className="ltr-num">{formatDate(post.createdAt)}</span>
               </p>
             </div>
           </div>
@@ -182,6 +190,10 @@ function BlogCard({ post, index }: { post: BlogPost; index: number }) {
 
 function FeaturedCard({ post }: { post: BlogPost }) {
   const openDetail = useNav((s) => s.openDetail)
+  const t = useT()
+  const lang = useLang((s) => s.lang)
+  const title = tc('blogPost', post.slug, 'title', post.title, lang)
+  const excerpt = tc('blogPost', post.slug, 'excerpt', post.excerpt, lang)
   return (
     <Reveal>
       <article
@@ -191,13 +203,13 @@ function FeaturedCard({ post }: { post: BlogPost }) {
         <div className="relative aspect-video overflow-hidden md:aspect-auto md:min-h-[22rem]">
           <img
             src={post.coverImage}
-            alt={post.title}
+            alt={title}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-black/20" />
           <Badge className="absolute left-4 top-4 gap-1 border-transparent bg-background/90 text-foreground backdrop-blur">
             <Sparkles className="h-3 w-3 text-accent" />
-            Featured
+            {t('blog.featured')}
           </Badge>
         </div>
         <div className="flex flex-col justify-center gap-4 p-6 md:p-8 lg:p-10">
@@ -207,10 +219,10 @@ function FeaturedCard({ post }: { post: BlogPost }) {
             </Badge>
           )}
           <h3 className="text-2xl font-bold leading-tight tracking-tight transition-colors group-hover:text-primary md:text-3xl">
-            {post.title}
+            {title}
           </h3>
           <p className="line-clamp-3 text-base leading-relaxed text-muted-foreground">
-            {post.excerpt}
+            {excerpt}
           </p>
           <div className="mt-2 flex items-center gap-3">
             <AuthorAvatar post={post} size="md" />
@@ -218,13 +230,15 @@ function FeaturedCard({ post }: { post: BlogPost }) {
               <p className="truncate text-sm font-medium">{post.authorName}</p>
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
-                <span>{post.readingTime} min read</span>
+                <span>
+                  <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
+                </span>
                 <span aria-hidden>·</span>
-                <span>{relativeDate(post.createdAt)}</span>
+                <span className="ltr-num">{relativeDate(post.createdAt)}</span>
               </p>
             </div>
             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border/60 transition-all group-hover:border-primary/40 group-hover:bg-primary group-hover:text-primary-foreground">
-              <ArrowUpRight className="h-4 w-4" />
+              <ArrowUpRight className="h-4 w-4 rtl-flip" />
             </div>
           </div>
         </div>
@@ -281,13 +295,14 @@ function FeaturedSkeleton() {
 /* ------------------------------ empty ------------------------------ */
 
 function EmptyState({ onReset }: { onReset: () => void }) {
+  const t = useT()
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border/80 bg-muted/30 px-6 py-16 text-center">
       <div className="grid h-14 w-14 place-items-center rounded-full bg-primary/10 text-primary">
         <FileText className="h-6 w-6" />
       </div>
       <div>
-        <h3 className="text-lg font-semibold">No articles found</h3>
+        <h3 className="text-lg font-semibold">{t('blog.noResults')}</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Try a different search term or clear your filters.
         </p>
@@ -297,7 +312,7 @@ function EmptyState({ onReset }: { onReset: () => void }) {
         onClick={onReset}
         className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
       >
-        Clear filters
+        {t('blog.clearAll')}
       </button>
     </div>
   )
@@ -320,6 +335,7 @@ export function BlogView() {
   const [q, setQ] = useState('')
   const [category, setCategory] = useState<string>('')
   const [tag, setTag] = useState<string>('')
+  const t = useT()
 
   const params = useMemo(() => {
     const p: Record<string, string> = {}
@@ -351,13 +367,9 @@ export function BlogView() {
 
       {/* Hero */}
       <SectionHeading
-        eyebrow="Insights"
-        title={
-          <>
-            Ideas, tutorials & <span className="text-gradient">perspectives</span>
-          </>
-        }
-        description="Sharing expertise from the trenches — performance, architecture, design, and the craft of building great digital products."
+        eyebrow={t('blog.eyebrow')}
+        title={t('blog.title')}
+        description={t('blog.desc')}
       />
 
       {/* Featured */}
@@ -376,9 +388,9 @@ export function BlogView() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search articles..."
+            placeholder={t('blog.search')}
             className="rounded-full pl-9"
-            aria-label="Search articles"
+            aria-label={t('blog.search')}
           />
         </div>
 
@@ -386,10 +398,10 @@ export function BlogView() {
           {!filtersLoading && filtersData?.categories?.length ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Topics
+                {t('blog.topics')}
               </span>
               <Chip active={category === ''} onClick={() => setCategory('')}>
-                All
+                {t('blog.all')}
               </Chip>
               {filtersData.categories.map((c) => (
                 <Chip
@@ -406,18 +418,18 @@ export function BlogView() {
           {!filtersLoading && filtersData?.tags?.length ? (
             <div className="flex flex-wrap items-center gap-2">
               <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Tags
+                {t('blog.tags')}
               </span>
               <Chip active={tag === ''} onClick={() => setTag('')}>
-                All
+                {t('blog.all')}
               </Chip>
-              {filtersData.tags.slice(0, 12).map((t) => (
+              {filtersData.tags.slice(0, 12).map((tg) => (
                 <Chip
-                  key={t.id}
-                  active={tag === t.slug}
-                  onClick={() => setTag(tag === t.slug ? '' : t.slug)}
+                  key={tg.id}
+                  active={tag === tg.slug}
+                  onClick={() => setTag(tag === tg.slug ? '' : tg.slug)}
                 >
-                  #{t.name}
+                  #{tg.name}
                 </Chip>
               ))}
             </div>
@@ -426,15 +438,13 @@ export function BlogView() {
 
         {isFiltering && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>
-              Showing {rest.length} article{rest.length === 1 ? '' : 's'}
-            </span>
+            <span>{t('blog.showing', { count: rest.length })}</span>
             <button
               type="button"
               onClick={reset}
               className="font-medium text-primary underline-offset-4 hover:underline"
             >
-              Clear all
+              {t('blog.clearAll')}
             </button>
           </div>
         )}

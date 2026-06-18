@@ -2,39 +2,42 @@
 
 import { Logo } from './logo'
 import { useNav, type ViewKey } from '@/lib/store'
+import { useT } from '@/lib/lang-store'
 import { Github, Linkedin, Twitter, Mail, MapPin, Phone, ArrowUpRight } from 'lucide-react'
-
-const FOOTER_LINKS: { title: string; links: { label: string; view?: ViewKey; href?: string }[] }[] = [
-  {
-    title: 'Company',
-    links: [
-      { label: 'About Us', view: 'about' },
-      { label: 'Our Work', view: 'portfolio' },
-      { label: 'Case Studies', view: 'case-studies' },
-      { label: 'Blog', view: 'blog' },
-    ],
-  },
-  {
-    title: 'Services',
-    links: [
-      { label: 'Web Development' },
-      { label: 'E-commerce' },
-      { label: 'SaaS Platforms' },
-      { label: 'AI Integration' },
-    ],
-  },
-  {
-    title: 'Resources',
-    links: [
-      { label: 'Project Estimator', view: 'estimate' },
-      { label: 'Contact', view: 'contact' },
-      { label: 'FAQs', view: 'home' },
-    ],
-  },
-]
 
 export function Footer() {
   const { setView } = useNav()
+  const t = useT()
+
+  const FOOTER_LINKS: { title: string; links: { label: string; view?: ViewKey }[] }[] = [
+    {
+      title: t('footer.company'),
+      links: [
+        { label: t('footer.about'), view: 'about' },
+        { label: t('footer.ourWork'), view: 'portfolio' },
+        { label: t('footer.caseStudies'), view: 'case-studies' },
+        { label: t('footer.blog'), view: 'blog' },
+      ],
+    },
+    {
+      title: t('footer.services'),
+      links: [
+        { label: t('footer.webDev') },
+        { label: t('footer.ecommerce') },
+        { label: t('footer.saas') },
+        { label: t('footer.ai') },
+      ],
+    },
+    {
+      title: t('footer.resources'),
+      links: [
+        { label: t('footer.estimator'), view: 'estimate' },
+        { label: t('footer.contact'), view: 'contact' },
+        { label: t('footer.faqs'), view: 'home' },
+      ],
+    },
+  ]
+
   return (
     <footer className="mt-auto border-t border-border/60 bg-secondary text-secondary-foreground">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
@@ -44,8 +47,7 @@ export function Footer() {
               <Logo />
             </div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-secondary-foreground/70">
-              We build fast, scalable, and modern digital products. From marketing sites to
-              enterprise SaaS — we help ambitious teams ship software that converts.
+              {t('footer.desc')}
             </p>
             <div className="mt-5 flex items-center gap-3">
               {[
@@ -89,29 +91,29 @@ export function Footer() {
 
         <div className="mt-12 grid gap-4 border-t border-white/10 pt-8 text-sm text-secondary-foreground/70 sm:grid-cols-3">
           <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4 text-accent" />
+            <Mail className="h-4 w-4 shrink-0 text-accent" />
             hello@devstudio.com
           </div>
           <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 text-accent" />
-            +1 (555) 123-4567
+            <Phone className="h-4 w-4 shrink-0 text-accent" />
+            <span className="ltr-num">+1 (555) 123-4567</span>
           </div>
           <div className="flex items-center gap-2 sm:justify-end">
-            <MapPin className="h-4 w-4 text-accent" />
+            <MapPin className="h-4 w-4 shrink-0 text-accent" />
             123 Innovation Drive, San Francisco, CA
           </div>
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-secondary-foreground/60 sm:flex-row">
-          <p>© {new Date().getFullYear()} DevStudio. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} DevStudio. {t('footer.rights')}</p>
           <div className="flex items-center gap-4">
-            <p>Crafted with care · Built on Next.js, TypeScript & Prisma</p>
+            <p>{t('footer.crafted')}</p>
             <button
               onClick={() => setView('admin')}
               className="text-secondary-foreground/40 transition hover:text-accent"
-              aria-label="Admin panel"
+              aria-label={t('nav.admin')}
             >
-              Admin
+              {t('nav.admin')}
             </button>
           </div>
         </div>

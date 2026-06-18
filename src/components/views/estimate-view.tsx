@@ -35,6 +35,7 @@ import { SectionHeading } from '@/components/site/section-heading'
 import { Counter } from '@/components/site/counter'
 import { useNav } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { useT, useLang } from '@/lib/lang-store'
 
 /* ----------------------------- types & config ---------------------------- */
 
@@ -56,51 +57,36 @@ type ProjectType = {
   icon: typeof Layout
 }
 
-const PROJECT_TYPES: ProjectType[] = [
-  { value: 'landing-page', label: 'Landing Page', desc: 'Single-page marketing site', icon: Layout },
-  { value: 'corporate-site', label: 'Corporate Site', desc: 'Multi-page business website', icon: Building2 },
-  { value: 'ecommerce', label: 'E-Commerce', desc: 'Online store with checkout', icon: ShoppingBag },
-  { value: 'web-app', label: 'Web App', desc: 'Custom interactive application', icon: AppWindow },
-  { value: 'saas', label: 'SaaS', desc: 'Subscription-based platform', icon: Layers },
-  { value: 'booking', label: 'Booking Platform', desc: 'Reservations & scheduling', icon: CalendarClock },
-  { value: 'custom', label: 'Custom System', desc: 'Bespoke enterprise system', icon: Boxes },
-]
-
-const PAGE_RANGES = [
-  { label: '1 – 5', value: 5, desc: 'Compact' },
-  { label: '6 – 10', value: 10, desc: 'Standard' },
-  { label: '11 – 20', value: 20, desc: 'Extensive' },
-  { label: '20+', value: 25, desc: 'Large scale' },
-]
+type PageRange = {
+  label: string
+  value: number
+  desc: string
+}
 
 type StepDef = {
   key: keyof Answers
-  question: string
   hint: string
 }
 
 const STEPS: StepDef[] = [
-  { key: 'projectType', question: 'What are you building?', hint: 'Pick the option that best describes your project.' },
-  { key: 'pages', question: 'How many pages or screens?', hint: 'A rough estimate is fine — you can refine later.' },
-  { key: 'adminPanel', question: 'Do you need an admin panel?', hint: 'A dashboard to manage content, users or data.' },
-  { key: 'payment', question: 'Do you need a payment gateway?', hint: 'Stripe, PayPal, or other online checkout.' },
-  { key: 'auth', question: 'Do you need user registration?', hint: 'Accounts, login, roles and permissions.' },
-  { key: 'mobileApp', question: 'Do you need a mobile app?', hint: 'A companion iOS / Android experience.' },
-  { key: 'ai', question: 'Do you need AI features?', hint: 'Chatbots, recommendations, content generation, etc.' },
+  { key: 'projectType', hint: 'Pick the option that best describes your project.' },
+  { key: 'pages', hint: 'A rough estimate is fine — you can refine later.' },
+  { key: 'adminPanel', hint: 'A dashboard to manage content, users or data.' },
+  { key: 'payment', hint: 'Stripe, PayPal, or other online checkout.' },
+  { key: 'auth', hint: 'Accounts, login, roles and permissions.' },
+  { key: 'mobileApp', hint: 'A companion iOS / Android experience.' },
+  { key: 'ai', hint: 'Chatbots, recommendations, computer vision, etc.' },
 ]
 
 const TOTAL_STEPS = STEPS.length
-
-const YES_NO: { value: boolean; label: string; desc: string }[] = [
-  { value: true, label: 'Yes', desc: "I'll need this" },
-  { value: false, label: 'No', desc: 'Not required' },
-]
 
 /* --------------------------------- view ---------------------------------- */
 
 type Stage = 'wizard' | 'calculating' | 'result' | 'saved'
 
 export function EstimateView() {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
   const { setView } = useNav()
   const [step, setStep] = useState(0)
   const [direction, setDirection] = useState(1)
@@ -114,6 +100,28 @@ export function EstimateView() {
   const [contact, setContact] = useState({ name: '', email: '', phone: '', company: '' })
   const [contactErrors, setContactErrors] = useState<Partial<Record<keyof typeof contact, string>>>({})
   const [savingLead, setSavingLead] = useState(false)
+
+  const PROJECT_TYPES: ProjectType[] = [
+    { value: 'landing-page', label: t('estimate.landingPage'), desc: t('estimate.landingDesc'), icon: Layout },
+    { value: 'corporate-site', label: t('estimate.corporateSite'), desc: t('estimate.corporateDesc'), icon: Building2 },
+    { value: 'ecommerce', label: t('estimate.ecommerce'), desc: t('estimate.ecommerceDesc'), icon: ShoppingBag },
+    { value: 'web-app', label: t('estimate.webApp'), desc: t('estimate.webAppDesc'), icon: AppWindow },
+    { value: 'saas', label: t('estimate.saas'), desc: t('estimate.saasDesc'), icon: Layers },
+    { value: 'booking', label: t('estimate.booking'), desc: t('estimate.bookingDesc'), icon: CalendarClock },
+    { value: 'custom', label: t('estimate.custom'), desc: t('estimate.customDesc'), icon: Boxes },
+  ]
+
+  const PAGE_RANGES: PageRange[] = [
+    { label: t('estimate.pages1'), value: 5, desc: t('estimate.pages1Desc') },
+    { label: t('estimate.pages2'), value: 10, desc: t('estimate.pages2Desc') },
+    { label: t('estimate.pages3'), value: 20, desc: t('estimate.pages3Desc') },
+    { label: t('estimate.pages4'), value: 25, desc: t('estimate.pages4Desc') },
+  ]
+
+  const YES_NO: { value: boolean; label: string; desc: string }[] = [
+    { value: true, label: t('estimate.yes'), desc: "I'll need this" },
+    { value: false, label: t('estimate.no'), desc: 'Not required' },
+  ]
 
   /* --------------------------- step navigation --------------------------- */
 
@@ -170,9 +178,9 @@ export function EstimateView() {
   const submitLead = async (e: FormEvent) => {
     e.preventDefault()
     const errs: Partial<Record<keyof typeof contact, string>> = {}
-    if (!contact.name.trim()) errs.name = 'Please enter your name.'
-    if (!contact.email.trim()) errs.email = 'Please enter your email.'
-    else if (!emailRegex.test(contact.email)) errs.email = 'Please enter a valid email.'
+    if (!contact.name.trim()) errs.name = t('contact.requiredField')
+    if (!contact.email.trim()) errs.email = t('contact.requiredField')
+    else if (!emailRegex.test(contact.email)) errs.email = t('contact.invalidEmail')
     setContactErrors(errs)
     if (Object.keys(errs).length) {
       toast.error('Please fix the highlighted fields.')
@@ -187,7 +195,7 @@ export function EstimateView() {
       })
       if (!res.ok) throw new Error('Failed to save your estimate')
       setStage('saved')
-      toast.success('Estimate saved!', { description: 'Our team will reach out within 24h.' })
+      toast.success(t('estimate.savedTitle'), { description: t('estimate.savedDesc') })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong.'
       toast.error('Could not save estimate', { description: message })
@@ -207,13 +215,11 @@ export function EstimateView() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Project Estimator"
+          eyebrow={t('estimate.eyebrow')}
           title={
-            <>
-              Get an <span className="text-gradient">instant estimate</span>
-            </>
+            <span className="text-gradient">{t('estimate.title')}</span>
           }
-          description="Answer a few questions to get a ballpark cost range for your project. No email required to see your estimate."
+          description={t('estimate.desc')}
         />
 
         {/* progress + step indicator */}
@@ -221,7 +227,12 @@ export function EstimateView() {
           <div className="mb-6 flex items-center justify-between text-sm">
             <span className="font-medium text-muted-foreground">
               {stage === 'wizard' ? (
-                <>Question <span className="font-semibold text-foreground">{step + 1}</span> of {TOTAL_STEPS}</>
+                <>
+                  {t('estimate.question')}{' '}
+                  <span className="font-semibold text-foreground ltr-num">{step + 1}</span>{' '}
+                  {t('estimate.of')}{' '}
+                  <span className="font-semibold text-foreground ltr-num">{TOTAL_STEPS}</span>
+                </>
               ) : stage === 'result' || stage === 'saved' ? (
                 <span className="inline-flex items-center gap-1.5 font-semibold text-accent">
                   <CheckCircle2 className="size-4" /> Estimate ready
@@ -231,7 +242,7 @@ export function EstimateView() {
               )}
             </span>
             <span className="text-xs text-muted-foreground">
-              {Math.round(stage === 'wizard' ? progress : 100)}% complete
+              <span className="ltr-num">{Math.round(stage === 'wizard' ? progress : 100)}%</span> complete
             </span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -261,7 +272,7 @@ export function EstimateView() {
                   >
                     <StepHeader
                       index={step + 1}
-                      question={currentDef.question}
+                      question={t(`estimate.q${step + 1}`)}
                       hint={currentDef.hint}
                     />
 
@@ -302,7 +313,7 @@ export function EstimateView() {
                               >
                                 <span
                                   className={cn(
-                                    'text-xl font-bold tracking-tight',
+                                    'text-xl font-bold tracking-tight ltr-num',
                                     active ? 'text-primary' : 'text-foreground'
                                   )}
                                 >
@@ -331,8 +342,8 @@ export function EstimateView() {
                         onClick={() => goTo(step - 1)}
                         disabled={step === 0}
                       >
-                        <ArrowLeft className="size-4" />
-                        Back
+                        <ArrowLeft className={cn('size-4', lang === 'fa' ? 'ml-1.5 rtl-flip' : 'mr-1.5')} />
+                        {t('estimate.back')}
                       </Button>
 
                       {step < TOTAL_STEPS - 1 ? (
@@ -341,8 +352,8 @@ export function EstimateView() {
                           onClick={() => goTo(step + 1)}
                           disabled={!isAnswered}
                         >
-                          Next
-                          <ArrowRight className="size-4" />
+                          {t('estimate.next')}
+                          <ArrowRight className={cn('size-4', lang === 'fa' ? 'mr-1.5 rtl-flip' : 'ml-1.5')} />
                         </Button>
                       ) : (
                         <Button
@@ -350,7 +361,7 @@ export function EstimateView() {
                           onClick={handleSeeEstimate}
                           disabled={!isAnswered}
                         >
-                          See estimate
+                          {t('estimate.seeEstimate')}
                           <Sparkles className="size-4" />
                         </Button>
                       )}
@@ -371,7 +382,7 @@ export function EstimateView() {
                       <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
                       <Loader2 className="size-9 animate-spin text-primary" />
                     </span>
-                    <p className="text-base font-medium">Calculating your estimate…</p>
+                    <p className="text-base font-medium">{t('estimate.calculating')}</p>
                     <p className="text-sm text-muted-foreground">Matching your answers against our pricing model.</p>
                   </motion.div>
                 )}
@@ -394,27 +405,28 @@ export function EstimateView() {
                       <div className="mt-5 flex items-end justify-center gap-3">
                         <div className="flex flex-col">
                           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Min</span>
-                          <span className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl">
+                          <span className="text-4xl font-bold tracking-tight text-gradient ltr-num sm:text-5xl">
                             $<Counter to={estimate.min} duration={1.4} />
                           </span>
                         </div>
                         <span className="pb-2 text-2xl font-light text-muted-foreground">–</span>
                         <div className="flex flex-col">
                           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Max</span>
-                          <span className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl">
+                          <span className="text-4xl font-bold tracking-tight text-gradient ltr-num sm:text-5xl">
                             $<Counter to={estimate.max} duration={1.6} />
                           </span>
                         </div>
                       </div>
                       <p className="mt-3 text-sm text-muted-foreground">
-                        Estimated project cost range · typical timeline 4–12 weeks
+                        {t('estimate.estimatedCost')} · typical timeline{' '}
+                        <span className="ltr-num">4–12</span> weeks
                       </p>
                     </div>
 
                     {/* breakdown */}
                     <div className="mt-8">
                       <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                        Cost breakdown
+                        {t('estimate.breakdown')}
                       </h4>
                       <ul className="mt-3 space-y-2">
                         {estimate.breakdown.map((b, i) => (
@@ -426,7 +438,7 @@ export function EstimateView() {
                             className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-4 py-3"
                           >
                             <span className="text-sm font-medium text-foreground">{b.label}</span>
-                            <span className="text-sm font-semibold text-foreground">
+                            <span className="text-sm font-semibold text-foreground ltr-num">
                               ${b.cost.toLocaleString()}
                             </span>
                           </motion.li>
@@ -438,9 +450,7 @@ export function EstimateView() {
                     <div className="mt-6 flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/40 p-4">
                       <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                       <p className="text-xs leading-relaxed text-muted-foreground">
-                        This is a ballpark estimate based on your answers. Final quotes are provided after
-                        a discovery call where we review detailed scope, design complexity, integrations and
-                        timelines. No commitment required.
+                        {t('estimate.disclaimer')}
                       </p>
                     </div>
 
@@ -458,7 +468,7 @@ export function EstimateView() {
                       </p>
 
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <LabeledField id="est-name" label="Name" required error={contactErrors.name}>
+                        <LabeledField id="est-name" label={t('estimate.name')} required error={contactErrors.name}>
                           <Input
                             id="est-name"
                             value={contact.name}
@@ -468,7 +478,7 @@ export function EstimateView() {
                             aria-invalid={!!contactErrors.name}
                           />
                         </LabeledField>
-                        <LabeledField id="est-company" label="Company" error={undefined}>
+                        <LabeledField id="est-company" label={t('estimate.company')} error={undefined}>
                           <Input
                             id="est-company"
                             value={contact.company}
@@ -477,7 +487,7 @@ export function EstimateView() {
                             autoComplete="organization"
                           />
                         </LabeledField>
-                        <LabeledField id="est-email" label="Email" required error={contactErrors.email}>
+                        <LabeledField id="est-email" label={t('estimate.email')} required error={contactErrors.email}>
                           <Input
                             id="est-email"
                             type="email"
@@ -488,7 +498,7 @@ export function EstimateView() {
                             aria-invalid={!!contactErrors.email}
                           />
                         </LabeledField>
-                        <LabeledField id="est-phone" label="Phone" error={undefined}>
+                        <LabeledField id="est-phone" label={t('estimate.phone')} error={undefined}>
                           <Input
                             id="est-phone"
                             type="tel"
@@ -513,8 +523,8 @@ export function EstimateView() {
                             </>
                           ) : (
                             <>
-                              Save my estimate
-                              <ArrowRight className="size-4" />
+                              {t('estimate.saveEstimate')}
+                              <ArrowRight className={cn('size-4', lang === 'fa' ? 'mr-1.5 rtl-flip' : 'ml-1.5')} />
                             </>
                           )}
                         </Button>
@@ -541,20 +551,19 @@ export function EstimateView() {
                       <PartyPopper className="size-9" />
                     </motion.span>
                     <h3 className="mt-6 text-2xl font-semibold tracking-tight sm:text-3xl">
-                      We&apos;ve saved your estimate!
+                      {t('estimate.savedTitle')}
                     </h3>
                     <p className="mt-2 max-w-md text-sm text-muted-foreground sm:text-base">
-                      Thanks, {contact.name.split(' ')[0] || 'there'}! Our team will reach out within 24 hours
-                      with a tailored proposal. Want to jump the queue? Book a call now.
+                      {t('estimate.savedDesc')}
                     </p>
                     <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                       <Button onClick={() => setView('contact')}>
                         <CalendarCheck className="size-4" />
-                        Book a call
+                        {t('estimate.bookCall')}
                       </Button>
                       <Button variant="outline" onClick={restart}>
                         <RotateCcw className="size-4" />
-                        Run another estimate
+                        {t('estimate.runAnother')}
                       </Button>
                     </div>
                   </motion.div>
@@ -589,7 +598,7 @@ function StepHeader({ index, question, hint }: { index: number; question: string
   return (
     <div>
       <div className="flex items-center gap-3">
-        <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
+        <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground ltr-num">
           {index}
         </span>
         <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">{question}</h3>
@@ -638,6 +647,11 @@ function YesNoCards({
   value: boolean | undefined
   onChange: (v: boolean) => void
 }) {
+  const t = useT()
+  const YES_NO: { value: boolean; label: string; desc: string }[] = [
+    { value: true, label: t('estimate.yes'), desc: "I'll need this" },
+    { value: false, label: t('estimate.no'), desc: 'Not required' },
+  ]
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
       {YES_NO.map((opt) => {
@@ -690,11 +704,19 @@ function LabeledField({
   error?: string
   children: ReactNode
 }) {
+  const lang = useLang((s) => s.lang)
   return (
     <div className="space-y-2">
       <Label htmlFor={id} className="text-sm font-medium">
         {label}
-        {required && <span className="ml-0.5 text-primary">*</span>}
+        {required && (
+          <span
+            className={cn('text-primary', lang === 'fa' ? 'mr-0.5' : 'ml-0.5')}
+            aria-label={required ? 'required' : undefined}
+          >
+            *
+          </span>
+        )}
       </Label>
       {children}
       {error ? <p className="text-xs font-medium text-destructive">{error}</p> : null}

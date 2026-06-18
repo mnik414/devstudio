@@ -1,0 +1,647 @@
+     1→'use client'
+     2→
+     3→import { motion } from 'framer-motion'
+     4→import {
+     5→  ArrowRight,
+     6→  ArrowUpRight,
+     7→  Code2,
+     8→  ShoppingCart,
+     9→  CalendarCheck,
+    10→  Cloud,
+    11→  LayoutDashboard,
+    12→  Webhook,
+    13→  Search,
+    14→  Sparkles,
+    15→  Star,
+    16→  Quote,
+    17→  Lightbulb,
+    18→  Rocket,
+    19→  ClipboardCheck,
+    20→  TestTube,
+    21→  Hammer,
+    22→  LifeBuoy,
+    23→  Compass,
+    24→  CheckCircle2,
+    25→} from 'lucide-react'
+    26→import { useState } from 'react'
+    27→import { Button } from '@/components/ui/button'
+    28→import { Card } from '@/components/ui/card'
+    29→import { Badge } from '@/components/ui/badge'
+    30→import { Skeleton } from '@/components/ui/skeleton'
+    31→import {
+    32→  Accordion,
+    33→  AccordionContent,
+    34→  AccordionItem,
+    35→  AccordionTrigger,
+    36→} from '@/components/ui/accordion'
+    37→import { Reveal } from '@/components/site/reveal'
+    38→import { SectionHeading } from '@/components/site/section-heading'
+    39→import { Counter } from '@/components/site/counter'
+    40→import {
+    41→  useSite,
+    42→  usePortfolios,
+    43→  parseList,
+    44→  type Service,
+    45→  type Portfolio,
+    46→  type Testimonial,
+    47→} from '@/lib/hooks'
+    48→import { useNav } from '@/lib/store'
+    49→
+    50→const iconMap: Record<string, typeof Code2> = {
+    51→  Code2,
+    52→  ShoppingCart,
+    53→  CalendarCheck,
+    54→  Cloud,
+    55→  LayoutDashboard,
+    56→  Webhook,
+    57→  Search,
+    58→  Sparkles,
+    59→}
+    60→
+    61→const PROCESS_STEPS = [
+    62→  { icon: Compass, title: 'Discovery', desc: 'We dive deep into your business, users, and goals to define a clear product strategy.' },
+    63→  { icon: ClipboardCheck, title: 'Planning', desc: 'Roadmaps, milestones, and technical architecture are mapped out with full transparency.' },
+    64→  { icon: Lightbulb, title: 'UI/UX Design', desc: 'Wireframes evolve into pixel-perfect, accessible, conversion-focused interfaces.' },
+    65→  { icon: Hammer, title: 'Development', desc: 'Clean, tested, scalable code built in iterative sprints with weekly demos.' },
+    66→  { icon: TestTube, title: 'Testing', desc: 'Automated tests, QA passes, and performance audits ensure production readiness.' },
+    67→  { icon: Rocket, title: 'Launch', desc: 'Zero-downtime deployment with monitoring, analytics, and SEO in place.' },
+    68→  { icon: LifeBuoy, title: 'Support', desc: 'Ongoing maintenance, optimizations, and feature iterations post-launch.' },
+    69→]
+    70→
+    71→const TECH_LOGOS = [
+    72→  'Laravel', 'PHP', 'React', 'Vue', 'Next.js',
+    73→  'PostgreSQL', 'MySQL', 'TailwindCSS', 'TypeScript',
+    74→  'Node.js', 'Docker', 'Linux',
+    75→]
+    76→
+    77→export function HomeView() {
+    78→  const { setView, scrollTo, openDetail } = useNav()
+    79→  const { data: siteData, isLoading: siteLoading } = useSite()
+    80→  const { data: portfolioData, isLoading: portfolioLoading } = usePortfolios({ featured: 'true', limit: '6' })
+    81→
+    82→  const featuredPortfolios = portfolioData?.items ?? []
+    83→  const services = siteData?.services ?? []
+    84→  const testimonials = siteData?.testimonials ?? []
+    85→  const faqs = siteData?.faqs ?? []
+    86→  const settings = siteData?.settings ?? {}
+    87→
+    88→  return (
+    89→    <div className="overflow-hidden">
+    90→      {/* ===== HERO ===== */}
+    91→      <section className="relative isolate overflow-hidden bg-radial-fade pb-24 pt-20 sm:pt-28">
+    92→        <div className="absolute inset-0 -z-10 bg-grid opacity-60 [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)]" />
+    93→        <div className="absolute -top-24 left-1/2 -z-10 h-72 w-[40rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+    94→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    95→          <div className="mx-auto max-w-4xl text-center">
+    96→            <motion.div
+    97→              initial={{ opacity: 0, y: 20 }}
+    98→              animate={{ opacity: 1, y: 0 }}
+    99→              transition={{ duration: 0.6 }}
+   100→              className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary"
+   101→            >
+   102→              <span className="relative flex h-2 w-2">
+   103→                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+   104→                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+   105→              </span>
+   106→              Now booking Q3 2024 projects
+   107→            </motion.div>
+   108→
+   109→            <motion.h1
+   110→              initial={{ opacity: 0, y: 24 }}
+   111→              animate={{ opacity: 1, y: 0 }}
+   112→              transition={{ duration: 0.7, delay: 0.05 }}
+   113→              className="text-4xl font-bold tracking-tight text-balance sm:text-6xl md:text-7xl md:leading-[1.05]"
+   114→            >
+   115→              We Build <span className="text-gradient">Fast, Scalable</span> & Modern Digital Products
+   116→            </motion.h1>
+   117→
+   118→            <motion.p
+   119→              initial={{ opacity: 0, y: 24 }}
+   120→              animate={{ opacity: 1, y: 0 }}
+   121→              transition={{ duration: 0.7, delay: 0.15 }}
+   122→              className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl"
+   123→            >
+   124→              DevStudio is a premium web development agency crafting high-performance websites,
+   125→              SaaS platforms, and AI-powered products that convert visitors into customers.
+   126→            </motion.p>
+   127→
+   128→            <motion.div
+   129→              initial={{ opacity: 0, y: 24 }}
+   130→              animate={{ opacity: 1, y: 0 }}
+   131→              transition={{ duration: 0.7, delay: 0.25 }}
+   132→              className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
+   133→            >
+   134→              <Button size="lg" className="h-12 rounded-full px-7 text-base" onClick={() => setView('portfolio')}>
+   135→                View Portfolio
+   136→                <ArrowRight className="ml-2 h-4 w-4" />
+   137→              </Button>
+   138→              <Button size="lg" variant="outline" className="h-12 rounded-full px-7 text-base" onClick={() => setView('contact')}>
+   139→                Request Consultation
+   140→              </Button>
+   141→            </motion.div>
+   142→
+   143→            <motion.div
+   144→              initial={{ opacity: 0 }}
+   145→              animate={{ opacity: 1 }}
+   146→              transition={{ duration: 0.7, delay: 0.4 }}
+   147→              className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
+   148→            >
+   149→              {['180+ projects shipped', '98% client satisfaction', '12+ years experience'].map((t) => (
+   150→                <span key={t} className="inline-flex items-center gap-1.5">
+   151→                  <CheckCircle2 className="h-4 w-4 text-accent" />
+   152→                  {t}
+   153→                </span>
+   154→              ))}
+   155→            </motion.div>
+   156→          </div>
+   157→
+   158→          {/* Floating dashboard mockup */}
+   159→          <motion.div
+   160→            initial={{ opacity: 0, y: 60 }}
+   161→            animate={{ opacity: 1, y: 0 }}
+   162→            transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+   163→            className="relative mx-auto mt-16 max-w-5xl"
+   164→          >
+   165→            <div className="absolute -inset-4 -z-10 rounded-3xl bg-gradient-to-tr from-primary/20 via-accent/10 to-transparent blur-2xl" />
+   166→            <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft">
+   167→              <div className="flex items-center gap-1.5 border-b border-border/60 bg-muted/40 px-4 py-3">
+   168→                <span className="h-3 w-3 rounded-full bg-red-400/80" />
+   169→                <span className="h-3 w-3 rounded-full bg-yellow-400/80" />
+   170→                <span className="h-3 w-3 rounded-full bg-green-400/80" />
+   171→                <span className="ml-3 text-xs text-muted-foreground">devstudio.com/dashboard</span>
+   172→              </div>
+   173→              <div className="grid gap-4 p-5 sm:grid-cols-3">
+   174→                {[
+   175→                  { label: 'Active Users', value: '48,920', trend: '+12.4%', color: 'text-accent' },
+   176→                  { label: 'Revenue', value: '$92,310', trend: '+8.1%', color: 'text-accent' },
+   177→                  { label: 'Conversion', value: '4.8%', trend: '+0.6pt', color: 'text-accent' },
+   178→                ].map((stat) => (
+   179→                  <div key={stat.label} className="rounded-xl border border-border/60 bg-background p-4">
+   180→                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+   181→                    <p className="mt-1 text-2xl font-bold">{stat.value}</p>
+   182→                    <p className={`mt-1 text-xs font-medium ${stat.color}`}>{stat.trend} ↑</p>
+   183→                  </div>
+   184→                ))}
+   185→                <div className="sm:col-span-3">
+   186→                  <div className="flex h-32 items-end gap-2 rounded-xl border border-border/60 bg-background p-4">
+   187→                    {[40, 65, 50, 80, 55, 90, 70, 95, 60, 85, 75, 100].map((h, i) => (
+   188→                      <motion.div
+   189→                        key={i}
+   190→                        initial={{ height: 0 }}
+   191→                        animate={{ height: `${h}%` }}
+   192→                        transition={{ duration: 0.6, delay: 0.6 + i * 0.05 }}
+   193→                        className="flex-1 rounded-t bg-gradient-to-t from-primary/40 to-accent"
+   194→                      />
+   195→                    ))}
+   196→                  </div>
+   197→                </div>
+   198→              </div>
+   199→            </div>
+   200→            <div className="pointer-events-none absolute -right-6 -top-6 hidden animate-float rounded-xl border border-border/60 bg-card p-3 shadow-soft sm:block">
+   201→              <div className="flex items-center gap-2">
+   202→                <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15 text-accent">
+   203→                  <Sparkles className="h-4 w-4" />
+   204→                </div>
+   205→                <div>
+   206→                  <p className="text-xs font-semibold">AI Insights</p>
+   207→                  <p className="text-[10px] text-muted-foreground">Live</p>
+   208→                </div>
+   209→              </div>
+   210→            </div>
+   211→          </motion.div>
+   212→        </div>
+   213→      </section>
+   214→
+   215→      {/* ===== TRUSTED BY MARQUEE ===== */}
+   216→      <section className="border-y border-border/60 bg-muted/30 py-10">
+   217→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   218→          <p className="mb-6 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+   219→            Trusted by teams at fast-growing companies
+   220→          </p>
+   221→          <div className="mask-fade-x overflow-hidden">
+   222→            <div className="flex w-max animate-marquee items-center gap-12 pr-12">
+   223→              {[...TECH_LOGOS, ...TECH_LOGOS].map((name, i) => (
+   224→                <span key={i} className="text-xl font-bold text-muted-foreground/50 transition hover:text-foreground">
+   225→                  {name}
+   226→                </span>
+   227→              ))}
+   228→            </div>
+   229→          </div>
+   230→        </div>
+   231→      </section>
+   232→
+   233→      {/* ===== STATISTICS ===== */}
+   234→      <section className="py-20 sm:py-28">
+   235→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   236→          <SectionHeading
+   237→            eyebrow="By the numbers"
+   238→            title={<>Results that speak for themselves</>}
+   239→            description="Over a decade of building digital products that drive measurable business outcomes."
+   240→          />
+   241→          <div className="mt-14 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+   242→            {[
+   243→              { label: 'Completed Projects', value: Number(settings.stats_projects || 180), suffix: '+' },
+   244→              { label: 'Years of Experience', value: Number(settings.stats_experience || 12), suffix: '+' },
+   245→              { label: 'Client Satisfaction', value: Number(settings.stats_satisfaction || 98), suffix: '%' },
+   246→              { label: 'Technologies Used', value: Number(settings.stats_technologies || 25), suffix: '+' },
+   247→            ].map((stat, i) => (
+   248→              <Reveal key={stat.label} delay={i * 0.1}>
+   249→                <Card className="group relative overflow-hidden border-border/60 p-6 text-center transition hover:shadow-soft sm:p-8">
+   250→                  <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 transition group-hover:opacity-100" />
+   251→                  <div className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl">
+   252→                    <Counter to={stat.value} suffix={stat.suffix} />
+   253→                  </div>
+   254→                  <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">{stat.label}</p>
+   255→                </Card>
+   256→              </Reveal>
+   257→            ))}
+   258→          </div>
+   259→        </div>
+   260→      </section>
+   261→
+   262→      {/* ===== FEATURED PORTFOLIO ===== */}
+   263→      <section id="featured-work" className="scroll-mt-24 bg-muted/30 py-20 sm:py-28">
+   264→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   265→          <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
+   266→            <SectionHeading
+   267→              align="left"
+   268→              eyebrow="Featured Work"
+   269→              title={<>Selected projects we're proud of</>}
+   270→              description="A glimpse into the products we've shipped across industries."
+   271→            />
+   272→            <Button variant="outline" className="shrink-0 rounded-full" onClick={() => setView('portfolio')}>
+   273→              View all projects
+   274→              <ArrowRight className="ml-2 h-4 w-4" />
+   275→            </Button>
+   276→          </div>
+   277→
+   278→          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+   279→            {portfolioLoading
+   280→              ? Array.from({ length: 6 }).map((_, i) => (
+   281→                  <Card key={i} className="overflow-hidden border-border/60 p-0">
+   282→                    <Skeleton className="aspect-video w-full rounded-none" />
+   283→                    <div className="space-y-3 p-5">
+   284→                      <Skeleton className="h-4 w-1/3" />
+   285→                      <Skeleton className="h-5 w-3/4" />
+   286→                      <Skeleton className="h-4 w-full" />
+   287→                      <Skeleton className="h-4 w-2/3" />
+   288→                    </div>
+   289→                  </Card>
+   290→                ))
+   291→              : featuredPortfolios.map((p, i) => (
+   292→                  <FeaturedPortfolioCard key={p.id} portfolio={p} index={i} onClick={() => openDetail('portfolio', p.slug)} />
+   293→                ))}
+   294→          </div>
+   295→        </div>
+   296→      </section>
+   297→
+   298→      {/* ===== SERVICES ===== */}
+   299→      <section id="services" className="scroll-mt-24 py-20 sm:py-28">
+   300→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   301→          <SectionHeading
+   302→            eyebrow="What we do"
+   303→            title={<>Full-stack expertise under one roof</>}
+   304→            description="From idea to launch and beyond — we cover every layer of modern product development."
+   305→          />
+   306→          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+   307→            {services.map((service, i) => (
+   308→              <ServiceCard key={service.id} service={service} index={i} onCta={() => setView('contact')} />
+   309→            ))}
+   310→          </div>
+   311→        </div>
+   312→      </section>
+   313→
+   314→      {/* ===== DEVELOPMENT PROCESS ===== */}
+   315→      <section id="process" className="scroll-mt-24 bg-secondary py-20 text-secondary-foreground sm:py-28">
+   316→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   317→          <div className="max-w-2xl">
+   318→            <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent">
+   319→              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+   320→              How we work
+   321→            </span>
+   322→            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-[2.6rem] md:leading-[1.1]">
+   323→              A proven process from <span className="text-gradient bg-gradient-to-r from-white to-accent">discovery to launch</span>
+   324→            </h2>
+   325→            <p className="mt-4 text-base leading-relaxed text-secondary-foreground/70 sm:text-lg">
+   326→              No black boxes. You'll always know what's happening, why, and what's next.
+   327→            </p>
+   328→          </div>
+   329→
+   330→          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+   331→            {PROCESS_STEPS.map((step, i) => (
+   332→              <Reveal key={step.title} delay={i * 0.06}>
+   333→                <div className="group relative h-full rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:bg-white/[0.08]">
+   334→                  <div className="mb-4 flex items-center justify-between">
+   335→                    <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground">
+   336→                      <step.icon className="h-5 w-5" />
+   337→                    </div>
+   338→                    <span className="text-3xl font-bold text-white/10 transition group-hover:text-white/20">
+   339→                      {String(i + 1).padStart(2, '0')}
+   340→                    </span>
+   341→                  </div>
+   342→                  <h3 className="text-lg font-semibold">{step.title}</h3>
+   343→                  <p className="mt-2 text-sm leading-relaxed text-secondary-foreground/70">{step.desc}</p>
+   344→                </div>
+   345→              </Reveal>
+   346→            ))}
+   347→            <Reveal delay={0.42}>
+   348→              <button
+   349→                onClick={() => setView('contact')}
+   350→                className="group flex h-full w-full flex-col items-start justify-center rounded-2xl border border-accent/30 bg-accent/10 p-6 text-left transition hover:bg-accent/20"
+   351→              >
+   352→                <ArrowUpRight className="mb-3 h-6 w-6 text-accent transition group-hover:translate-x-1 group-hover:-translate-y-1" />
+   353→                <h3 className="text-lg font-semibold">Ready to start?</h3>
+   354→                <p className="mt-2 text-sm text-secondary-foreground/70">Book a free discovery call today.</p>
+   355→              </button>
+   356→            </Reveal>
+   357→          </div>
+   358→        </div>
+   359→      </section>
+   360→
+   361→      {/* ===== TESTIMONIALS ===== */}
+   362→      <TestimonialsSlider testimonials={testimonials} loading={siteLoading} onCta={() => setView('portfolio')} />
+   363→
+   364→      {/* ===== TECHNOLOGIES ===== */}
+   365→      <section className="py-20 sm:py-28">
+   366→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   367→          <SectionHeading
+   368→            eyebrow="Our stack"
+   369→            title={<>Modern tools, battle-tested in production</>}
+   370→            description="We choose technologies for their reliability, performance, and long-term maintainability."
+   371→          />
+   372→          <div className="mt-14 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+   373→            {TECH_LOGOS.map((tech, i) => (
+   374→              <Reveal key={tech} delay={i * 0.04}>
+   375→                <div className="group flex h-20 items-center justify-center rounded-xl border border-border/60 bg-card transition hover:border-primary/40 hover:shadow-soft">
+   376→                  <span className="text-sm font-semibold text-muted-foreground transition group-hover:text-foreground sm:text-base">
+   377→                    {tech}
+   378→                  </span>
+   379→                </div>
+   380→              </Reveal>
+   381→            ))}
+   382→          </div>
+   383→        </div>
+   384→      </section>
+   385→
+   386→      {/* ===== FAQ ===== */}
+   387→      <section id="faq" className="scroll-mt-24 bg-muted/30 py-20 sm:py-28">
+   388→        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+   389→          <SectionHeading
+   390→            eyebrow="FAQ"
+   391→            title={<>Questions, answered</>}
+   392→            description="Everything you need to know about working with us. Still curious? Just ask."
+   393→          />
+   394→          {siteLoading ? (
+   395→            <div className="mt-10 space-y-3">
+   396→              {Array.from({ length: 6 }).map((_, i) => (
+   397→                <Skeleton key={i} className="h-14 w-full rounded-xl" />
+   398→              ))}
+   399→            </div>
+   400→          ) : (
+   401→            <Accordion type="single" collapsible className="mt-10 space-y-3">
+   402→              {faqs.map((faq) => (
+   403→                <AccordionItem
+   404→                  key={faq.id}
+   405→                  value={faq.id}
+   406→                  className="overflow-hidden rounded-xl border border-border/60 bg-card px-5 data-[state=open]:shadow-soft"
+   407→                >
+   408→                  <AccordionTrigger className="hover:no-underline">
+   409→                    <span className="text-left text-base font-semibold">{faq.question}</span>
+   410→                  </AccordionTrigger>
+   411→                  <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+   412→                    {faq.answer}
+   413→                  </AccordionContent>
+   414→                </AccordionItem>
+   415→              ))}
+   416→            </Accordion>
+   417→          )}
+   418→          <div className="mt-10 text-center">
+   419→            <p className="text-sm text-muted-foreground">Still have questions?</p>
+   420→            <Button variant="link" className="mt-1 text-primary" onClick={() => setView('contact')}>
+   421→              Talk to our team →
+   422→            </Button>
+   423→          </div>
+   424→        </div>
+   425→      </section>
+   426→
+   427→      {/* ===== FINAL CTA ===== */}
+   428→      <FinalCta onPrimary={() => setView('contact')} onSecondary={() => setView('estimate')} />
+   429→    </div>
+   430→  )
+   431→}
+   432→
+   433→/* ---------- Sub-components ---------- */
+   434→
+   435→function FeaturedPortfolioCard({ portfolio, index, onClick }: { portfolio: Portfolio; index: number; onClick: () => void }) {
+   436→  return (
+   437→    <Reveal delay={index * 0.08}>
+   438→      <Card
+   439→        onClick={onClick}
+   440→        className="group cursor-pointer overflow-hidden border-border/60 p-0 transition duration-300 hover:-translate-y-1 hover:shadow-soft"
+   441→      >
+   442→        <div className="relative aspect-video overflow-hidden">
+   443→          <img
+   444→            src={portfolio.coverImage}
+   445→            alt={portfolio.title}
+   446→            loading="lazy"
+   447→            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+   448→          />
+   449→          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+   450→          {portfolio.category && (
+   451→            <Badge className="absolute left-3 top-3 border-0 bg-background/90 text-foreground backdrop-blur">
+   452→              {portfolio.category.name}
+   453→            </Badge>
+   454→          )}
+   455→          <div className="absolute bottom-3 right-3 translate-y-2 rounded-full bg-primary p-2 text-primary-foreground opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+   456→            <ArrowUpRight className="h-4 w-4" />
+   457→          </div>
+   458→        </div>
+   459→        <div className="p-5">
+   460→          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+   461→            <span>{portfolio.year}</span>
+   462→            {portfolio.clientName && (
+   463→              <>
+   464→                <span>•</span>
+   465→                <span>{portfolio.clientName}</span>
+   466→              </>
+   467→            )}
+   468→          </div>
+   469→          <h3 className="mt-1.5 text-lg font-semibold leading-snug">{portfolio.title}</h3>
+   470→          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{portfolio.summary}</p>
+   471→          {portfolio.technologies && portfolio.technologies.length > 0 && (
+   472→            <div className="mt-3 flex flex-wrap gap-1.5">
+   473→              {portfolio.technologies.slice(0, 3).map((t) => (
+   474→                <span
+   475→                  key={t.id}
+   476→                  className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+   477→                >
+   478→                  {t.color && <span className="h-1.5 w-1.5 rounded-full" style={{ background: t.color }} />}
+   479→                  {t.name}
+   480→                </span>
+   481→              ))}
+   482→              {portfolio.technologies.length > 3 && (
+   483→                <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+   484→                  +{portfolio.technologies.length - 3}
+   485→                </span>
+   486→              )}
+   487→            </div>
+   488→          )}
+   489→        </div>
+   490→      </Card>
+   491→    </Reveal>
+   492→  )
+   493→}
+   494→
+   495→function ServiceCard({ service, index, onCta }: { service: Service; index: number; onCta: () => void }) {
+   496→  const Icon = iconMap[service.icon] ?? Code2
+   497→  const features = parseList<string>(service.features)
+   498→  return (
+   499→    <Reveal delay={index * 0.06}>
+   500→      <Card className="group relative h-full overflow-hidden border-border/60 p-6 transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-soft">
+   501→        <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/5 transition group-hover:scale-150" />
+   502→        <div className="relative">
+   503→          <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+   504→            <Icon className="h-6 w-6" />
+   505→          </div>
+   506→          <h3 className="mt-4 text-lg font-semibold">{service.title}</h3>
+   507→          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{service.description}</p>
+   508→          {features.length > 0 && (
+   509→            <ul className="mt-4 space-y-1.5">
+   510→              {features.slice(0, 3).map((f) => (
+   511→                <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
+   512→                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-accent" />
+   513→                  {f}
+   514→                </li>
+   515→              ))}
+   516→            </ul>
+   517→          )}
+   518→          <button
+   519→            onClick={onCta}
+   520→            className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary opacity-0 transition group-hover:opacity-100"
+   521→          >
+   522→            Learn more
+   523→            <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+   524→          </button>
+   525→        </div>
+   526→      </Card>
+   527→    </Reveal>
+   528→  )
+   529→}
+   530→
+   531→function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Testimonial[]; loading: boolean; onCta: () => void }) {
+   532→  const [active, setActive] = useState(0)
+   533→
+   534→  if (loading) {
+   535→    return (
+   536→      <section className="py-20 sm:py-28">
+   537→        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+   538→          <Skeleton className="h-64 w-full rounded-2xl" />
+   539→        </div>
+   540→      </section>
+   541→    )
+   542→  }
+   543→
+   544→  if (testimonials.length === 0) return null
+   545→  const current = testimonials[active]
+   546→
+   547→  return (
+   548→    <section className="py-20 sm:py-28">
+   549→      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+   550→        <SectionHeading
+   551→          eyebrow="Testimonials"
+   552→          title={<>Don't just take our word for it</>}
+   553→          description="Real feedback from founders and product leaders we've partnered with."
+   554→        />
+   555→        <Reveal className="mt-14">
+   556→          <Card className="relative overflow-hidden border-border/60 p-8 sm:p-12">
+   557→            <Quote className="absolute right-6 top-6 h-20 w-20 text-primary/5" />
+   558→            <div className="relative">
+   559→              <div className="flex gap-1">
+   560→                {Array.from({ length: current.rating }).map((_, i) => (
+   561→                  <Star key={i} className="h-5 w-5 fill-accent text-accent" />
+   562→                ))}
+   563→              </div>
+   564→              <blockquote className="mt-6 text-xl font-medium leading-relaxed text-foreground sm:text-2xl">
+   565→                "{current.quote}"
+   566→              </blockquote>
+   567→              <div className="mt-8 flex items-center gap-4">
+   568→                <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground">
+   569→                  {current.avatar ? (
+   570→                    <img src={current.avatar} alt={current.clientName} className="h-full w-full rounded-full object-cover" />
+   571→                  ) : (
+   572→                    current.clientName.split(' ').map((n) => n[0]).join('').slice(0, 2)
+   573→                  )}
+   574→                </div>
+   575→                <div>
+   576→                  <p className="font-semibold">{current.clientName}</p>
+   577→                  <p className="text-sm text-muted-foreground">{current.role}, {current.company}</p>
+   578→                </div>
+   579→              </div>
+   580→            </div>
+   581→          </Card>
+   582→        </Reveal>
+   583→
+   584→        <div className="mt-6 flex items-center justify-center gap-2">
+   585→          {testimonials.map((t, i) => (
+   586→            <button
+   587→              key={t.id}
+   588→              onClick={() => setActive(i)}
+   589→              aria-label={`Testimonial ${i + 1}`}
+   590→              className={`h-2 rounded-full transition-all ${
+   591→                i === active ? 'w-8 bg-primary' : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+   592→              }`}
+   593→            />
+   594→          ))}
+   595→        </div>
+   596→
+   597→        <div className="mt-6 flex items-center justify-center gap-3">
+   598→          <Button variant="outline" size="sm" className="rounded-full" onClick={() => setActive((a) => (a - 1 + testimonials.length) % testimonials.length)}>
+   599→            Previous
+   600→          </Button>
+   601→          <Button variant="outline" size="sm" className="rounded-full" onClick={() => setActive((a) => (a + 1) % testimonials.length)}>
+   602→            Next
+   603→          </Button>
+   604→          <Button size="sm" className="rounded-full" onClick={onCta}>
+   605→            See more work
+   606→            <ArrowRight className="ml-1.5 h-4 w-4" />
+   607→          </Button>
+   608→        </div>
+   609→      </div>
+   610→    </section>
+   611→  )
+   612→}
+   613→
+   614→function FinalCta({ onPrimary, onSecondary }: { onPrimary: () => void; onSecondary: () => void }) {
+   615→  return (
+   616→    <section id="estimate-cta" className="scroll-mt-24 px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+   617→      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-accent p-10 text-primary-foreground shadow-glow sm:p-16">
+   618→        <div className="absolute inset-0 bg-grid opacity-20" />
+   619→        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+   620→        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-accent/30 blur-3xl" />
+   621→        <div className="relative mx-auto max-w-2xl text-center">
+   622→          <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-5xl">
+   623→            Let's build something your users will love
+   624→          </h2>
+   625→          <p className="mx-auto mt-4 max-w-xl text-base text-primary-foreground/80 sm:text-lg">
+   626→            Tell us about your project. We'll get back within 24 hours with next steps and a tailored plan.
+   627→          </p>
+   628→          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+   629→            <Button size="lg" variant="secondary" className="h-12 rounded-full px-7 text-base" onClick={onPrimary}>
+   630→              Start your project
+   631→              <ArrowRight className="ml-2 h-4 w-4" />
+   632→            </Button>
+   633→            <Button
+   634→              size="lg"
+   635→              variant="outline"
+   636→              className="h-12 rounded-full border-primary-foreground/30 bg-transparent px-7 text-base text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+   637→              onClick={onSecondary}
+   638→            >
+   639→              Get an estimate
+   640→            </Button>
+   641→          </div>
+   642→        </div>
+   643→      </div>
+   644→    </section>
+   645→  )
+   646→}
+   647→

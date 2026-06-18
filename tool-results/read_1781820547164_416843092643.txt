@@ -1,0 +1,615 @@
+    90→]
+    91→
+    92→const TOTAL_STEPS = STEPS.length
+    93→
+    94→const YES_NO: { value: boolean; label: string; desc: string }[] = [
+    95→  { value: true, label: 'Yes', desc: "I'll need this" },
+    96→  { value: false, label: 'No', desc: 'Not required' },
+    97→]
+    98→
+    99→/* --------------------------------- view ---------------------------------- */
+   100→
+   101→type Stage = 'wizard' | 'calculating' | 'result' | 'saved'
+   102→
+   103→export function EstimateView() {
+   104→  const { setView } = useNav()
+   105→  const [step, setStep] = useState(0)
+   106→  const [direction, setDirection] = useState(1)
+   107→  const [answers, setAnswers] = useState<Answers>({})
+   108→  const [stage, setStage] = useState<Stage>('wizard')
+   109→
+   110→  // estimate payload
+   111→  const [estimate, setEstimate] = useState<{ min: number; max: number; breakdown: { label: string; cost: number }[] } | null>(null)
+   112→
+   113→  // contact / lead capture
+   114→  const [contact, setContact] = useState({ name: '', email: '', phone: '', company: '' })
+   115→  const [contactErrors, setContactErrors] = useState<Partial<Record<keyof typeof contact, string>>>({})
+   116→  const [savingLead, setSavingLead] = useState(false)
+   117→
+   118→  /* --------------------------- step navigation --------------------------- */
+   119→
+   120→  const currentDef = STEPS[step]
+   121→  const isAnswered = useMemo(() => {
+   122→    const v = answers[currentDef.key]
+   123→    if (typeof v === 'boolean') return true
+   124→    return v !== undefined && v !== null && v !== ''
+   125→  }, [answers, currentDef.key])
+   126→
+   127→  const goTo = (next: number) => {
+   128→    setDirection(next > step ? 1 : -1)
+   129→    setStep(Math.max(0, Math.min(TOTAL_STEPS - 1, next)))
+   130→  }
+   131→
+   132→  const setAnswer = <K extends keyof Answers>(key: K, value: Answers[K]) => {
+   133→    setAnswers((prev) => ({ ...prev, [key]: value }))
+   134→  }
+   135→
+   136→  const handleSeeEstimate = async () => {
+   137→    setStage('calculating')
+   138→    // small artificial delay for premium "calculating" feel
+   139→    await new Promise((r) => setTimeout(r, 700))
+   140→    try {
+   141→      const res = await fetch('/api/estimate', {
+   142→        method: 'POST',
+   143→        headers: { 'Content-Type': 'application/json' },
+   144→        body: JSON.stringify({ answers }),
+   145→      })
+   146→      if (!res.ok) throw new Error('Failed to compute estimate')
+   147→      const data = await res.json()
+   148→      setEstimate(data.estimate)
+   149→      setStage('result')
+   150→    } catch (err) {
+   151→      const message = err instanceof Error ? err.message : 'Something went wrong.'
+   152→      toast.error('Could not compute estimate', { description: message })
+   153→      setStage('wizard')
+   154→    }
+   155→  }
+   156→
+   157→  const restart = () => {
+   158→    setAnswers({})
+   159→    setStep(0)
+   160→    setStage('wizard')
+   161→    setEstimate(null)
+   162→    setContact({ name: '', email: '', phone: '', company: '' })
+   163→    setContactErrors({})
+   164→  }
+   165→
+   166→  /* ----------------------------- lead capture ---------------------------- */
+   167→
+   168→  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+   169→
+   170→  const submitLead = async (e: FormEvent) => {
+   171→    e.preventDefault()
+   172→    const errs: Partial<Record<keyof typeof contact, string>> = {}
+   173→    if (!contact.name.trim()) errs.name = 'Please enter your name.'
+   174→    if (!contact.email.trim()) errs.email = 'Please enter your email.'
+   175→    else if (!emailRegex.test(contact.email)) errs.email = 'Please enter a valid email.'
+   176→    setContactErrors(errs)
+   177→    if (Object.keys(errs).length) {
+   178→      toast.error('Please fix the highlighted fields.')
+   179→      return
+   180→    }
+   181→    setSavingLead(true)
+   182→    try {
+   183→      const res = await fetch('/api/estimate', {
+   184→        method: 'POST',
+   185→        headers: { 'Content-Type': 'application/json' },
+   186→        body: JSON.stringify({ answers, contact }),
+   187→      })
+   188→      if (!res.ok) throw new Error('Failed to save your estimate')
+   189→      setStage('saved')
+   190→      toast.success('Estimate saved!', { description: 'Our team will reach out within 24h.' })
+   191→    } catch (err) {
+   192→      const message = err instanceof Error ? err.message : 'Something went wrong.'
+   193→      toast.error('Could not save estimate', { description: message })
+   194→    } finally {
+   195→      setSavingLead(false)
+   196→    }
+   197→  }
+   198→
+   199→  const progress = ((step + (stage === 'wizard' ? 0 : 1)) / TOTAL_STEPS) * 100
+   200→
+   201→  /* -------------------------------- render -------------------------------- */
+   202→
+   203→  return (
+   204→    <section id="estimate-cta" className="relative overflow-hidden py-20 sm:py-28">
+   205→      <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40" />
+   206→      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-radial-fade" />
+   207→
+   208→      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+   209→        <SectionHeading
+   210→          eyebrow="Project Estimator"
+   211→          title={
+   212→            <>
+   213→              Get an <span className="text-gradient">instant estimate</span>
+   214→            </>
+   215→          }
+   216→          description="Answer a few questions to get a ballpark cost range for your project. No email required to see your estimate."
+   217→        />
+   218→
+   219→        {/* progress + step indicator */}
+   220→        <Reveal delay={0.05} className="mt-12">
+   221→          <div className="mb-6 flex items-center justify-between text-sm">
+   222→            <span className="font-medium text-muted-foreground">
+   223→              {stage === 'wizard' ? (
+   224→                <>Question <span className="font-semibold text-foreground">{step + 1}</span> of {TOTAL_STEPS}</>
+   225→              ) : stage === 'result' || stage === 'saved' ? (
+   226→                <span className="inline-flex items-center gap-1.5 font-semibold text-accent">
+   227→                  <CheckCircle2 className="size-4" /> Estimate ready
+   228→                </span>
+   229→              ) : (
+   230→                <>Crunching numbers…</>
+   231→              )}
+   232→            </span>
+   233→            <span className="text-xs text-muted-foreground">
+   234→              {Math.round(stage === 'wizard' ? progress : 100)}% complete
+   235→            </span>
+   236→          </div>
+   237→          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+   238→            <motion.div
+   239→              className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
+   240→              animate={{ width: `${stage === 'wizard' ? progress : 100}%` }}
+   241→              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+   242→            />
+   243→          </div>
+   244→        </Reveal>
+   245→
+   246→        {/* main panel */}
+   247→        <Reveal delay={0.1} className="mt-8">
+   248→          <Card className="overflow-hidden border-border/60 shadow-soft">
+   249→            <CardContent className="p-0">
+   250→              <AnimatePresence mode="wait" custom={direction}>
+   251→                {/* WIZARD */}
+   252→                {stage === 'wizard' && (
+   253→                  <motion.div
+   254→                    key={`step-${step}`}
+   255→                    custom={direction}
+   256→                    initial={{ opacity: 0, x: direction * 40 }}
+   257→                    animate={{ opacity: 1, x: 0 }}
+   258→                    exit={{ opacity: 0, x: direction * -40 }}
+   259→                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+   260→                    className="p-6 sm:p-8"
+   261→                  >
+   262→                    <StepHeader
+   263→                      index={step + 1}
+   264→                      question={currentDef.question}
+   265→                      hint={currentDef.hint}
+   266→                    />
+   267→
+   268→                    <div className="mt-6">
+   269→                      {currentDef.key === 'projectType' && (
+   270→                        <RadioGroup
+   271→                          value={answers.projectType ?? ''}
+   272→                          onValueChange={(v) => setAnswer('projectType', v)}
+   273→                          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+   274→                        >
+   275→                          {PROJECT_TYPES.map((opt) => (
+   276→                            <RadioCard
+   277→                              key={opt.value}
+   278→                              value={opt.value}
+   279→                              icon={<opt.icon className="size-5" />}
+   280→                              label={opt.label}
+   281→                              desc={opt.desc}
+   282→                            />
+   283→                          ))}
+   284→                        </RadioGroup>
+   285→                      )}
+   286→
+   287→                      {currentDef.key === 'pages' && (
+   288→                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+   289→                          {PAGE_RANGES.map((opt) => {
+   290→                            const active = answers.pages === opt.value
+   291→                            return (
+   292→                              <button
+   293→                                key={opt.label}
+   294→                                type="button"
+   295→                                onClick={() => setAnswer('pages', opt.value)}
+   296→                                className={cn(
+   297→                                  'group flex flex-col items-center gap-1 rounded-2xl border p-4 text-center transition-all',
+   298→                                  active
+   299→                                    ? 'border-primary bg-primary/5 shadow-glow'
+   300→                                    : 'border-border/60 hover:-translate-y-0.5 hover:border-primary/40'
+   301→                                )}
+   302→                              >
+   303→                                <span
+   304→                                  className={cn(
+   305→                                    'text-xl font-bold tracking-tight',
+   306→                                    active ? 'text-primary' : 'text-foreground'
+   307→                                  )}
+   308→                                >
+   309→                                  {opt.label}
+   310→                                </span>
+   311→                                <span className="text-xs text-muted-foreground">{opt.desc}</span>
+   312→                              </button>
+   313→                            )
+   314→                          })}
+   315→                        </div>
+   316→                      )}
+   317→
+   318→                      {['adminPanel', 'payment', 'auth', 'mobileApp', 'ai'].includes(currentDef.key) && (
+   319→                        <YesNoCards
+   320→                          value={answers[currentDef.key] as boolean | undefined}
+   321→                          onChange={(v) => setAnswer(currentDef.key, v)}
+   322→                        />
+   323→                      )}
+   324→                    </div>
+   325→
+   326→                    {/* nav */}
+   327→                    <div className="mt-8 flex items-center justify-between">
+   328→                      <Button
+   329→                        type="button"
+   330→                        variant="ghost"
+   331→                        onClick={() => goTo(step - 1)}
+   332→                        disabled={step === 0}
+   333→                      >
+   334→                        <ArrowLeft className="size-4" />
+   335→                        Back
+   336→                      </Button>
+   337→
+   338→                      {step < TOTAL_STEPS - 1 ? (
+   339→                        <Button
+   340→                          type="button"
+   341→                          onClick={() => goTo(step + 1)}
+   342→                          disabled={!isAnswered}
+   343→                        >
+   344→                          Next
+   345→                          <ArrowRight className="size-4" />
+   346→                        </Button>
+   347→                      ) : (
+   348→                        <Button
+   349→                          type="button"
+   350→                          onClick={handleSeeEstimate}
+   351→                          disabled={!isAnswered}
+   352→                        >
+   353→                          See estimate
+   354→                          <Sparkles className="size-4" />
+   355→                        </Button>
+   356→                      )}
+   357→                    </div>
+   358→                  </motion.div>
+   359→                )}
+   360→
+   361→                {/* CALCULATING */}
+   362→                {stage === 'calculating' && (
+   363→                  <motion.div
+   364→                    key="calculating"
+   365→                    initial={{ opacity: 0 }}
+   366→                    animate={{ opacity: 1 }}
+   367→                    exit={{ opacity: 0 }}
+   368→                    className="flex flex-col items-center justify-center gap-4 py-20 text-center"
+   369→                  >
+   370→                    <span className="relative flex size-16 items-center justify-center">
+   371→                      <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+   372→                      <Loader2 className="size-9 animate-spin text-primary" />
+   373→                    </span>
+   374→                    <p className="text-base font-medium">Calculating your estimate…</p>
+   375→                    <p className="text-sm text-muted-foreground">Matching your answers against our pricing model.</p>
+   376→                  </motion.div>
+   377→                )}
+   378→
+   379→                {/* RESULT */}
+   380→                {stage === 'result' && estimate && (
+   381→                  <motion.div
+   382→                    key="result"
+   383→                    initial={{ opacity: 0, y: 16 }}
+   384→                    animate={{ opacity: 1, y: 0 }}
+   385→                    exit={{ opacity: 0, y: -16 }}
+   386→                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+   387→                    className="p-6 sm:p-8"
+   388→                  >
+   389→                    <div className="text-center">
+   390→                      <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent">
+   391→                        <Sparkles className="size-3.5" />
+   392→                        Your estimate
+   393→                      </span>
+   394→                      <div className="mt-5 flex items-end justify-center gap-3">
+   395→                        <div className="flex flex-col">
+   396→                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Min</span>
+   397→                          <span className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl">
+   398→                            $<Counter to={estimate.min} duration={1.4} />
+   399→                          </span>
+   400→                        </div>
+   401→                        <span className="pb-2 text-2xl font-light text-muted-foreground">–</span>
+   402→                        <div className="flex flex-col">
+   403→                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Max</span>
+   404→                          <span className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl">
+   405→                            $<Counter to={estimate.max} duration={1.6} />
+   406→                          </span>
+   407→                        </div>
+   408→                      </div>
+   409→                      <p className="mt-3 text-sm text-muted-foreground">
+   410→                        Estimated project cost range · typical timeline 4–12 weeks
+   411→                      </p>
+   412→                    </div>
+   413→
+   414→                    {/* breakdown */}
+   415→                    <div className="mt-8">
+   416→                      <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+   417→                        Cost breakdown
+   418→                      </h4>
+   419→                      <ul className="mt-3 space-y-2">
+   420→                        {estimate.breakdown.map((b, i) => (
+   421→                          <motion.li
+   422→                            key={b.label}
+   423→                            initial={{ opacity: 0, x: -10 }}
+   424→                            animate={{ opacity: 1, x: 0 }}
+   425→                            transition={{ delay: 0.2 + i * 0.07 }}
+   426→                            className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-4 py-3"
+   427→                          >
+   428→                            <span className="text-sm font-medium text-foreground">{b.label}</span>
+   429→                            <span className="text-sm font-semibold text-foreground">
+   430→                              ${b.cost.toLocaleString()}
+   431→                            </span>
+   432→                          </motion.li>
+   433→                        ))}
+   434→                      </ul>
+   435→                    </div>
+   436→
+   437→                    {/* disclaimer */}
+   438→                    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/40 p-4">
+   439→                      <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+   440→                      <p className="text-xs leading-relaxed text-muted-foreground">
+   441→                        This is a ballpark estimate based on your answers. Final quotes are provided after
+   442→                        a discovery call where we review detailed scope, design complexity, integrations and
+   443→                        timelines. No commitment required.
+   444→                      </p>
+   445→                    </div>
+   446→
+   447→                    {/* lead capture */}
+   448→                    <form onSubmit={submitLead} className="mt-8 space-y-4">
+   449→                      <div className="flex items-center gap-2">
+   450→                        <span className="h-px flex-1 bg-border" />
+   451→                        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+   452→                          Save your estimate
+   453→                        </span>
+   454→                        <span className="h-px flex-1 bg-border" />
+   455→                      </div>
+   456→                      <p className="text-center text-sm text-muted-foreground">
+   457→                        Drop your details and we&apos;ll send a tailored proposal within 24 hours.
+   458→                      </p>
+   459→
+   460→                      <div className="grid gap-4 sm:grid-cols-2">
+   461→                        <LabeledField id="est-name" label="Name" required error={contactErrors.name}>
+   462→                          <Input
+   463→                            id="est-name"
+   464→                            value={contact.name}
+   465→                            onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))}
+   466→                            placeholder="Jane Doe"
+   467→                            autoComplete="name"
+   468→                            aria-invalid={!!contactErrors.name}
+   469→                          />
+   470→                        </LabeledField>
+   471→                        <LabeledField id="est-company" label="Company" error={undefined}>
+   472→                          <Input
+   473→                            id="est-company"
+   474→                            value={contact.company}
+   475→                            onChange={(e) => setContact((c) => ({ ...c, company: e.target.value }))}
+   476→                            placeholder="Acme Inc. (optional)"
+   477→                            autoComplete="organization"
+   478→                          />
+   479→                        </LabeledField>
+   480→                        <LabeledField id="est-email" label="Email" required error={contactErrors.email}>
+   481→                          <Input
+   482→                            id="est-email"
+   483→                            type="email"
+   484→                            value={contact.email}
+   485→                            onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
+   486→                            placeholder="jane@acme.com"
+   487→                            autoComplete="email"
+   488→                            aria-invalid={!!contactErrors.email}
+   489→                          />
+   490→                        </LabeledField>
+   491→                        <LabeledField id="est-phone" label="Phone" error={undefined}>
+   492→                          <Input
+   493→                            id="est-phone"
+   494→                            type="tel"
+   495→                            value={contact.phone}
+   496→                            onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))}
+   497→                            placeholder="+1 (415) 555-0192"
+   498→                            autoComplete="tel"
+   499→                          />
+   500→                        </LabeledField>
+   501→                      </div>
+   502→
+   503→                      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
+   504→                        <Button type="button" variant="ghost" onClick={restart}>
+   505→                          <RotateCcw className="size-4" />
+   506→                          Start over
+   507→                        </Button>
+   508→                        <Button type="submit" disabled={savingLead} className="sm:min-w-[200px]">
+   509→                          {savingLead ? (
+   510→                            <>
+   511→                              <Loader2 className="size-4 animate-spin" />
+   512→                              Saving…
+   513→                            </>
+   514→                          ) : (
+   515→                            <>
+   516→                              Save my estimate
+   517→                              <ArrowRight className="size-4" />
+   518→                            </>
+   519→                          )}
+   520→                        </Button>
+   521→                      </div>
+   522→                    </form>
+   523→                  </motion.div>
+   524→                )}
+   525→
+   526→                {/* SAVED */}
+   527→                {stage === 'saved' && (
+   528→                  <motion.div
+   529→                    key="saved"
+   530→                    initial={{ opacity: 0, scale: 0.96 }}
+   531→                    animate={{ opacity: 1, scale: 1 }}
+   532→                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+   533→                    className="flex flex-col items-center py-12 text-center sm:py-16"
+   534→                  >
+   535→                    <motion.span
+   536→                      initial={{ scale: 0, rotate: -20 }}
+   537→                      animate={{ scale: 1, rotate: 0 }}
+   538→                      transition={{ delay: 0.1, type: 'spring', stiffness: 220, damping: 16 }}
+   539→                      className="flex size-16 items-center justify-center rounded-full bg-accent/15 text-accent"
+   540→                    >
+   541→                      <PartyPopper className="size-9" />
+   542→                    </motion.span>
+   543→                    <h3 className="mt-6 text-2xl font-semibold tracking-tight sm:text-3xl">
+   544→                      We&apos;ve saved your estimate!
+   545→                    </h3>
+   546→                    <p className="mt-2 max-w-md text-sm text-muted-foreground sm:text-base">
+   547→                      Thanks, {contact.name.split(' ')[0] || 'there'}! Our team will reach out within 24 hours
+   548→                      with a tailored proposal. Want to jump the queue? Book a call now.
+   549→                    </p>
+   550→                    <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+   551→                      <Button onClick={() => setView('contact')}>
+   552→                        <CalendarCheck className="size-4" />
+   553→                        Book a call
+   554→                      </Button>
+   555→                      <Button variant="outline" onClick={restart}>
+   556→                        <RotateCcw className="size-4" />
+   557→                        Run another estimate
+   558→                      </Button>
+   559→                    </div>
+   560→                  </motion.div>
+   561→                )}
+   562→              </AnimatePresence>
+   563→            </CardContent>
+   564→          </Card>
+   565→        </Reveal>
+   566→
+   567→        {/* trust strip */}
+   568→        <Reveal delay={0.15} className="mt-8">
+   569→          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+   570→            <span className="inline-flex items-center gap-1.5">
+   571→              <ShieldCheck className="size-3.5 text-accent" /> No spam, ever
+   572→            </span>
+   573→            <span className="inline-flex items-center gap-1.5">
+   574→              <CreditCard className="size-3.5 text-accent" /> No payment required
+   575→            </span>
+   576→            <span className="inline-flex items-center gap-1.5">
+   577→              <Users className="size-3.5 text-accent" /> Real humans review every request
+   578→            </span>
+   579→          </div>
+   580→        </Reveal>
+   581→      </div>
+   582→    </section>
+   583→  )
+   584→}
+   585→
+   586→/* ------------------------------ sub-components ---------------------------- */
+   587→
+   588→function StepHeader({ index, question, hint }: { index: number; question: string; hint: string }) {
+   589→  return (
+   590→    <div>
+   591→      <div className="flex items-center gap-3">
+   592→        <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
+   593→          {index}
+   594→        </span>
+   595→        <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">{question}</h3>
+   596→      </div>
+   597→      <p className="mt-2 pl-12 text-sm text-muted-foreground">{hint}</p>
+   598→    </div>
+   599→  )
+   600→}
+   601→
+   602→function RadioCard({
+   603→  value,
+   604→  icon,
+   605→  label,
+   606→  desc,
+   607→}: {
+   608→  value: string
+   609→  icon: ReactNode
+   610→  label: string
+   611→  desc: string
+   612→}) {
+   613→  return (
+   614→    <Label
+   615→      htmlFor={`rc-${value}`}
+   616→      className="group relative flex cursor-pointer items-start gap-3 rounded-2xl border border-border/60 p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-glow"
+   617→    >
+   618→      <RadioGroupItem
+   619→        id={`rc-${value}`}
+   620→        value={value}
+   621→        className="absolute right-3 top-3"
+   622→      />
+   623→      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-has-[:checked]:bg-primary group-has-[:checked]:text-primary-foreground">
+   624→        {icon}
+   625→      </span>
+   626→      <span className="flex flex-col pr-6">
+   627→        <span className="text-sm font-semibold text-foreground">{label}</span>
+   628→        <span className="mt-0.5 text-xs text-muted-foreground">{desc}</span>
+   629→      </span>
+   630→    </Label>
+   631→  )
+   632→}
+   633→
+   634→function YesNoCards({
+   635→  value,
+   636→  onChange,
+   637→}: {
+   638→  value: boolean | undefined
+   639→  onChange: (v: boolean) => void
+   640→}) {
+   641→  return (
+   642→    <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+   643→      {YES_NO.map((opt) => {
+   644→        const active = value === opt.value
+   645→        return (
+   646→          <button
+   647→            key={String(opt.value)}
+   648→            type="button"
+   649→            onClick={() => onChange(opt.value)}
+   650→            className={cn(
+   651→              'flex flex-col items-start gap-1 rounded-2xl border p-5 text-left transition-all',
+   652→              active
+   653→                ? opt.value
+   654→                  ? 'border-accent bg-accent/5 shadow-glow'
+   655→                  : 'border-primary bg-primary/5 shadow-glow'
+   656→                : 'border-border/60 hover:-translate-y-0.5 hover:border-primary/40'
+   657→            )}
+   658→          >
+   659→            <span
+   660→              className={cn(
+   661→                'flex size-9 items-center justify-center rounded-xl',
+   662→                active
+   663→                  ? opt.value
+   664→                    ? 'bg-accent text-accent-foreground'
+   665→                    : 'bg-primary text-primary-foreground'
+   666→                  : 'bg-muted text-muted-foreground'
+   667→              )}
+   668→            >
+   669→              {opt.value ? <CheckCircle2 className="size-5" /> : <ArrowLeft className="size-5 rotate-45" />}
+   670→            </span>
+   671→            <span className="mt-1 text-base font-semibold text-foreground">{opt.label}</span>
+   672→            <span className="text-xs text-muted-foreground">{opt.desc}</span>
+   673→          </button>
+   674→        )
+   675→      })}
+   676→    </div>
+   677→  )
+   678→}
+   679→
+   680→function LabeledField({
+   681→  id,
+   682→  label,
+   683→  required,
+   684→  error,
+   685→  children,
+   686→}: {
+   687→  id: string
+   688→  label: string
+   689→  required?: boolean
+   690→  error?: string
+   691→  children: ReactNode
+   692→}) {
+   693→  return (
+   694→    <div className="space-y-2">
+   695→      <Label htmlFor={id} className="text-sm font-medium">
+   696→        {label}
+   697→        {required && <span className="ml-0.5 text-primary">*</span>}
+   698→      </Label>
+   699→      {children}
+   700→      {error ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
+   701→    </div>
+   702→  )
+   703→}
+   704→

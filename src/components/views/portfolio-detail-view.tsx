@@ -35,8 +35,12 @@ import { SectionHeading } from '@/components/site/section-heading'
 import { usePortfolio, parseList, type Portfolio } from '@/lib/hooks'
 import { useNav } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { useT, useLang } from '@/lib/lang-store'
+import { tc } from '@/lib/content-i18n'
 
 export function PortfolioDetailView() {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
   const slug = useNav((s) => s.detailSlug)
   const closeDetail = useNav((s) => s.closeDetail)
   const setView = useNav((s) => s.setView)
@@ -56,8 +60,8 @@ export function PortfolioDetailView() {
           onClick={closeDetail}
           className="text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="size-4" />
-          Back to Portfolio
+          <ArrowLeft className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
+          {t('portfolioDetail.back')}
         </Button>
       </div>
 
@@ -68,32 +72,32 @@ export function PortfolioDetailView() {
       ) : (
         <>
           {/* Hero */}
-          <Hero item={item} />
+          <Hero item={item} lang={lang} />
 
           {/* Overview (Problem / Solution / Result) */}
           <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
             <SectionHeading
               eyebrow="Overview"
-              title="Project at a glance"
+              title={t('portfolioDetail.overview')}
               align="left"
             />
             <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
               <OverviewCard
                 icon={AlertCircle}
                 tone="rose"
-                title="Problem"
+                title={t('portfolioDetail.problem')}
                 text={item.problem}
               />
               <OverviewCard
                 icon={Lightbulb}
                 tone="amber"
-                title="Solution"
+                title={t('portfolioDetail.solution')}
                 text={item.solution}
               />
               <OverviewCard
                 icon={TrendingUp}
                 tone="emerald"
-                title="Result"
+                title={t('portfolioDetail.result')}
                 text={item.result}
               />
             </div>
@@ -105,20 +109,20 @@ export function PortfolioDetailView() {
               <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
                 <SectionHeading
                   eyebrow="Tech Stack"
-                  title="Technologies used"
+                  title={t('portfolioDetail.technologies')}
                   align="left"
                 />
                 <Reveal delay={0.1} className="mt-8 flex flex-wrap gap-3">
-                  {item.technologies.map((t) => (
+                  {item.technologies.map((techItem) => (
                     <div
-                      key={t.id}
+                      key={techItem.id}
                       className="inline-flex items-center gap-2.5 rounded-full border bg-background px-4 py-2 text-sm font-medium shadow-xs transition-colors hover:border-primary/40"
                     >
                       <span
                         className="inline-block size-2.5 rounded-full"
-                        style={{ background: t.color ?? 'var(--accent)' }}
+                        style={{ background: techItem.color ?? 'var(--accent)' }}
                       />
-                      {t.name}
+                      {techItem.name}
                     </div>
                   ))}
                 </Reveal>
@@ -131,7 +135,7 @@ export function PortfolioDetailView() {
             <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
               <SectionHeading
                 eyebrow="Capabilities"
-                title="Features we shipped"
+                title={t('portfolioDetail.features')}
                 align="left"
               />
               <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -165,7 +169,7 @@ export function PortfolioDetailView() {
               <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
                 <SectionHeading
                   eyebrow="Keep exploring"
-                  title="Related projects"
+                  title={t('portfolioDetail.related')}
                   align="left"
                 />
                 <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -173,6 +177,7 @@ export function PortfolioDetailView() {
                     <Reveal key={r.id} delay={Math.min(i * 0.08, 0.3)}>
                       <RelatedCard
                         item={r}
+                        lang={lang}
                         onClick={() => openDetail('portfolio', r.slug)}
                       />
                     </Reveal>
@@ -190,7 +195,7 @@ export function PortfolioDetailView() {
                 <div className="relative flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
                   <div className="max-w-xl">
                     <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                      Request a similar project
+                      {t('portfolioDetail.ctaTitle')}
                     </h3>
                     <p className="mt-2 text-sm text-primary-foreground/80 sm:text-base">
                       Inspired by what you see? Let's build something tailored to
@@ -203,8 +208,8 @@ export function PortfolioDetailView() {
                     className="group shrink-0"
                     onClick={() => setView('contact')}
                   >
-                    Start a project
-                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                    {t('portfolioDetail.ctaButton')}
+                    <ArrowRight className={cn('size-4 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
                   </Button>
                 </div>
               </div>
@@ -218,7 +223,10 @@ export function PortfolioDetailView() {
 
 /* ------------------------- Hero ------------------------- */
 
-function Hero({ item }: { item: Portfolio }) {
+function Hero({ item, lang }: { item: Portfolio; lang: 'en' | 'fa' }) {
+  const t = useT()
+  const title = tc('portfolio', item.slug, 'title', item.title, lang)
+  const summary = tc('portfolio', item.slug, 'summary', item.summary, lang)
   return (
     <section className="relative overflow-hidden">
       <div className="bg-grid pointer-events-none absolute inset-0 opacity-40" />
@@ -243,11 +251,11 @@ function Hero({ item }: { item: Portfolio }) {
           </div>
 
           <h1 className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-balance sm:text-5xl md:text-6xl">
-            {item.title}
+            {title}
           </h1>
 
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            {item.summary}
+            {summary}
           </p>
 
           {/* Meta details */}
@@ -260,11 +268,12 @@ function Hero({ item }: { item: Portfolio }) {
             )}
             <span className="inline-flex items-center gap-2">
               <Calendar className="size-4 text-accent" />
-              {item.year}
+              <span className="ltr-num">{item.year}</span>
             </span>
             <span className="inline-flex items-center gap-2">
               <Eye className="size-4 text-accent" />
-              {item.views} views
+              <span className="ltr-num">{item.views}</span>{' '}
+              {t('portfolioDetail.views')}
             </span>
           </div>
 
@@ -279,8 +288,8 @@ function Hero({ item }: { item: Portfolio }) {
                     rel="noopener noreferrer"
                   >
                     <ExternalLink className="size-4" />
-                    Visit Live Site
-                    <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                    {t('portfolioDetail.visitLive')}
+                    <ArrowUpRight className={cn('size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5', lang === 'fa' && 'rtl-flip')} />
                   </a>
                 </Button>
               )}
@@ -292,7 +301,7 @@ function Hero({ item }: { item: Portfolio }) {
                     rel="noopener noreferrer"
                   >
                     <Github className="size-4" />
-                    View Source
+                    {t('portfolioDetail.viewCode')}
                   </a>
                 </Button>
               )}
@@ -310,7 +319,7 @@ function Hero({ item }: { item: Portfolio }) {
           <div className="relative aspect-[16/9]">
             <img
               src={item.coverImage}
-              alt={`${item.title} main cover`}
+              alt={`${title} main cover`}
               className="size-full object-cover"
             />
           </div>
@@ -382,6 +391,7 @@ function OverviewCard({
 /* ------------------------- Gallery ------------------------- */
 
 function GallerySection({ raw }: { raw: string }) {
+  const t = useT()
   const images = parseList<string>(raw)
   const [active, setActive] = useState<string | null>(null)
 
@@ -392,7 +402,7 @@ function GallerySection({ raw }: { raw: string }) {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
         <SectionHeading
           eyebrow="Gallery"
-          title="Project screenshots"
+          title={t('portfolioDetail.gallery')}
           align="left"
         />
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -459,30 +469,31 @@ const CASE_STUDY = [
   {
     key: 'challenge' as const,
     icon: Flag,
-    title: 'Challenge',
+    titleKey: 'portfolioDetail.challenge',
     tone: 'rose',
   },
   {
     key: 'architecture' as const,
     icon: Layers,
-    title: 'Architecture',
+    titleKey: 'portfolioDetail.architecture',
     tone: 'amber',
   },
   {
     key: 'implementation' as const,
     icon: Code2,
-    title: 'Implementation',
+    titleKey: 'portfolioDetail.implementation',
     tone: 'primary',
   },
   {
     key: 'outcome' as const,
     icon: Trophy,
-    title: 'Outcome',
+    titleKey: 'portfolioDetail.outcome',
     tone: 'emerald',
   },
 ]
 
 function CaseStudySection({ item }: { item: Portfolio }) {
+  const t = useT()
   const hasAny = CASE_STUDY.some((s) => item[s.key])
   if (!hasAny) return null
 
@@ -490,7 +501,7 @@ function CaseStudySection({ item }: { item: Portfolio }) {
     <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
       <SectionHeading
         eyebrow="Case Study"
-        title="How we built it"
+        title={t('portfolioDetail.caseStudy')}
         description="A deeper look at the journey from problem to outcome."
         align="left"
       />
@@ -516,9 +527,9 @@ function CaseStudySection({ item }: { item: Portfolio }) {
                   </span>
                   <div>
                     <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                      Step {i + 1}
+                      Step <span className="ltr-num">{i + 1}</span>
                     </span>
-                    <h3 className="text-base font-semibold">{s.title}</h3>
+                    <h3 className="text-base font-semibold">{t(s.titleKey)}</h3>
                   </div>
                 </div>
                 <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
@@ -537,11 +548,16 @@ function CaseStudySection({ item }: { item: Portfolio }) {
 
 function RelatedCard({
   item,
+  lang,
   onClick,
 }: {
   item: Portfolio
+  lang: 'en' | 'fa'
   onClick: () => void
 }) {
+  const t = useT()
+  const title = tc('portfolio', item.slug, 'title', item.title, lang)
+  const summary = tc('portfolio', item.slug, 'summary', item.summary, lang)
   return (
     <motion.button
       type="button"
@@ -554,7 +570,7 @@ function RelatedCard({
         <div className="relative aspect-video overflow-hidden">
           <img
             src={item.coverImage}
-            alt={`${item.title} cover`}
+            alt={`${title} cover`}
             loading="lazy"
             className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
@@ -565,13 +581,13 @@ function RelatedCard({
           )}
         </div>
         <div className="p-5">
-          <h3 className="line-clamp-1 text-base font-semibold">{item.title}</h3>
+          <h3 className="line-clamp-1 text-base font-semibold">{title}</h3>
           <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
-            {item.summary}
+            {summary}
           </p>
           <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-            View Project
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+            {t('portfolio.viewProject')}
+            <ArrowRight className={cn('size-4 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
           </div>
         </div>
       </Card>
@@ -605,19 +621,21 @@ function DetailSkeleton() {
 }
 
 function NotFoundState({ onBack }: { onBack: () => void }) {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
   return (
     <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-md flex-col items-center rounded-2xl border border-dashed bg-muted/30 px-6 py-16 text-center">
         <div className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
           <FileQuestion className="size-8" />
         </div>
-        <h2 className="mt-5 text-xl font-semibold">Project not found</h2>
+        <h2 className="mt-5 text-xl font-semibold">{t('portfolioDetail.notFound')}</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           The project you're looking for may have been moved or unpublished.
         </p>
         <Button className="mt-6" onClick={onBack}>
-          <ArrowLeft className="size-4" />
-          Back to Portfolio
+          <ArrowLeft className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
+          {t('portfolioDetail.back')}
         </Button>
       </div>
     </div>

@@ -1,26 +1,30 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ArrowRight } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Menu, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Logo } from './logo'
 import { ThemeToggle } from './theme-toggle'
+import { LanguageToggle } from './language-toggle'
 import { useNav, type ViewKey } from '@/lib/store'
+import { useT, useLang } from '@/lib/lang-store'
 import { cn } from '@/lib/utils'
 
-const NAV_ITEMS: { label: string; view: ViewKey }[] = [
-  { label: 'Home', view: 'home' },
-  { label: 'Portfolio', view: 'portfolio' },
-  { label: 'Case Studies', view: 'case-studies' },
-  { label: 'Blog', view: 'blog' },
-  { label: 'About', view: 'about' },
-  { label: 'Contact', view: 'contact' },
+const NAV_KEYS: { key: string; view: ViewKey }[] = [
+  { key: 'nav.home', view: 'home' },
+  { key: 'nav.portfolio', view: 'portfolio' },
+  { key: 'nav.caseStudies', view: 'case-studies' },
+  { key: 'nav.blog', view: 'blog' },
+  { key: 'nav.about', view: 'about' },
+  { key: 'nav.contact', view: 'contact' },
 ]
 
 export function Navbar() {
-  const { view, setView, scrollTo } = useNav()
+  const { view, setView } = useNav()
+  const t = useT()
+  const lang = useLang((s) => s.lang)
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -44,12 +48,12 @@ export function Navbar() {
       )}
     >
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <button onClick={() => go('home')} className="flex items-center" aria-label="Go home">
+        <button onClick={() => go('home')} className="flex items-center" aria-label={t('nav.home')}>
           <Logo />
         </button>
 
         <div className="hidden items-center gap-1 lg:flex">
-          {NAV_ITEMS.map((item) => (
+          {NAV_KEYS.map((item) => (
             <button
               key={item.view}
               onClick={() => go(item.view)}
@@ -67,48 +71,50 @@ export function Navbar() {
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
-              {item.label}
+              {t(item.key)}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <LanguageToggle />
           <ThemeToggle />
           <Button
             size="sm"
             onClick={() => setView('estimate')}
             className="hidden rounded-full sm:inline-flex"
           >
-            Get Estimate
-            <ArrowRight className="ml-1.5 h-4 w-4" />
+            {t('nav.getEstimate')}
+            <ArrowRight className={cn('h-4 w-4', lang === 'fa' ? 'mr-1.5' : 'ml-1.5')} />
           </Button>
 
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">
+              <Button variant="ghost" size="icon" className="lg:hidden" aria-label={t('nav.menu')}>
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px]">
+            <SheetContent side={lang === 'fa' ? 'left' : 'right'} className="w-[300px]">
               <SheetHeader>
                 <SheetTitle>
                   <Logo />
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-6 flex flex-col gap-1">
-                {NAV_ITEMS.map((item) => (
+                {NAV_KEYS.map((item) => (
                   <button
                     key={item.view}
                     onClick={() => go(item.view)}
                     className={cn(
-                      'flex items-center justify-between rounded-xl px-4 py-3 text-left text-base font-medium transition-colors',
+                      'flex items-center justify-between rounded-xl px-4 py-3 text-base font-medium transition-colors',
+                      lang === 'fa' ? 'text-right' : 'text-left',
                       view === item.view
                         ? 'bg-primary/10 text-primary'
                         : 'text-foreground hover:bg-muted',
                     )}
                   >
-                    {item.label}
-                    <ArrowRight className="h-4 w-4 opacity-50" />
+                    {t(item.key)}
+                    <ArrowRight className={cn('h-4 w-4 opacity-50', lang === 'fa' && 'rtl-flip')} />
                   </button>
                 ))}
                 <Button
@@ -118,8 +124,8 @@ export function Navbar() {
                     setOpen(false)
                   }}
                 >
-                  Get Estimate
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
+                  {t('nav.getEstimate')}
+                  <ArrowRight className={cn('h-4 w-4', lang === 'fa' ? 'mr-1.5' : 'ml-1.5')} />
                 </Button>
               </div>
             </SheetContent>

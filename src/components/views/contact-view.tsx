@@ -34,6 +34,7 @@ import {
 import { Reveal } from '@/components/site/reveal'
 import { SectionHeading } from '@/components/site/section-heading'
 import { cn } from '@/lib/utils'
+import { useT, useLang } from '@/lib/lang-store'
 
 type FormState = {
   fullName: string
@@ -46,50 +47,18 @@ type FormState = {
 
 type Errors = Partial<Record<keyof FormState, string>>
 
-const BUDGET_OPTIONS = [
-  { value: '< $2k', label: 'Under $2k' },
-  { value: '$2k - $5k', label: '$2k – $5k' },
-  { value: '$5k - $15k', label: '$5k – $15k' },
-  { value: '$15k - $50k', label: '$15k – $50k' },
-  { value: '$50k+', label: '$50k+' },
-]
-
-const CONTACT_DETAILS = [
-  {
-    icon: Mail,
-    label: 'Email us',
-    value: 'hello@devstudio.com',
-    href: 'mailto:hello@devstudio.com',
-  },
-  {
-    icon: Phone,
-    label: 'Call us',
-    value: '+1 (415) 555-0192',
-    href: 'tel:+14155550192',
-  },
-  {
-    icon: MapPin,
-    label: 'Visit us',
-    value: '535 Mission St, San Francisco, CA',
-    href: 'https://maps.google.com',
-  },
-]
-
 const SOCIALS = [
   { icon: Github, label: 'GitHub', href: 'https://github.com' },
   { icon: Linkedin, label: 'LinkedIn', href: 'https://linkedin.com' },
   { icon: Twitter, label: 'Twitter', href: 'https://twitter.com' },
 ]
 
-const NEXT_STEPS = [
-  { icon: Calendar, title: 'Discovery call', desc: 'A 30-min call to understand your goals, scope and timeline.' },
-  { icon: FileText, title: 'Proposal', desc: 'Within 48h you receive a tailored proposal and fixed quote.' },
-  { icon: Rocket, title: 'Kickoff', desc: 'We assemble the squad, set milestones and ship week one.' },
-]
-
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function ContactView() {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
+
   const [form, setForm] = useState<FormState>({
     fullName: '',
     company: '',
@@ -101,6 +70,44 @@ export function ContactView() {
   const [errors, setErrors] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+
+  const BUDGET_OPTIONS = [
+    { value: '< $2k', label: t('contact.budgetOpt1') },
+    { value: '$2k - $5k', label: t('contact.budgetOpt2') },
+    { value: '$5k - $15k', label: t('contact.budgetOpt3') },
+    { value: '$15k - $50k', label: t('contact.budgetOpt4') },
+    { value: '$50k+', label: t('contact.budgetOpt5') },
+  ]
+
+  const CONTACT_DETAILS = [
+    {
+      icon: Mail,
+      label: t('contact.email'),
+      value: 'hello@devstudio.com',
+      href: 'mailto:hello@devstudio.com',
+      ltr: true,
+    },
+    {
+      icon: Phone,
+      label: t('contact.phone'),
+      value: '+1 (415) 555-0192',
+      href: 'tel:+14155550192',
+      ltr: true,
+    },
+    {
+      icon: MapPin,
+      label: t('contact.address'),
+      value: '535 Mission St, San Francisco, CA',
+      href: 'https://maps.google.com',
+      ltr: false,
+    },
+  ]
+
+  const NEXT_STEPS = [
+    { icon: Calendar, title: t('contact.step1'), desc: t('contact.step1Desc') },
+    { icon: FileText, title: t('contact.step2'), desc: t('contact.step2Desc') },
+    { icon: Rocket, title: t('contact.step3'), desc: t('contact.step3Desc') },
+  ]
 
   const update = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -115,11 +122,11 @@ export function ContactView() {
 
   const validate = (): boolean => {
     const next: Errors = {}
-    if (!form.fullName.trim()) next.fullName = 'Please enter your full name.'
-    if (!form.email.trim()) next.email = 'Please enter your email.'
-    else if (!emailRegex.test(form.email)) next.email = 'Please enter a valid email address.'
-    if (!form.message.trim()) next.message = 'Please tell us about your project.'
-    else if (form.message.trim().length < 20) next.message = 'A little more detail helps — at least 20 characters.'
+    if (!form.fullName.trim()) next.fullName = t('contact.requiredField')
+    if (!form.email.trim()) next.email = t('contact.requiredField')
+    else if (!emailRegex.test(form.email)) next.email = t('contact.invalidEmail')
+    if (!form.message.trim()) next.message = t('contact.requiredField')
+    else if (form.message.trim().length < 10) next.message = t('contact.minMessage')
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -142,7 +149,7 @@ export function ContactView() {
         throw new Error(data?.error || 'Request failed')
       }
       setSubmitted(true)
-      toast.success('Message sent!', { description: "We'll reply within 24 hours." })
+      toast.success(t('contact.successTitle'), { description: t('contact.successDesc') })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong.'
       toast.error('Could not send message', { description: message })
@@ -165,14 +172,11 @@ export function ContactView() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Get in touch"
+          eyebrow={t('contact.eyebrow')}
           title={
-            <>
-              Let&apos;s build something{' '}
-              <span className="text-gradient">great together</span>
-            </>
+            <span className="text-gradient">{t('contact.title')}</span>
           }
-          description="Tell us about your project. Whether you have a fully-specced brief or just an idea, we'll help you shape it into something exceptional."
+          description={t('contact.desc')}
         />
 
         <div className="mt-16 grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-14">
@@ -180,11 +184,10 @@ export function ContactView() {
           <Reveal className="flex flex-col gap-8">
             <div className="space-y-4">
               <h3 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                We&apos;d love to hear from you
+                {t('contact.weLove')}
               </h3>
               <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
-                Drop us a line and our team will get back to you within one business day.
-                Prefer email or phone? Use the details below — we&apos;re real humans, not bots.
+                {t('contact.desc')}
               </p>
             </div>
 
@@ -203,7 +206,12 @@ export function ContactView() {
                     <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       {item.label}
                     </span>
-                    <span className="mt-0.5 text-sm font-semibold text-foreground">
+                    <span
+                      className={cn(
+                        'mt-0.5 text-sm font-semibold text-foreground',
+                        item.ltr && 'ltr-num',
+                      )}
+                    >
                       {item.value}
                     </span>
                   </span>
@@ -215,17 +223,14 @@ export function ContactView() {
             <div className="flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-4">
               <Clock className="size-5 shrink-0 text-accent" />
               <p className="text-sm font-medium text-foreground">
-                <span className="text-accent">24-hour response promise.</span>{' '}
-                <span className="text-muted-foreground">
-                  Reach out today — we reply to every serious inquiry within one business day.
-                </span>
+                <span className="text-accent">{t('contact.responseTime')}</span>
               </p>
             </div>
 
             {/* what happens next */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                What happens next
+                {t('contact.whatsNext')}
               </h4>
               <ol className="space-y-3">
                 {NEXT_STEPS.map((step, idx) => (
@@ -235,8 +240,11 @@ export function ContactView() {
                   >
                     <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground">
                       <step.icon className="size-5" />
-                      <span className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                        {idx + 1}
+                      <span className={cn(
+                        'absolute -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground',
+                        lang === 'fa' ? '-left-1' : '-right-1',
+                      )}>
+                        <span className="ltr-num">{idx + 1}</span>
                       </span>
                     </span>
                     <div className="flex flex-col">
@@ -294,14 +302,13 @@ export function ContactView() {
                       <CheckCircle2 className="size-9" />
                     </motion.span>
                     <h3 className="mt-6 text-2xl font-semibold tracking-tight">
-                      Message sent!
+                      {t('contact.successTitle')}
                     </h3>
                     <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                      Thanks for reaching out. We&apos;ll get back to you within 24 hours.
-                      In the meantime, feel free to explore our recent work.
+                      {t('contact.successDesc')}
                     </p>
                     <Button onClick={resetForm} variant="outline" className="mt-8">
-                      Send another message
+                      {t('contact.sendAnother')}
                     </Button>
                   </motion.div>
                 ) : (
@@ -309,7 +316,7 @@ export function ContactView() {
                     <div className="grid gap-5 sm:grid-cols-2">
                       <Field
                         id="fullName"
-                        label="Full Name"
+                        label={t('contact.fullName')}
                         required
                         error={errors.fullName}
                       >
@@ -322,7 +329,7 @@ export function ContactView() {
                           aria-invalid={!!errors.fullName}
                         />
                       </Field>
-                      <Field id="company" label="Company Name" error={undefined}>
+                      <Field id="company" label={t('contact.companyName')} error={undefined}>
                         <Input
                           id="company"
                           value={form.company}
@@ -334,7 +341,7 @@ export function ContactView() {
                     </div>
 
                     <div className="grid gap-5 sm:grid-cols-2">
-                      <Field id="email" label="Email" required error={errors.email}>
+                      <Field id="email" label={t('contact.emailLabel')} required error={errors.email}>
                         <Input
                           id="email"
                           type="email"
@@ -345,7 +352,7 @@ export function ContactView() {
                           aria-invalid={!!errors.email}
                         />
                       </Field>
-                      <Field id="phone" label="Phone" error={undefined}>
+                      <Field id="phone" label={t('contact.phoneLabel')} error={undefined}>
                         <Input
                           id="phone"
                           type="tel"
@@ -357,7 +364,7 @@ export function ContactView() {
                       </Field>
                     </div>
 
-                    <Field id="budget" label="Budget" error={undefined}>
+                    <Field id="budget" label={t('contact.budget')} error={undefined}>
                       <Select
                         value={form.budget}
                         onValueChange={(v) => update('budget', v)}
@@ -377,7 +384,7 @@ export function ContactView() {
 
                     <Field
                       id="message"
-                      label="Project Description"
+                      label={t('contact.message')}
                       required
                       error={errors.message}
                     >
@@ -385,7 +392,7 @@ export function ContactView() {
                         id="message"
                         value={form.message}
                         onChange={(e) => update('message', e.target.value)}
-                        placeholder="Tell us about your goals, scope, timeline and anything else we should know…"
+                        placeholder={t('contact.messagePlaceholder')}
                         rows={5}
                         aria-invalid={!!errors.message}
                       />
@@ -404,12 +411,12 @@ export function ContactView() {
                         {submitting ? (
                           <>
                             <Loader2 className="size-4 animate-spin" />
-                            Sending…
+                            {t('contact.sending')}
                           </>
                         ) : (
                           <>
-                            Send message
-                            <Send className="size-4" />
+                            {t('contact.send')}
+                            <Send className={cn('size-4', lang === 'fa' ? 'mr-1.5' : 'ml-1.5')} />
                           </>
                         )}
                       </Button>
@@ -425,7 +432,7 @@ export function ContactView() {
         <Reveal delay={0.15} className="mt-16">
           <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-border/60 bg-secondary px-6 py-6 text-center text-secondary-foreground shadow-soft sm:flex-row sm:text-left">
             <div className="flex items-center gap-3">
-              <ArrowRight className="size-5 text-accent" />
+              <ArrowRight className={cn('size-5 text-accent', lang === 'fa' && 'rtl-flip')} />
               <div>
                 <p className="text-base font-semibold">Not sure where to start?</p>
                 <p className="text-sm text-secondary-foreground/70">
@@ -441,7 +448,7 @@ export function ContactView() {
               className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-colors hover:bg-accent/90"
             >
               Get an estimate
-              <ArrowRight className="size-4" />
+              <ArrowRight className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
             </a>
           </div>
         </Reveal>
@@ -463,11 +470,19 @@ function Field({
   error?: string
   children: React.ReactNode
 }) {
+  const lang = useLang((s) => s.lang)
   return (
     <div className="space-y-2">
       <Label htmlFor={id} className="text-sm font-medium">
         {label}
-        {required && <span className="ml-0.5 text-primary">*</span>}
+        {required && (
+          <span
+            className={cn('text-primary', lang === 'fa' ? 'mr-0.5' : 'ml-0.5')}
+            aria-label={required ? 'required' : undefined}
+          >
+            *
+          </span>
+        )}
       </Label>
       {children}
       {error ? (

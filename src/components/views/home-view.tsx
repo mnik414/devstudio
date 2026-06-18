@@ -46,6 +46,9 @@ import {
   type Testimonial,
 } from '@/lib/hooks'
 import { useNav } from '@/lib/store'
+import { useT, useLang } from '@/lib/lang-store'
+import { tc } from '@/lib/content-i18n'
+import { cn } from '@/lib/utils'
 
 const iconMap: Record<string, typeof Code2> = {
   Code2,
@@ -59,13 +62,13 @@ const iconMap: Record<string, typeof Code2> = {
 }
 
 const PROCESS_STEPS = [
-  { icon: Compass, title: 'Discovery', desc: 'We dive deep into your business, users, and goals to define a clear product strategy.' },
-  { icon: ClipboardCheck, title: 'Planning', desc: 'Roadmaps, milestones, and technical architecture are mapped out with full transparency.' },
-  { icon: Lightbulb, title: 'UI/UX Design', desc: 'Wireframes evolve into pixel-perfect, accessible, conversion-focused interfaces.' },
-  { icon: Hammer, title: 'Development', desc: 'Clean, tested, scalable code built in iterative sprints with weekly demos.' },
-  { icon: TestTube, title: 'Testing', desc: 'Automated tests, QA passes, and performance audits ensure production readiness.' },
-  { icon: Rocket, title: 'Launch', desc: 'Zero-downtime deployment with monitoring, analytics, and SEO in place.' },
-  { icon: LifeBuoy, title: 'Support', desc: 'Ongoing maintenance, optimizations, and feature iterations post-launch.' },
+  { icon: Compass, titleKey: 'process.discovery', descKey: 'process.discoveryDesc' },
+  { icon: ClipboardCheck, titleKey: 'process.planning', descKey: 'process.planningDesc' },
+  { icon: Lightbulb, titleKey: 'process.design', descKey: 'process.designDesc' },
+  { icon: Hammer, titleKey: 'process.development', descKey: 'process.developmentDesc' },
+  { icon: TestTube, titleKey: 'process.testing', descKey: 'process.testingDesc' },
+  { icon: Rocket, titleKey: 'process.launch', descKey: 'process.launchDesc' },
+  { icon: LifeBuoy, titleKey: 'process.support', descKey: 'process.supportDesc' },
 ]
 
 const TECH_LOGOS = [
@@ -78,12 +81,26 @@ export function HomeView() {
   const { setView, scrollTo, openDetail } = useNav()
   const { data: siteData, isLoading: siteLoading } = useSite()
   const { data: portfolioData, isLoading: portfolioLoading } = usePortfolios({ featured: 'true', limit: '6' })
+  const t = useT()
+  const lang = useLang((s) => s.lang)
 
   const featuredPortfolios = portfolioData?.items ?? []
   const services = siteData?.services ?? []
   const testimonials = siteData?.testimonials ?? []
   const faqs = siteData?.faqs ?? []
   const settings = siteData?.settings ?? {}
+
+  const heroBadges = [
+    t('hero.badgeProjects'),
+    t('hero.badgeSatisfaction'),
+    t('hero.badgeExperience'),
+  ]
+
+  const dashboardStats = [
+    { label: t('hero.activeUsers'), value: '48,920', trend: '+12.4%' },
+    { label: t('hero.revenue'), value: '$92,310', trend: '+8.1%' },
+    { label: t('hero.conversion'), value: '4.8%', trend: '+0.6pt' },
+  ]
 
   return (
     <div className="overflow-hidden">
@@ -103,7 +120,7 @@ export function HomeView() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
               </span>
-              Now booking Q3 2024 projects
+              {t('hero.badge')}
             </motion.div>
 
             <motion.h1
@@ -112,7 +129,7 @@ export function HomeView() {
               transition={{ duration: 0.7, delay: 0.05 }}
               className="text-4xl font-bold tracking-tight text-balance sm:text-6xl md:text-7xl md:leading-[1.05]"
             >
-              We Build <span className="text-gradient">Fast, Scalable</span> & Modern Digital Products
+              {t('hero.title')} <span className="text-gradient">{t('hero.titleAccent')}</span> {t('hero.titleEnd')}
             </motion.h1>
 
             <motion.p
@@ -121,8 +138,7 @@ export function HomeView() {
               transition={{ duration: 0.7, delay: 0.15 }}
               className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl"
             >
-              DevStudio is a premium web development agency crafting high-performance websites,
-              SaaS platforms, and AI-powered products that convert visitors into customers.
+              {t('hero.subtitle')}
             </motion.p>
 
             <motion.div
@@ -132,11 +148,11 @@ export function HomeView() {
               className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
             >
               <Button size="lg" className="h-12 rounded-full px-7 text-base" onClick={() => setView('portfolio')}>
-                View Portfolio
-                <ArrowRight className="ml-2 h-4 w-4" />
+                {t('hero.viewPortfolio')}
+                <ArrowRight className={cn('ml-2 h-4 w-4 rtl-flip')} />
               </Button>
               <Button size="lg" variant="outline" className="h-12 rounded-full px-7 text-base" onClick={() => setView('contact')}>
-                Request Consultation
+                {t('hero.requestConsultation')}
               </Button>
             </motion.div>
 
@@ -146,10 +162,10 @@ export function HomeView() {
               transition={{ duration: 0.7, delay: 0.4 }}
               className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
             >
-              {['180+ projects shipped', '98% client satisfaction', '12+ years experience'].map((t) => (
-                <span key={t} className="inline-flex items-center gap-1.5">
+              {heroBadges.map((badge) => (
+                <span key={badge} className="inline-flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-accent" />
-                  {t}
+                  {badge}
                 </span>
               ))}
             </motion.div>
@@ -171,15 +187,11 @@ export function HomeView() {
                 <span className="ml-3 text-xs text-muted-foreground">devstudio.com/dashboard</span>
               </div>
               <div className="grid gap-4 p-5 sm:grid-cols-3">
-                {[
-                  { label: 'Active Users', value: '48,920', trend: '+12.4%', color: 'text-accent' },
-                  { label: 'Revenue', value: '$92,310', trend: '+8.1%', color: 'text-accent' },
-                  { label: 'Conversion', value: '4.8%', trend: '+0.6pt', color: 'text-accent' },
-                ].map((stat) => (
+                {dashboardStats.map((stat) => (
                   <div key={stat.label} className="rounded-xl border border-border/60 bg-background p-4">
                     <p className="text-xs text-muted-foreground">{stat.label}</p>
-                    <p className="mt-1 text-2xl font-bold">{stat.value}</p>
-                    <p className={`mt-1 text-xs font-medium ${stat.color}`}>{stat.trend} ↑</p>
+                    <p className="mt-1 text-2xl font-bold ltr-num">{stat.value}</p>
+                    <p className="mt-1 text-xs font-medium text-accent ltr-num">{stat.trend} ↑</p>
                   </div>
                 ))}
                 <div className="sm:col-span-3">
@@ -203,8 +215,8 @@ export function HomeView() {
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold">AI Insights</p>
-                  <p className="text-[10px] text-muted-foreground">Live</p>
+                  <p className="text-xs font-semibold">{t('hero.aiInsights')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t('hero.live')}</p>
                 </div>
               </div>
             </div>
@@ -216,7 +228,7 @@ export function HomeView() {
       <section className="border-y border-border/60 bg-muted/30 py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="mb-6 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Trusted by teams at fast-growing companies
+            {t('trusted.title')}
           </p>
           <div className="mask-fade-x overflow-hidden">
             <div className="flex w-max animate-marquee items-center gap-12 pr-12">
@@ -234,21 +246,21 @@ export function HomeView() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="By the numbers"
-            title={<>Results that speak for themselves</>}
-            description="Over a decade of building digital products that drive measurable business outcomes."
+            eyebrow={t('stats.eyebrow')}
+            title={t('stats.title')}
+            description={t('stats.desc')}
           />
           <div className="mt-14 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
             {[
-              { label: 'Completed Projects', value: Number(settings.stats_projects || 180), suffix: '+' },
-              { label: 'Years of Experience', value: Number(settings.stats_experience || 12), suffix: '+' },
-              { label: 'Client Satisfaction', value: Number(settings.stats_satisfaction || 98), suffix: '%' },
-              { label: 'Technologies Used', value: Number(settings.stats_technologies || 25), suffix: '+' },
+              { label: t('stats.projects'), value: Number(settings.stats_projects || 180), suffix: '+' },
+              { label: t('stats.experience'), value: Number(settings.stats_experience || 12), suffix: '+' },
+              { label: t('stats.satisfaction'), value: Number(settings.stats_satisfaction || 98), suffix: '%' },
+              { label: t('stats.technologies'), value: Number(settings.stats_technologies || 25), suffix: '+' },
             ].map((stat, i) => (
               <Reveal key={stat.label} delay={i * 0.1}>
                 <Card className="group relative overflow-hidden border-border/60 p-6 text-center transition hover:shadow-soft sm:p-8">
                   <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 transition group-hover:opacity-100" />
-                  <div className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl">
+                  <div className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl ltr-num">
                     <Counter to={stat.value} suffix={stat.suffix} />
                   </div>
                   <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">{stat.label}</p>
@@ -265,13 +277,13 @@ export function HomeView() {
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
             <SectionHeading
               align="left"
-              eyebrow="Featured Work"
-              title={<>Selected projects we're proud of</>}
-              description="A glimpse into the products we've shipped across industries."
+              eyebrow={t('featured.eyebrow')}
+              title={t('featured.title')}
+              description={t('featured.desc')}
             />
             <Button variant="outline" className="shrink-0 rounded-full" onClick={() => setView('portfolio')}>
-              View all projects
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {t('featured.viewAll')}
+              <ArrowRight className="ml-2 h-4 w-4 rtl-flip" />
             </Button>
           </div>
 
@@ -299,9 +311,9 @@ export function HomeView() {
       <section id="services" className="scroll-mt-24 py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="What we do"
-            title={<>Full-stack expertise under one roof</>}
-            description="From idea to launch and beyond — we cover every layer of modern product development."
+            eyebrow={t('services.eyebrow')}
+            title={t('services.title')}
+            description={t('services.desc')}
           />
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {services.map((service, i) => (
@@ -317,30 +329,30 @@ export function HomeView() {
           <div className="max-w-2xl">
             <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              How we work
+              {t('process.eyebrow')}
             </span>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-[2.6rem] md:leading-[1.1]">
-              A proven process from <span className="text-gradient bg-gradient-to-r from-white to-accent">discovery to launch</span>
+              {t('process.title')}
             </h2>
             <p className="mt-4 text-base leading-relaxed text-secondary-foreground/70 sm:text-lg">
-              No black boxes. You'll always know what's happening, why, and what's next.
+              {t('process.desc')}
             </p>
           </div>
 
           <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {PROCESS_STEPS.map((step, i) => (
-              <Reveal key={step.title} delay={i * 0.06}>
+              <Reveal key={step.titleKey} delay={i * 0.06}>
                 <div className="group relative h-full rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:bg-white/[0.08]">
                   <div className="mb-4 flex items-center justify-between">
                     <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground">
                       <step.icon className="h-5 w-5" />
                     </div>
-                    <span className="text-3xl font-bold text-white/10 transition group-hover:text-white/20">
+                    <span className="text-3xl font-bold text-white/10 transition group-hover:text-white/20 ltr-num">
                       {String(i + 1).padStart(2, '0')}
                     </span>
                   </div>
-                  <h3 className="text-lg font-semibold">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-secondary-foreground/70">{step.desc}</p>
+                  <h3 className="text-lg font-semibold">{t(step.titleKey)}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-secondary-foreground/70">{t(step.descKey)}</p>
                 </div>
               </Reveal>
             ))}
@@ -349,9 +361,9 @@ export function HomeView() {
                 onClick={() => setView('contact')}
                 className="group flex h-full w-full flex-col items-start justify-center rounded-2xl border border-accent/30 bg-accent/10 p-6 text-left transition hover:bg-accent/20"
               >
-                <ArrowUpRight className="mb-3 h-6 w-6 text-accent transition group-hover:translate-x-1 group-hover:-translate-y-1" />
-                <h3 className="text-lg font-semibold">Ready to start?</h3>
-                <p className="mt-2 text-sm text-secondary-foreground/70">Book a free discovery call today.</p>
+                <ArrowUpRight className="mb-3 h-6 w-6 text-accent transition group-hover:translate-x-1 group-hover:-translate-y-1 rtl-flip" />
+                <h3 className="text-lg font-semibold">{t('process.ready')}</h3>
+                <p className="mt-2 text-sm text-secondary-foreground/70">{t('process.readyDesc')}</p>
               </button>
             </Reveal>
           </div>
@@ -365,9 +377,9 @@ export function HomeView() {
       <section className="py-20 sm:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="Our stack"
-            title={<>Modern tools, battle-tested in production</>}
-            description="We choose technologies for their reliability, performance, and long-term maintainability."
+            eyebrow={t('tech.eyebrow')}
+            title={t('tech.title')}
+            description={t('tech.desc')}
           />
           <div className="mt-14 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {TECH_LOGOS.map((tech, i) => (
@@ -387,9 +399,9 @@ export function HomeView() {
       <section id="faq" className="scroll-mt-24 bg-muted/30 py-20 sm:py-28">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="FAQ"
-            title={<>Questions, answered</>}
-            description="Everything you need to know about working with us. Still curious? Just ask."
+            eyebrow={t('faq.eyebrow')}
+            title={t('faq.title')}
+            description={t('faq.desc')}
           />
           {siteLoading ? (
             <div className="mt-10 space-y-3">
@@ -416,9 +428,9 @@ export function HomeView() {
             </Accordion>
           )}
           <div className="mt-10 text-center">
-            <p className="text-sm text-muted-foreground">Still have questions?</p>
+            <p className="text-sm text-muted-foreground">{t('faq.stillQuestions')}</p>
             <Button variant="link" className="mt-1 text-primary" onClick={() => setView('contact')}>
-              Talk to our team →
+              {t('faq.talkToTeam')} →
             </Button>
           </div>
         </div>
@@ -433,6 +445,10 @@ export function HomeView() {
 /* ---------- Sub-components ---------- */
 
 function FeaturedPortfolioCard({ portfolio, index, onClick }: { portfolio: Portfolio; index: number; onClick: () => void }) {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
+  const title = tc('portfolio', portfolio.slug, 'title', portfolio.title, lang)
+  const summary = tc('portfolio', portfolio.slug, 'summary', portfolio.summary, lang)
   return (
     <Reveal delay={index * 0.08}>
       <Card
@@ -442,7 +458,7 @@ function FeaturedPortfolioCard({ portfolio, index, onClick }: { portfolio: Portf
         <div className="relative aspect-video overflow-hidden">
           <img
             src={portfolio.coverImage}
-            alt={portfolio.title}
+            alt={title}
             loading="lazy"
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
@@ -453,12 +469,12 @@ function FeaturedPortfolioCard({ portfolio, index, onClick }: { portfolio: Portf
             </Badge>
           )}
           <div className="absolute bottom-3 right-3 translate-y-2 rounded-full bg-primary p-2 text-primary-foreground opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-            <ArrowUpRight className="h-4 w-4" />
+            <ArrowUpRight className="h-4 w-4 rtl-flip" />
           </div>
         </div>
         <div className="p-5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{portfolio.year}</span>
+            <span className="ltr-num">{portfolio.year}</span>
             {portfolio.clientName && (
               <>
                 <span>•</span>
@@ -466,26 +482,30 @@ function FeaturedPortfolioCard({ portfolio, index, onClick }: { portfolio: Portf
               </>
             )}
           </div>
-          <h3 className="mt-1.5 text-lg font-semibold leading-snug">{portfolio.title}</h3>
-          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{portfolio.summary}</p>
+          <h3 className="mt-1.5 text-lg font-semibold leading-snug">{title}</h3>
+          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{summary}</p>
           {portfolio.technologies && portfolio.technologies.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {portfolio.technologies.slice(0, 3).map((t) => (
+              {portfolio.technologies.slice(0, 3).map((tech) => (
                 <span
-                  key={t.id}
+                  key={tech.id}
                   className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
                 >
-                  {t.color && <span className="h-1.5 w-1.5 rounded-full" style={{ background: t.color }} />}
-                  {t.name}
+                  {tech.color && <span className="h-1.5 w-1.5 rounded-full" style={{ background: tech.color }} />}
+                  {tech.name}
                 </span>
               ))}
               {portfolio.technologies.length > 3 && (
-                <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground ltr-num">
                   +{portfolio.technologies.length - 3}
                 </span>
               )}
             </div>
           )}
+          <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-primary">
+            {t('featured.viewProject')}
+            <ArrowUpRight className="h-3.5 w-3.5 rtl-flip" />
+          </div>
         </div>
       </Card>
     </Reveal>
@@ -493,6 +513,7 @@ function FeaturedPortfolioCard({ portfolio, index, onClick }: { portfolio: Portf
 }
 
 function ServiceCard({ service, index, onCta }: { service: Service; index: number; onCta: () => void }) {
+  const t = useT()
   const Icon = iconMap[service.icon] ?? Code2
   const features = parseList<string>(service.features)
   return (
@@ -519,8 +540,8 @@ function ServiceCard({ service, index, onCta }: { service: Service; index: numbe
             onClick={onCta}
             className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary opacity-0 transition group-hover:opacity-100"
           >
-            Learn more
-            <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+            {t('services.learnMore')}
+            <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 rtl-flip" />
           </button>
         </div>
       </Card>
@@ -529,6 +550,8 @@ function ServiceCard({ service, index, onCta }: { service: Service; index: numbe
 }
 
 function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Testimonial[]; loading: boolean; onCta: () => void }) {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
   const [active, setActive] = useState(0)
 
   if (loading) {
@@ -548,13 +571,13 @@ function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Te
     <section className="py-20 sm:py-28">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Testimonials"
-          title={<>Don't just take our word for it</>}
-          description="Real feedback from founders and product leaders we've partnered with."
+          eyebrow={t('testimonials.eyebrow')}
+          title={t('testimonials.title')}
+          description={t('testimonials.desc')}
         />
         <Reveal className="mt-14">
           <Card className="relative overflow-hidden border-border/60 p-8 sm:p-12">
-            <Quote className="absolute right-6 top-6 h-20 w-20 text-primary/5" />
+            <Quote className={cn('absolute right-6 top-6 h-20 w-20 text-primary/5', lang === 'fa' && 'left-6 right-auto')} />
             <div className="relative">
               <div className="flex gap-1">
                 {Array.from({ length: current.rating }).map((_, i) => (
@@ -562,7 +585,7 @@ function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Te
                 ))}
               </div>
               <blockquote className="mt-6 text-xl font-medium leading-relaxed text-foreground sm:text-2xl">
-                "{current.quote}"
+                &ldquo;{current.quote}&rdquo;
               </blockquote>
               <div className="mt-8 flex items-center gap-4">
                 <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground">
@@ -582,11 +605,11 @@ function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Te
         </Reveal>
 
         <div className="mt-6 flex items-center justify-center gap-2">
-          {testimonials.map((t, i) => (
+          {testimonials.map((item, i) => (
             <button
-              key={t.id}
+              key={item.id}
               onClick={() => setActive(i)}
-              aria-label={`Testimonial ${i + 1}`}
+              aria-label={t('about.testimonialN', { n: i + 1 })}
               className={`h-2 rounded-full transition-all ${
                 i === active ? 'w-8 bg-primary' : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
               }`}
@@ -596,14 +619,14 @@ function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Te
 
         <div className="mt-6 flex items-center justify-center gap-3">
           <Button variant="outline" size="sm" className="rounded-full" onClick={() => setActive((a) => (a - 1 + testimonials.length) % testimonials.length)}>
-            Previous
+            {t('testimonials.previous')}
           </Button>
           <Button variant="outline" size="sm" className="rounded-full" onClick={() => setActive((a) => (a + 1) % testimonials.length)}>
-            Next
+            {t('testimonials.next')}
           </Button>
           <Button size="sm" className="rounded-full" onClick={onCta}>
-            See more work
-            <ArrowRight className="ml-1.5 h-4 w-4" />
+            {t('testimonials.seeMore')}
+            <ArrowRight className={cn('ml-1.5 h-4 w-4', lang === 'fa' && 'mr-1.5 ml-0', 'rtl-flip')} />
           </Button>
         </div>
       </div>
@@ -612,6 +635,8 @@ function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Te
 }
 
 function FinalCta({ onPrimary, onSecondary }: { onPrimary: () => void; onSecondary: () => void }) {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
   return (
     <section id="estimate-cta" className="scroll-mt-24 px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
       <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-accent p-10 text-primary-foreground shadow-glow sm:p-16">
@@ -620,15 +645,15 @@ function FinalCta({ onPrimary, onSecondary }: { onPrimary: () => void; onSeconda
         <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-accent/30 blur-3xl" />
         <div className="relative mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-5xl">
-            Let's build something your users will love
+            {t('cta.title')}
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-primary-foreground/80 sm:text-lg">
-            Tell us about your project. We'll get back within 24 hours with next steps and a tailored plan.
+            {t('cta.desc')}
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" variant="secondary" className="h-12 rounded-full px-7 text-base" onClick={onPrimary}>
-              Start your project
-              <ArrowRight className="ml-2 h-4 w-4" />
+              {t('cta.startProject')}
+              <ArrowRight className={cn('ml-2 h-4 w-4', lang === 'fa' && 'mr-2 ml-0', 'rtl-flip')} />
             </Button>
             <Button
               size="lg"
@@ -636,7 +661,7 @@ function FinalCta({ onPrimary, onSecondary }: { onPrimary: () => void; onSeconda
               className="h-12 rounded-full border-primary-foreground/30 bg-transparent px-7 text-base text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
               onClick={onSecondary}
             >
-              Get an estimate
+              {t('cta.getEstimate')}
             </Button>
           </div>
         </div>

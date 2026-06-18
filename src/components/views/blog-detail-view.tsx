@@ -27,6 +27,8 @@ import { Reveal } from '@/components/site/reveal'
 import { SectionHeading } from '@/components/site/section-heading'
 import { useNav } from '@/lib/store'
 import { useBlogPost, type BlogPost } from '@/lib/hooks'
+import { useT, useLang } from '@/lib/lang-store'
+import { tc } from '@/lib/content-i18n'
 import { cn } from '@/lib/utils'
 
 /* ------------------------------ helpers ------------------------------ */
@@ -146,6 +148,7 @@ function AuthorAvatar({
 /* ------------------------------ share buttons ------------------------------ */
 
 function ShareButtons({ title }: { title: string }) {
+  const t = useT()
   const getUrl = () => (typeof window !== 'undefined' ? window.location.href : '')
 
   const shareText = encodeURIComponent(title)
@@ -169,7 +172,7 @@ function ShareButtons({ title }: { title: string }) {
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(getUrl())
-      toast.success('Link copied to clipboard')
+      toast.success(t('blogDetail.linkCopied'))
     } catch {
       toast.error('Failed to copy link')
     }
@@ -178,11 +181,11 @@ function ShareButtons({ title }: { title: string }) {
   const buttons: { icon: LucideIcon; label: string; onClick: () => void }[] = [
     { icon: Twitter, label: 'Share on Twitter/X', onClick: onTwitter },
     { icon: Linkedin, label: 'Share on LinkedIn', onClick: onLinkedIn },
-    { icon: Link2, label: 'Copy link', onClick: onCopy },
+    { icon: Link2, label: t('blogDetail.copyLink'), onClick: onCopy },
   ]
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" aria-label={t('blogDetail.share')}>
       {buttons.map(({ icon: Icon, label, onClick }) => (
         <button
           key={label}
@@ -201,7 +204,7 @@ function ShareButtons({ title }: { title: string }) {
         className="hidden items-center gap-1.5 rounded-full border border-border/60 bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/40 hover:text-primary sm:inline-flex"
       >
         <Copy className="h-3.5 w-3.5" />
-        Copy link
+        {t('blogDetail.copyLink')}
       </button>
     </div>
   )
@@ -299,6 +302,7 @@ const markdownComponents: Components = {
 /* ------------------------------ TOC ------------------------------ */
 
 function TableOfContents({ items }: { items: { id: string; text: string }[] }) {
+  const t = useT()
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault()
     const el = document.getElementById(id)
@@ -312,10 +316,10 @@ function TableOfContents({ items }: { items: { id: string; text: string }[] }) {
   if (items.length === 0) return null
 
   return (
-    <nav aria-label="Table of contents" className="text-sm">
+    <nav aria-label={t('blogDetail.contents')} className="text-sm">
       <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         <List className="h-3.5 w-3.5" />
-        On this page
+        {t('blogDetail.contents')}
       </p>
       <ul className="space-y-1 border-l border-border/60">
         {items.map((item) => (
@@ -338,6 +342,9 @@ function TableOfContents({ items }: { items: { id: string; text: string }[] }) {
 
 function CompactCard({ post }: { post: BlogPost }) {
   const openDetail = useNav((s) => s.openDetail)
+  const t = useT()
+  const lang = useLang((s) => s.lang)
+  const title = tc('blogPost', post.slug, 'title', post.title, lang)
   return (
     <article
       onClick={() => openDetail('blog', post.slug)}
@@ -346,7 +353,7 @@ function CompactCard({ post }: { post: BlogPost }) {
       <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl">
         <img
           src={post.coverImage}
-          alt={post.title}
+          alt={title}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
@@ -358,11 +365,11 @@ function CompactCard({ post }: { post: BlogPost }) {
           </span>
         )}
         <h4 className="line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
-          {post.title}
+          {title}
         </h4>
         <p className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
-          {post.readingTime} min read
+          <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
         </p>
       </div>
     </article>
@@ -404,20 +411,22 @@ function ArticleSkeleton() {
 /* ------------------------------ not found ------------------------------ */
 
 function NotFound({ onBack }: { onBack: () => void }) {
+  const t = useT()
+  const lang = useLang((s) => s.lang)
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center justify-center gap-4 px-4 py-32 text-center">
       <div className="grid h-16 w-16 place-items-center rounded-full bg-destructive/10 text-destructive">
         <AlertCircle className="h-7 w-7" />
       </div>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Article not found</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('blogDetail.notFound')}</h1>
         <p className="mt-2 text-muted-foreground">
           The article you&apos;re looking for may have been moved or doesn&apos;t exist.
         </p>
       </div>
       <Button onClick={onBack} variant="outline" className="mt-2 rounded-full">
-        <ArrowLeft className="mr-1.5 h-4 w-4" />
-        Back to Blog
+        <ArrowLeft className={cn('mr-1.5 h-4 w-4', lang === 'fa' && 'rtl-flip mr-0 ml-1.5')} />
+        {t('blogDetail.back')}
       </Button>
     </div>
   )
@@ -430,6 +439,8 @@ export function BlogDetailView() {
   const closeDetail = useNav((s) => s.closeDetail)
   const setView = useNav((s) => s.setView)
   const { data, isLoading, isError } = useBlogPost(slug)
+  const t = useT()
+  const lang = useLang((s) => s.lang)
 
   const articleRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({
@@ -488,8 +499,8 @@ export function BlogDetailView() {
             onClick={handleBack}
             className="group mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-            Back to Blog
+            <ArrowLeft className={cn('h-4 w-4 transition-transform group-hover:-translate-x-0.5', lang === 'fa' && 'rtl-flip group-hover:translate-x-0.5')} />
+            {t('blogDetail.back')}
           </button>
         </Reveal>
 
@@ -502,10 +513,10 @@ export function BlogDetailView() {
               </Badge>
             )}
             <h1 className="text-balance text-3xl font-bold leading-[1.1] tracking-tight sm:text-4xl md:text-5xl">
-              {item.title}
+              {tc('blogPost', item.slug, 'title', item.title, lang)}
             </h1>
             <p className="mt-5 text-balance text-lg leading-relaxed text-muted-foreground sm:text-xl">
-              {item.excerpt}
+              {tc('blogPost', item.slug, 'excerpt', item.excerpt, lang)}
             </p>
 
             {/* meta row */}
@@ -517,20 +528,20 @@ export function BlogDetailView() {
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
                       <Calendar className="h-3 w-3" />
-                      {formatDate(item.createdAt)}
+                      <span className="ltr-num">{formatDate(item.createdAt)}</span>
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <Clock className="h-3 w-3" />
-                      {item.readingTime} min read
+                      <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
                       <FileText className="h-3 w-3" />
-                      {item.views} views
+                      <span className="ltr-num">{item.views}</span> {t('blogDetail.views')}
                     </span>
                   </div>
                 </div>
               </div>
-              <ShareButtons title={item.title} />
+              <ShareButtons title={tc('blogPost', item.slug, 'title', item.title, lang)} />
             </div>
           </header>
         </Reveal>
@@ -540,7 +551,7 @@ export function BlogDetailView() {
           <div className="mt-10 overflow-hidden rounded-2xl border border-border/60 shadow-sm">
             <img
               src={item.coverImage}
-              alt={item.title}
+              alt={tc('blogPost', item.slug, 'title', item.title, lang)}
               className="aspect-[16/8] w-full object-cover"
             />
           </div>
@@ -558,14 +569,14 @@ export function BlogDetailView() {
             {item.tags && item.tags.length > 0 && (
               <div className="mt-10 flex flex-wrap items-center gap-2 border-t border-border/60 pt-6">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Tags
+                  {t('blog.tags')}
                 </span>
-                {item.tags.map((t) => (
+                {item.tags.map((tg) => (
                   <span
-                    key={t.id}
+                    key={tg.id}
                     className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
                   >
-                    #{t.name}
+                    #{tg.name}
                   </span>
                 ))}
               </div>
@@ -580,7 +591,8 @@ export function BlogDetailView() {
                 </p>
                 <p className="text-base font-semibold">{item.authorName}</p>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  {item.views + 1} views · {item.readingTime} min read
+                  <span className="ltr-num">{item.views + 1}</span> {t('blogDetail.views')} ·{' '}
+                  <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
                 </p>
               </div>
             </div>
@@ -600,7 +612,7 @@ export function BlogDetailView() {
 
               {/* mini CTA in sidebar */}
               <div className="mt-4 rounded-2xl border border-border/60 bg-secondary p-5 text-secondary-foreground">
-                <p className="text-sm font-semibold">Like what you read?</p>
+                <p className="text-sm font-semibold">{t('blogDetail.likeCta')}</p>
                 <p className="mt-1 text-xs text-secondary-foreground/70">
                   We craft digital products that ship fast and scale gracefully.
                 </p>
@@ -609,8 +621,8 @@ export function BlogDetailView() {
                   onClick={() => setView('contact')}
                   className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
                 >
-                  Start your project
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  {t('blogDetail.startProject')}
+                  <ArrowRight className={cn('h-3.5 w-3.5', lang === 'fa' && 'rtl-flip')} />
                 </button>
               </div>
             </div>
@@ -623,7 +635,7 @@ export function BlogDetailView() {
             <SectionHeading
               align="left"
               eyebrow="Keep reading"
-              title="Related articles"
+              title={t('blogDetail.related')}
               description="More perspectives from our team."
             />
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -646,10 +658,10 @@ export function BlogDetailView() {
                 Let&apos;s build
               </span>
               <h2 className="text-balance text-2xl font-bold tracking-tight text-secondary-foreground md:text-3xl">
-                Have a project in mind?
+                {t('blogDetail.ctaTitle')}
               </h2>
               <p className="mt-3 text-base text-secondary-foreground/70">
-                Let&apos;s turn your idea into a fast, scalable, beautifully crafted digital product.
+                {t('blogDetail.ctaDesc')}
               </p>
               <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Button
@@ -657,8 +669,8 @@ export function BlogDetailView() {
                   onClick={() => setView('contact')}
                   className="rounded-full"
                 >
-                  Start your project
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
+                  {t('blogDetail.startProject')}
+                  <ArrowRight className={cn('ml-1.5 h-4 w-4', lang === 'fa' && 'rtl-flip ml-0 mr-1.5')} />
                 </Button>
                 <Button
                   size="lg"
@@ -666,7 +678,7 @@ export function BlogDetailView() {
                   onClick={() => setView('estimate')}
                   className="rounded-full border-white/20 bg-white/5 text-secondary-foreground hover:bg-white/10 hover:text-secondary-foreground"
                 >
-                  Get an estimate
+                  {t('cta.getEstimate')}
                 </Button>
               </div>
               <a
@@ -678,7 +690,7 @@ export function BlogDetailView() {
                 className="mt-6 inline-flex items-center gap-1 text-sm text-secondary-foreground/60 transition-colors hover:text-secondary-foreground"
               >
                 or subscribe to our newsletter
-                <ArrowUpRight className="h-3.5 w-3.5" />
+                <ArrowUpRight className={cn('h-3.5 w-3.5', lang === 'fa' && 'rtl-flip')} />
               </a>
             </div>
           </div>

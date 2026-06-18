@@ -1,0 +1,276 @@
+     1→# DevStudio — Web Development Agency Portfolio Platform
+     2→
+     3→## Project Overview
+     4→A premium web development agency portfolio platform. Originally requested as Laravel/PHP/Filament, delivered as the equivalent Next.js 16 + TypeScript + Prisma + shadcn/ui stack (per environment constraints). All requested features are implemented: Home, Portfolio (+detail), Case Studies (+detail), Blog (+detail), Contact, Estimate calculator, About, Admin panel, SEO (sitemap, robots, structured data), dark mode.
+     5→
+     6→## Tech Stack
+     7→- Next.js 16 (App Router) + TypeScript
+     8→- Prisma ORM + SQLite
+     9→- Tailwind CSS 4 + shadcn/ui (New York)
+    10→- Framer Motion (animations)
+    11→- Zustand (view navigation) + TanStack Query (server state)
+    12→- next-themes (dark mode)
+    13→
+    14→## Color System
+    15→- Primary: #2563EB (blue)
+    16→- Secondary: #0F172A (slate)
+    17→- Accent: #14B8A6 (teal)
+    18→- Background: white (light) / deep slate (dark)
+    19→
+    20→## Architecture (single-route SPA)
+    21→- All content rendered on `/` (per environment rule)
+    22→- Zustand `useNav` store switches between views: home | portfolio | case-studies | blog | contact | estimate | about | admin
+    23→- Detail views (portfolio/blog/case-study) triggered via `openDetail(view, slug)`
+    24→- API routes under `/api/*` for all data + admin CRUD
+    25→
+    26→## Database (Prisma models)
+    27→Portfolio, PortfolioCategory, Technology, BlogPost, BlogCategory, Tag, CaseStudy, Testimonial, TeamMember, Service, Lead, ContactRequest, Faq, Setting. Seeded via `src/lib/seed.ts`.
+    28→
+    29→## Key Files
+    30→- `src/app/page.tsx` — SPA shell (view switcher)
+    31→- `src/lib/store.ts` — navigation state
+    32→- `src/lib/hooks.ts` — data fetching hooks (TanStack Query)
+    33→- `src/components/site/*` — navbar, footer, reveal, counter, section-heading, logo, theme-toggle, scroll-progress
+    34→- `src/components/views/*` — all view components
+    35→- `src/app/api/*` — API routes (portfolio, blog, case-studies, site, contact, estimate, admin, filters, blog-filters)
+    36→
+    37→## API Routes
+    38→- GET /api/site — testimonials, team, services, faqs, settings
+    39→- GET /api/portfolio?featured&category&tech&q&sort&limit
+    40→- GET /api/portfolio/[slug] — detail + related + view increment
+    41→- GET /api/filters — portfolio categories + technologies
+    42→- GET /api/blog?category&tag&q&featured&limit
+    43→- GET /api/blog/[slug] — detail + related
+    44→- GET /api/blog-filters — blog categories + tags
+    45→- GET /api/case-studies?featured
+    46→- GET /api/case-studies/[slug]
+    47→- POST /api/contact — store contact request (validated)
+    48→- POST /api/estimate — calculate estimate + store lead
+    49→- GET/POST/PATCH/DELETE /api/admin?model=... — CMS CRUD (X-Admin-Token auth)
+    50→
+    51→---
+    52→Task ID: 0
+    53→Agent: Main (orchestrator)
+    54→Task: Set up foundation — schema, seed, theme, providers, store, hooks, API routes, shared site components, page shell
+    55→
+    56→Work Log:
+    57→- Defined Prisma schema with 14 models + relationships; ran db:push
+    58→- Wrote comprehensive seed (8 portfolios, 6 blog posts, 3 case studies, 6 testimonials, 6 team members, 8 services, 8 FAQs, 9 settings)
+    59→- Built premium color system in globals.css (primary #2563EB, accent #14B8A6) with dark mode, custom scrollbar, gradient/grid/glass utilities, float/marquee animations
+    60→- Set up Providers (ThemeProvider + QueryClientProvider) and updated layout.tsx with full SEO metadata + sticky-footer flex shell
+    61→- Built Zustand nav store (view + detailSlug + scrollTarget)
+    62→- Built data hooks for all entities + parseList helper
+    63→- Built all API routes (site, portfolio, portfolio/[slug], filters, blog, blog/[slug], blog-filters, case-studies, case-studies/[slug], contact, estimate, admin CRUD)
+    64→- Built sitemap.ts + updated robots.txt
+    65→- Built shared components: Navbar (scroll-aware, animated pill, mobile sheet), Footer (sticky, dark secondary bg), Reveal, Counter (animated stats), SectionHeading, Logo, ThemeToggle, ScrollProgress
+    66→- Built page.tsx SPA shell with AnimatePresence view transitions
+    67→
+    68→Stage Summary:
+    69→- Foundation complete and APIs verified working (curl tests passed for /api/site and /api/portfolio)
+    70→- Design language established: premium, minimal, blue/teal palette, large spacing, smooth motion
+    71→- Ready to build the 8 view components (home, portfolio+detail, case-studies+detail, blog+detail, contact, estimate, about, admin)
+    72→
+    73→---
+    74→Task ID: 2-e
+    75→Agent: full-stack-developer (About view)
+    76→Task: Build AboutView
+    77→
+    78→Work Log:
+    79→- Read worklog.md and inspected shared site components (Reveal, SectionHeading, Counter), shadcn primitives (Button, Card, Skeleton), hooks (useSite, useNav), and globals.css utility classes (bg-grid, bg-radial-fade, animate-marquee, mask-fade-x, text-gradient, shadow-soft, shadow-glow)
+    80→- Created src/components/views/about-view.tsx with 'use client' directive and named AboutView export plus a private TeamCard sub-component
+    81→- Built all 8 sections: (1) Hero with grid + radial fade background and dual CTA buttons wired to setView('portfolio') / setView('contact'); (2) Story two-column with compelling 3-paragraph agency narrative and a stat collage (founded 2012, 180+ shipped, 92% retention, distributed HQ); (3) Mission/Vision/Values as 3 icon cards (Target, Eye, Heart) with meaningful copy; (4) Stats band on bg-secondary with 4 Counter stats (180+, 12+, 98%, 30+); (5) Team grid from useSite().team with avatar ring, 2-line clamp bio, filtered social links (linkedin/github/twitter), hover lift + avatar zoom, Reveal stagger; (6) Values deep-dive with 6 commitment cards (Quality First, Transparent Communication, Long-term Partnership, Continuous Learning, Client Success, Senior-Only Team); (7) Technologies marquee with 12 tech pills, duplicated list, animate-marquee + mask-fade-x for infinite scroll with fade edges; (8) Final CTA band "Ready to work with us?" with button to setView('contact')
+    82→- Loading skeletons (6 placeholder cards) shown while useSite() resolves; Reveal entrance animations and SectionHeading used throughout
+    83→- Ran bun run lint; cleaned one unused eslint-disable directive in the new file. Remaining lint issues are pre-existing in other agents' files (theme-toggle.tsx, case-studies-view.tsx, case-study-detail-view.tsx) and left untouched per "do not modify other files" rule
+    84→
+    85→Stage Summary:
+    86→- File delivered: src/components/views/about-view.tsx (~460 lines, single named export AboutView, private TeamCard helper)
+    87→- Lint-clean for this file: zero errors, zero warnings introduced
+    88→- All imports verified against existing modules; view is already wired into src/app/page.tsx (import + switch case), so no other files needed modification
+    89→- Fully responsive (mobile-first), premium aesthetic with shadow-soft/shadow-glow, rounded-2xl, hover transitions, and proper dark-mode design tokens
+    90→
+    91→---
+    92→Task ID: 2-d
+    93→Agent: full-stack-developer (Contact + Estimate views)
+    94→Task: Build ContactView and EstimateView
+    95→
+    96→Work Log:
+    97→- Read worklog + existing foundation (store, section-heading, reveal, counter, contact/estimate API routes, slider/select/radio-group/card components) to align with established conventions and API contracts
+    98→- Created `src/components/views/contact-view.tsx`:
+    99→  - 'use client', named export `ContactView`, two-column responsive layout (max-w-6xl, py-20 sm:py-28)
+   100→  - Left column: SectionHeading (eyebrow "Get in touch", gradient title), intro, contact detail cards (email/phone/address with icons, hover lift + glow), accent response-time promise banner, "What happens next" 3-step list (Discovery call / Proposal / Kickoff) with numbered badges, social links row
+   101→  - Right column: Card with header + form: Full Name (required), Company (optional), Email (required, validated), Phone (optional), Budget (Select with 5 ranges), Project Description (Textarea rows=5, required + min length)
+   102→  - Plain controlled inputs + Label, inline error messages, aria-invalid, useState form/errors/submitting/submitted
+   103→  - Submit POSTs JSON to `/api/contact`; on success shows animated success state (spring checkmark, "Message sent! We'll get back to you within 24 hours.", "Send another message" button); on error → `toast.error` from sonner
+   104→  - Submit button shows spinner + "Sending…" while loading; bottom CTA strip links to estimate-cta
+   105→- Created `src/components/views/estimate-view.tsx`:
+   106→  - 'use client', named export `EstimateView`, root `<section id="estimate-cta">` (max-w-3xl, py-20 sm:py-28)
+   107→  - Hero SectionHeading ("Project Estimator" / "Get an instant estimate" / description)
+   108→  - Animated progress bar + "Question X of 7" indicator
+   109→  - 7-step wizard with framer-motion AnimatePresence slide/fade transitions (custom direction):
+   110→    1. Project Type — RadioGroup with custom RadioCard grid (7 options, icons, hover/select states)
+   111→    2. Number of Pages — segmented control (1-5, 6-10, 11-20, 20+) mapping to representative numbers (5/10/20/25)
+   112→    3-7. Yes/No toggle cards (Admin / Payment / Auth / Mobile App / AI) with active color theming
+   113→  - Back/Next nav; Next disabled until answered; last step shows "See estimate" button
+   114→  - "Calculating" stage with spinner + ping animation, then POSTs to `/api/estimate` with `{answers}`
+   115→  - Result screen: animated gradient cost range using Counter component (min/max), staggered breakdown list from `estimate.breakdown`, disclaimer note, lead capture form (Name/Email required + validated, Phone/Company optional) POSTing `{answers, contact}` to `/api/estimate`
+   116→  - Saved confirmation screen: spring party-popper icon, personalized greeting, "Book a call" → `setView('contact')` and "Run another estimate" → restart
+   117→  - Trust strip footer (no spam / no payment / real humans)
+   118→- Ran `bun run lint` — only pre-existing error in `src/components/site/theme-toggle.tsx` (foundation Task 0 file, not touched by this task); no errors introduced in either new file
+   119→
+   120→Stage Summary:
+   121→- Both `ContactView` and `EstimateView` created and lint-clean; fully wired to existing `/api/contact` and `/api/estimate` routes and to the `useNav` store for cross-view navigation (estimate → contact via "Book a call")
+   122→- Premium aesthetic matches foundation: gradient text, shadow-soft/shadow-glow, rounded-2xl, hover micro-interactions, framer-motion transitions, mobile-first responsive, dark-mode token usage
+   123→- API contract verified: contact form sends {fullName, company, email, phone, budget, message}; estimate sends {answers} then {answers, contact}; both consume the documented response shapes ({ok, id} and {ok, estimate:{min,max,breakdown}, estimatedCost, leadId})
+   124→- Files created:
+   125→  - /home/z/my-project/src/components/views/contact-view.tsx
+   126→  - /home/z/my-project/src/components/views/estimate-view.tsx
+   127→
+   128→---
+   129→Task ID: 2-f
+   130→Agent: full-stack-developer (Admin view)
+   131→Task: Build AdminView (CMS panel)
+   132→
+   133→Work Log:
+   134→- Read worklog.md, prisma/schema.prisma, /api/admin/route.ts, src/lib/store.ts and shadcn component APIs (table, dialog, alert-dialog, switch, button, badge, select) to align with established conventions
+   135→- Designed a single source of truth: MODEL_CONFIGS mapping each of the 14 resources (portfolio, portfolioCategory, technology, blogPost, blogCategory, tag, caseStudy, testimonial, teamMember, service, faq, lead, contactRequest, setting) to { label, singular, icon, description, listColumns, formFields, readOnly? }
+   136→- Per-model form field config supports text/textarea/number/switch/json/select field types; JSON fields (gallery, features, metrics, answers) render as Textarea with JSON parsing/validation on serialize
+   137→- Built LoginCard gate: password-style token input defaulting to `devstudio-admin`; on submit fetches `GET /api/admin?model=setting` to verify the token against the X-Admin-Token header; shows toast on success/failure
+   138→- Built Dashboard layout: sticky top bar (Admin Panel title, "Authenticated" badge, Back-to-site → useNav.setView('home'), Logout) + left sidebar listing all 14 resource types with icons + active highlight + "RO" badge for read-only models + mobile drawer toggle; main area renders a per-model RecordTable
+   139→- RecordTable: TanStack Query (queryKey ['admin', model]) for fetch, sticky TableHeader, columns = ID (truncated, monospace) + configured key fields (with boolean rendering as Yes/No badges) + createdAt (formatted) + actions; max-h-[60vh] overflow-y-auto scroll area; live search input + Refresh button + New button (hidden for read-only); skeleton rows while loading; error state with retry
+   140→- EditDialog: dynamic DynamicForm rendering per field type; supports create (POST) and edit (PATCH, pre-filled via hydrateFormFromRecord); serializeForm validates JSON fields and throws user-facing errors; uses TanStack useMutation with query invalidation and sonner toasts
+   141→- ViewDialog: read-only detail viewer for lead & contactRequest showing all submitted fields in a grid inside ScrollArea
+   142→- DeleteDialog: AlertDialog confirmation showing the record's primary label; DELETE via useMutation; destructive button styling; toast on success/error
+   143→- All API requests use relative `/api/admin` URL with `X-Admin-Token` header from local state; no hardcoded ports
+   144→- Used design tokens (bg-primary, text-primary-foreground, bg-muted, text-muted-foreground, border-border, bg-background) consistently; responsive (mobile sidebar drawer, hidden labels on small screens)
+   145→- Ran `bun run lint`: admin-view.tsx passes with zero errors/warnings (the only remaining lint error is a pre-existing one in src/components/site/theme-toggle.tsx which I did not touch)
+   146→
+   147→Stage Summary:
+   148→- File created: /home/z/my-project/src/components/views/admin-view.tsx (~830 lines, single self-contained client component)
+   149→- Exports named `AdminView` (and default export) for import by src/app/page.tsx
+   150→- Full CMS CRUD against /api/admin for all 14 resource types with login gate, dashboard, dynamic forms, search, toasts, loading & error states
+   151→- Looks like a mini Filament admin: sticky top bar, iconified sidebar, clean tables, polished dialogs
+   152→- Lint clean for the new file; ready for integration once sibling view files (home-view, portfolio-view, etc.) land from other agents
+   153→
+   154→---
+   155→Task ID: 2-c
+   156→Agent: full-stack-developer (Case Studies views)
+   157→Task: Build CaseStudiesView and CaseStudyDetailView
+   158→
+   159→Work Log:
+   160→- Read worklog.md to understand design system (blue/teal palette, shadow-soft, rounded-2xl, Reveal/SectionHeading shared components, useNav store, useCaseStudies/useCaseStudy hooks, parseList helper, CaseStudy interface)
+   161→- Verified metrics JSON shape from seed.ts: array of {label, value} — used parseList<CaseStudyMetric> for safe parsing
+   162→- Built `case-studies-view.tsx`:
+   163→  * Hero section with bg-grid + bg-radial-fade utilities, SectionHeading (eyebrow "Case Studies", title "Real results, real impact" with text-gradient on "real impact"), description, and a small feature row
+   164→  * Grid of CaseStudyCard: 1 col mobile / 2 col desktop; each card has aspect-video cover image with hover zoom (group-hover:scale-105), industry badge (white-on-blur), client name (primary), title (bold), summary (line-clamp-2), 3 metric chips with accent values, "Read Case Study →" with arrow translate on hover; whole card calls openDetail('case-studies', slug)
+   165→  * Loading state: 4 skeleton cards (aspect-video + content blocks)
+   166→  * Empty/error state: dashed-border card with FileSearch icon + CTA to contact
+   167→  * Bottom CTA: secondary-bg rounded-3xl panel with grid overlay + blurred accent/primary blobs, "Become our next success story" → setView('contact')
+   168→- Built `case-study-detail-view.tsx`:
+   169→  * Reads detailSlug from useNav; uses useCaseStudy(slug)
+   170→  * Back button "← Back to Case Studies" at top of hero
+   171→  * Hero: industry badge (primary/10 bg), large title (text-5xl on md), client name + industry row, cover image (aspect-video rounded-2xl with shadow-soft)
+   172→  * Metrics banner: grid-cols-2 / sm:grid-cols-4 of MetricStat cards with big accent-colored values
+   173→  * Body: lg:grid-cols-[1fr_220px] split — article column with 7 SectionBlocks + sticky TOC sidebar on desktop
+   174→  * Section blocks (each with icon badge + heading + Paragraphs that split on \n): Problem (AlertCircle), Analysis (Search), Architecture (Network), Development Process (GitBranch), Challenges (AlertTriangle), Results (TrendingUp, highlighted with bg-accent/5 + border-accent/30), Lessons Learned (Lightbulb)
+   175→  * Sticky TOC: IntersectionObserver-based active section highlight (rootMargin -30%/-55%), click-to-jump smooth scroll, hidden on mobile
+   176→  * Loading skeleton + NotFoundState (AlertTriangle + "Case study not found" + back button)
+   177→  * Final CTA: "Let's build your success story" → setView('contact')
+   178→  * Container: max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 (narrower than portfolio for reading comfort)
+   179→- Fixed one TypeScript error: Reveal component doesn't accept `id` prop — wrapped SectionBlock's Reveal in a `<div id={section.id} className="scroll-mt-28">` instead
+   180→- Removed unused eslint-disable comments for @next/next/no-img-element (rule not active in this project)
+   181→
+   182→Stage Summary:
+   183→- Both files written and integrated with existing src/app/page.tsx (already imports CaseStudiesView + CaseStudyDetailView)
+   184→- Lint: my files report 0 errors / 0 warnings (one pre-existing theme-toggle.tsx error untouched — out of scope)
+   185→- TypeScript: 0 errors on my files via `bunx tsc --noEmit`
+   186→- Premium aesthetic achieved: staggered Reveal entrances, hover-zoom cover images, accent-colored metric values, sticky reading-progress TOC with IntersectionObserver, accent-highlighted Results section, secondary-bg CTAs with blurred color blobs
+   187→- agent-ctx record written at /home/z/my-project/agent-ctx/2-c-case-studies-views.md with integration notes for sibling agents
+   188→
+   189→---
+   190→Task ID: 2-a
+   191→Agent: full-stack-developer (Portfolio views)
+   192→Task: Build PortfolioView and PortfolioDetailView
+   193→
+   194→Work Log:
+   195→- Read worklog.md, hooks.ts (Portfolio interface, usePortfolios/usePortfolio/usePortfolioFilters/parseList), store.ts (useNav with openDetail/closeDetail/setView/detailSlug), globals.css design tokens (text-gradient, shadow-soft, bg-grid, bg-radial-fade), and existing shadcn ui components (button, card, badge, input, skeleton, select, dialog) for consistent API usage
+   196→- Built `src/components/views/portfolio-view.tsx`: hero with eyebrow "Our Work" + gradient title; sticky glass filter bar (search input, category chips, technology chips with colored dots, Sort Select: Newest/Oldest/Title A-Z/Most Viewed); local state memoised into params and passed to `usePortfolios(params)`; responsive 1/2/3-col grid; each card has aspect-video cover with hover zoom, category badge overlay, view count chip, 2-line summary, tech badges (max 4 + "+N"), year/client meta, "View Project" link with animated arrow; click → openDetail('portfolio', slug); loading skeletons, error state, empty state with clear-filters; staggered Reveal entrance; bottom CTA band → setView('contact')
+   197→- Built `src/components/views/portfolio-detail-view.tsx`: reads detailSlug from useNav, uses usePortfolio(slug); back button → closeDetail(); hero with category/featured badges, big title, summary, client/year/views meta, liveUrl/repoUrl external buttons, large cover image with motion entrance; Overview section (Problem/Solution/Result) with AlertCircle/Lightbulb/TrendingUp icons and rose/amber/emerald tone styles; Technologies Used pills with inline color dots; Features grid parsed via parseList with check-icon cards; Gallery section with masonry-style spans and shadcn Dialog lightbox; Case Study section (Challenge/Architecture/Implementation/Outcome) with Flag/Layers/Code2/Trophy icons and step labels; Related Projects smaller cards opening detail; Final CTA → setView('contact'); loading skeleton, not-found state, error handled; generous py-16/sm:py-20 spacing with max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+   198→- Removed unused imports (Loader2, ImageOff, CardContent) and confirmed no unused symbols
+   199→- Ran `bun run lint` — both new files clean (zero errors). Pre-existing theme-toggle.tsx error is out of scope
+   200→- Verified dev server: previous "Module not found" errors for portfolio-view and portfolio-detail-view are resolved
+   201→
+   202→Stage Summary:
+   203→- Two premium, production-ready portfolio view components delivered and lint-clean
+   204→- Full filter/sort/search flow wired to API params via `usePortfolios`
+   205→- Detail page covers all required sections (overview, tech, features, gallery with lightbox, case study with 4 sub-sections, related, CTA) plus loading/error/not-found states
+   206→- Worklog and agent-ctx record (2-a-portfolio-views.md) written
+   207→
+   208→---
+   209→Task ID: 2-b
+   210→Agent: full-stack-developer (Blog views)
+   211→Task: Build BlogView and BlogDetailView
+   212→
+   213→Work Log:
+   214→- Read project foundation (worklog, hooks, store, design system, seed data, navbar/footer for design consistency)
+   215→- Created `src/components/views/blog-view.tsx` (~473 lines): hero with eyebrow "Insights" + gradient title; featured post as large 2-col hero card (image + category/Featured badges + title + excerpt + author + reading time + relative date + animated arrow CTA); filter bar with rounded search input, category chips (Topics), tag chips (Tags, max 12, #prefixed), status row "Showing N articles · Clear all"; responsive 1/2/3 col grid of cards with aspect-video cover (hover zoom), category badge overlay, 2-line clamp title/excerpt, author avatar (initials fallback) + reading time + formatted date; click → `openDetail('blog', slug)`; FeaturedSkeleton + 6× BlogCardSkeleton loaders; dashed empty state with Clear filters button; staggered `Reveal` entrance; decorative `bg-radial-fade`
+   216→- Created `src/components/views/blog-detail-view.tsx` (~690 lines): back button "← Back to Blog" (calls `closeDetail()` + `setView('blog')` to safely return to listing); reading progress bar via `framer-motion` `useScroll` on article ref + `useSpring`, fixed `top-16` gradient bar with `origin-left`/`scaleX`; article hero (max-w-4xl) with category badge, large title, excerpt subtitle, meta row (avatar + name + date + reading time + views + share buttons); cover image (aspect-16/8, rounded-2xl); two-column `lg:grid-cols-3` layout with content (lg:col-span-2) + sticky TOC sidebar (lg:col-span-1, `lg:sticky lg:top-24`); markdown rendered via `react-markdown` with custom `Components` (h1/h2/h3/h4 with `scroll-mt-24`, h2 gets slugified `id` for anchoring + border-b; styled p/a/ul/ol/li/blockquote/code/pre/table/strong/em/hr); TOC parsed from `## ` lines (skipping code blocks) and rendered as smooth-scroll anchor links; sidebar also has mini "Like what you read?" CTA; tags row + author footer card after content; related articles section with horizontal CompactCards; final dark CTA band ("Have a project in mind?" + Start your project / Get an estimate buttons + newsletter link); ArticleSkeleton loader + AlertCircle not-found state; share buttons use `sonner` toast for copy-link feedback
+   217→- Used helpers: `getInitials`, `colorFromString` (8-color palette), `formatDate`/`relativeDate` (date-fns), `slugify`, `extractText` (recursive ReactNode text extraction), `extractTOC` (markdown h2 parser)
+   218→- Ran `bun run lint`: my two files report 0 errors / 0 warnings. The only remaining error is pre-existing in `theme-toggle.tsx` (set-state-in-effect rule from Task 0, out of scope per "do NOT modify other files"). `bunx tsc --noEmit`: 0 errors in my files.
+   219→
+   220→Stage Summary:
+   221→- Both `BlogView` and `BlogDetailView` are production-ready, fully typed, lint-clean, and follow the established premium design language (Stripe/Linear/Vercel aesthetic: large spacing, rounded-2xl/3xl, subtle shadows, hover transitions, gradient text, radial fades)
+   222→- All required features implemented: featured hero card, search + category/tag filters, responsive grid, markdown rendering with prose-like styling, sticky TOC with smooth scroll, reading progress bar, share buttons (Twitter/LinkedIn/Copy link with toast), related articles, final CTA, loading skeletons, empty/not-found states
+   223→- Integration: files import correctly from `@/lib/hooks` (useBlogPosts, useBlogPost, useBlogFilters, BlogPost), `@/lib/store` (useNav), `@/components/site/*` (Reveal, SectionHeading), `@/components/ui/*` (Badge, Button, Input, Skeleton). Page.tsx already imports both components — they will render correctly once the parallel home-view agent's file is in place.
+   224→- Note for orchestrator: the store's `closeDetail()` hard-codes `view: 'portfolio'`; my BlogDetailView calls `closeDetail()` (per task spec) followed by `setView('blog')` to ensure correct back navigation. Case-studies agent (2-c) used the same pattern. The orchestrator may want to update `closeDetail` to be view-aware to simplify this across all detail views.
+   225→
+   226→---
+   227→Task ID: 3
+   228→Agent: Main (orchestrator)
+   229→Task: Build Home view, fix bugs, browser verification, finalize
+   230→
+   231→Work Log:
+   232→- Built HomeView with all 9 sections: Hero (gradient headline, animated dashboard mockup, floating AI badge), Trusted-by marquee, Statistics (animated counters), Featured Portfolio (6 cards), Services (8 cards w/ icons + features), Development Process (7 steps on dark bg), Testimonials slider (with dots + prev/next), Technologies grid, FAQ accordion, Final CTA (gradient band)
+   233→- Fixed theme-toggle lint error (react-hooks/set-state-in-effect) by switching to useSyncExternalStore for mounted detection
+   234→- Fixed nav bug: "Get Estimate" button + Final CTA "Get an estimate" now navigate to Estimate view (was scrolling to CTA)
+   235→- Fixed admin API 500 error: Setting model lacks createdAt, so admin GET now sorts by updatedAt for setting model
+   236→- Added discreet "Admin" link in footer for CMS access
+   237→- Browser verification (agent-browser) confirmed:
+   238→  * Home renders all sections correctly (hero, stats, portfolio cards w/ images, services, process, testimonials, FAQ, CTA)
+   239→  * Portfolio detail opens with all sections (overview, tech, features, gallery lightbox, case study, related)
+   240→  * Blog view loads with featured post + filters
+   241→  * Estimate wizard progresses through 7 steps
+   242→  * Contact form submits → "Message sent!" success state → data stored in DB (verified)
+   243→  * Admin panel: login works, dashboard shows all 14 resource types, portfolio table loads with Edit/Delete
+   244→  * Dark mode toggles correctly (.dark class applied, premium dark slate theme)
+   245→  * About view renders (story, mission/vision/values, team grid)
+   246→  * Case Studies view renders (3 case studies)
+   247→- Lint passes with 0 errors across entire codebase
+   248→
+   249→Stage Summary:
+   250→- All 15 todos complete. Platform fully functional and browser-verified.
+   251→- Premium design achieved: blue #2563EB primary, teal #14B8A6 accent, dark mode, smooth Framer Motion animations, responsive layouts, sticky footer.
+   252→- Full CMS via admin panel (token: devstudio-admin), lead capture (contact + estimate), SEO (sitemap, robots, metadata).
+   253→- Equivalent to the requested Laravel/Filament platform, delivered on Next.js 16 + TypeScript + Prisma stack.
+   254→
+   255→---
+   256→Task ID: 4
+   257→Agent: Main (orchestrator)
+   258→Task: Add bilingual (Persian/English + RTL) support — i18n foundation
+   259→
+   260→Work Log:
+   261→- Created comprehensive i18n dictionary (src/lib/i18n.ts) with ~250 UI string keys in both en and fa (nav, hero, stats, services, process, testimonials, tech, faq, cta, footer, portfolio, blog, case-studies, contact, estimate, about, admin, common)
+   262→- Created language store (src/lib/lang-store.ts) with Zustand + localStorage persistence (useLang, useT, useDir hooks)
+   263→- Created content translation map (src/lib/content-i18n.ts) for dynamic content (portfolio/blog/case-study titles+summaries/excerpts in fa, keyed by slug, with tc() helper + English fallback)
+   264→- Added Vazirmatn Persian font via next/font/google in layout.tsx
+   265→- Created LangDirection component that sets <html lang/dir> and toggles .lang-fa class
+   266→- Added RTL CSS support in globals.css (Vazirmatn font for lang-fa, .ltr-num for LTR numbers, .rtl-flip to mirror icons, code blocks stay LTR)
+   267→- Created LanguageToggle component (dropdown with 🇬🇧 English / 🇮🇷 فارسی)
+   268→- Updated Navbar with i18n (all nav labels from dictionary, language toggle, RTL-aware margins/sheet side)
+   269→- Updated Footer with i18n (all section titles, link labels, contact info, copyright)
+   270→- Browser-verified: language dropdown works, switching to fa sets dir="rtl" lang="fa", nav shows Persian labels (خانه/نمونه‌کارها/وبلاگ/تماس)
+   271→
+   272→Stage Summary:
+   273→- i18n foundation complete and verified working in browser
+   274→- All UI chrome (navbar + footer) fully bilingual with RTL
+   275→- Ready to update the 8 view components to consume translations (parallel subagents next)
+   276→
