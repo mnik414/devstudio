@@ -848,3 +848,94 @@ Stage Summary:
 - Case Studies listing cards enhanced with hover overlays, gradient borders, metrics display, slide-up CTAs
 - All features work in both English (LTR) and Persian (RTL) modes
 - Platform continues to be stable and increasingly premium
+
+---
+Task ID: 12-b
+Agent: full-stack-developer (blog share + portfolio related)
+Task: Enhance blog post share buttons (premium circular design with brand-color hovers + Facebook) and transform the portfolio detail "Related Projects" section into an RTL-aware snap-scroll carousel with arrows + progress dots.
+Work Log:
+- Read worklog.md to align with the design system (blue #2563EB / teal #14B8A6, Framer Motion, RTL via useT/useLang).
+- blog-detail-view.tsx:
+  - Added `AnimatePresence`, `Facebook`, `Share2` to the framer-motion/lucide imports.
+  - Rewrote `ShareButtons` with a premium layout: a "Share" header label with Share2 icon, a "0 shares" visual badge, and a row of circular `size-11` brand buttons (Twitter/X, LinkedIn, Facebook, copy-link) with per-brand gradient + brand-tinted glow on hover (`from-sky-500 to-blue-600`, `from-blue-600 to-blue-800`, `from-blue-700 to-indigo-700`, `from-primary to-accent`).
+  - Wrapped each icon in a `motion.span` with `AnimatePresence` + spring `whileHover`/`whileTap` for icon scale animation; added a subtle sheen overlay on hover.
+  - Added `onFacebook` calling `https://www.facebook.com/sharer/sharer.php?u=${url}` (Twitter/LinkedIn already wired); kept copy-link toast flow and the secondary copy-link pill button.
+- portfolio-detail-view.tsx:
+  - Added `useRef`, `useCallback` to React imports.
+  - Replaced the static 1/2/3-col grid with a new `RelatedProjects` component: horizontal scrollable carousel (`overflow-x-auto` + hidden scrollbar via `[scrollbar-width:none]`, webkit `<style>` override), `snap-x snap-mandatory` with each card `snap-start`, `scroll-smooth`.
+  - Added desktop circular arrow buttons (prev/next) with gradient hover (primary→accent) and disabled state based on scroll position; arrow icons swap (ChevronLeft/ChevronRight) when `lang === 'fa'` and scroll direction is inverted via `flex-row-reverse` + signed `scrollBy`.
+  - Added mobile-only animated "Swipe to explore" hint using a Framer Motion looping chevron.
+  - Added gradient edge-fade overlays on both sides of the carousel (positions swap for RTL).
+  - Added progress dots: clickable pills that scroll to the matching card, with an active `w-6 bg-gradient-to-r from-primary to-accent` indicator and a `1/N` counter (LTR-num enforced).
+  - Rewrote `RelatedCard`: fixed `w-72` width, `aspect-[16/10]` cover with `group-hover:scale-110` zoom, gradient overlay (`from-slate-950/80`), top row with category badge + padded index counter, bottom-overlay title (white drop-shadow), and a "View Project" pill button that fills with primary color on hover (RTL arrow flip preserved).
+  - Active card gets `ring-2 ring-primary/20` highlight driven by the carousel's scroll-position tracking.
+  - Fixed ESLint `react-hooks/set-state-in-effect` by deferring the initial `updateState` measurement through `requestAnimationFrame`.
+- Ran `bun run lint` — clean (0 errors, 0 warnings). Verified dev server recompiles successfully (dev.log shows fresh ✓ Compiled entries).
+Stage Summary:
+- Blog share row is now a premium branded experience: 4 circular brand-colored share buttons (Twitter/X, LinkedIn, Facebook, copy) with AnimatePresence-driven spring icon scaling, gradient hover fills, brand glow shadows, a Share2-labeled header, and a subtle "0 shares" visual counter. Copy-link toast flow preserved.
+- Portfolio "Related Projects" is now an interactive RTL-aware carousel: snap scrolling, gradient-hover navigation arrows (RTL-swapped), mobile swipe hint, clickable progress dots with active state + numeric counter, edge-fade overlays, and redesigned cards (fixed w-72, hover-zoom cover, gradient overlay, category badge, index counter, overlay title, hover-fill "View Project" pill). All existing data fetching, translation, and navigation logic untouched.
+
+---
+Task ID: 12-a
+Agent: full-stack-developer (home hero dashboard)
+Task: Enhance the Home view hero section's floating dashboard mockup to be more premium and realistic with line chart overlay, donut progress ring, sparklines, live activity indicator, floating notification cards, gradient glow, and mini metrics row.
+Work Log:
+- Read worklog.md and home-view.tsx to understand the existing dashboard structure and design system.
+- Verified available i18n keys (hero.activeUsers, hero.revenue, hero.conversion, hero.aiInsights, hero.live) and design tokens (shadow-soft, shadow-glow, text-gradient, ltr-num, bg-grid) exist.
+- Added three new data arrays after `dashboardStats` inside HomeView(): `dashboardSparkPaths` (3 SVG path strings for sparklines), `dashboardBars` (12-bar heights extracted from inline literal), and `dashboardMiniMetrics` (CPU/Memory/API/Uptime compact labels).
+- Replaced the entire Floating dashboard mockup section with an enhanced version implementing all 8 requested features:
+  1. Animated SVG line chart overlay on top of the bar chart using motion.path with pathLength 0→1 animation and gradient stroke (#2563EB → #14B8A6).
+  2. Donut/circular progress ring (87% Goal) using motion.circle with strokeDasharray/strokeDashoffset animation and gradient stroke.
+  3. Enhanced stat cards: each has a sparkline mini-chart, subtle gradient hover background, prominent pill-shaped trend indicator with ArrowUpRight icon, and hover lift effect.
+  4. Live activity indicator in browser chrome bar: pulsing green dot (animate-ping) + "Live" text in accent color, pushed to the right via ml-auto.
+  5. Two floating notification cards at the dashboard edges ("New signup +1" left, "Revenue goal reached" right) with spring physics (stiffness 200, damping 18), backdrop-blur-md, shadow-glow, and staggered delays.
+  6. Pulsing gradient glow behind the entire dashboard: motion.div animating background between primary→accent radial gradients over 6s with infinite repeat.
+  7. Enhanced bar chart: gradient fill (from-primary/40 to-accent), rounded-t-md tops, and a hover tooltip showing the bar value (visual only, via group-hover/bar).
+  8. Mini metrics row below the main chart: 4 compact cells (CPU 42%, Memory 68%, API 12ms, Uptime 99.9%) in a grid-cols-4 layout.
+- Preserved the existing browser chrome bar (3 dots + URL) and the existing AI insights floating card (top-right).
+- Used existing imports (ArrowUpRight, CheckCircle2, Sparkles, motion) — no new imports needed.
+- Wrapped all numeric values in <span className="ltr-num"> for Persian RTL mode.
+- Kept the dashboard height reasonable: still fits nicely in the hero (stat cards ~same height, chart area unchanged h-32, only added thin mini metrics row).
+- Ran `bun run lint` — passed with zero errors. Checked dev.log — no runtime errors.
+Stage Summary:
+- The hero dashboard mockup is now significantly more premium and realistic with 8 layered enhancements.
+- All animations use framer-motion (motion.path, motion.circle, motion.div) with carefully staggered delays so the dashboard "comes alive" progressively on mount.
+- The line chart overlay and donut ring share the same primary→accent gradient language as the rest of the design system.
+- Floating notification cards add depth via spring physics, backdrop-blur, and shadow-glow.
+- Pulsing gradient glow behind the dashboard shifts color between primary and accent, giving the mockup a living, premium feel.
+- No new i18n keys added; dashboard-only labels (Weekly Activity, Monthly Target, Goal, New signup +1, Revenue goal reached, CPU, Memory, API, Uptime) kept in English per task constraints.
+- File modified: /home/z/my-project/src/components/views/home-view.tsx (only the hero dashboard mockup section + 3 new data arrays; no other views touched).
+- Lint clean, dev server compiling successfully.
+
+---
+Task ID: 12
+Agent: Main (orchestrator) — cron review round
+Task: QA testing (admin CRUD), home hero dashboard enhancement, blog share + portfolio related carousel
+
+Work Log:
+- QA tested admin CRUD flow: created a test blog post (filled Title/Slug/Excerpt, saved), verified it appeared in table + API, then deleted it via confirm dialog — full CRUD works
+- Dispatched 2 parallel subagents:
+  * 12-a: Enhanced home hero dashboard mockup
+    - Line chart overlay: animated SVG path with pathLength 0→1, gradient stroke (primary→accent)
+    - Donut progress ring: 87% "Goal" with strokeDasharray animation, gradient stroke
+    - Enhanced stat cards: sparkline mini-charts, gradient hover background, pill trend badges with ArrowUpRight
+    - Live activity indicator: pulsing green dot + "Live" text in browser chrome bar
+    - Floating notification cards: "New signup +1" and "Revenue goal reached" with spring physics, backdrop-blur, shadow-glow
+    - Pulsing gradient glow: animated background behind dashboard (primary↔accent)
+    - Enhanced bar chart: gradient fill, rounded tops, hover tooltip
+    - Mini metrics row: CPU 42%, Memory 68%, API 12ms, Uptime 99.9%
+  * 12-b: Enhanced blog share buttons + portfolio related projects carousel
+    - Blog share: 4 circular brand buttons (Twitter/X, LinkedIn, Facebook, Copy link) with brand gradients on hover, AnimatePresence spring animations, actual share URLs (window.open), "0 shares" visual badge, Share2 icon header
+    - Portfolio related: horizontal scrollable carousel with snap-x snap-mandatory, circular gradient-hover prev/next arrows (disabled state tracking), mobile "Swipe to explore" hint, edge-fade gradient overlays, progress dots with gradient active state, 1/N counter, RTL-aware scroll direction
+- Verified hero dashboard: Live indicator, 87% Goal donut, CPU/Memory mini metrics, floating notification cards all visible
+- Verified blog share: Twitter/X, LinkedIn, Facebook, Copy link buttons all present; Twitter share opens real share URL in new tab
+- Verified related carousel: 3 related project cards with prev/next navigation, progress dots
+- Verified all features work in Persian RTL mode (no console errors)
+- Lint passes with 0 errors; all endpoints return 200
+
+Stage Summary:
+- Home hero dashboard mockup significantly enhanced with line chart, donut ring, sparklines, live indicator, floating cards, pulsing glow, mini metrics — feels like a real product dashboard
+- Blog share buttons now have real share URLs for Twitter/LinkedIn/Facebook + copy link with premium styling
+- Portfolio related projects transformed from static grid to interactive carousel with navigation, progress dots, RTL support
+- All features work in both English (LTR) and Persian (RTL) modes
+- Platform continues to be stable and increasingly premium

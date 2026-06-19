@@ -108,6 +108,24 @@ export function HomeView() {
     { label: t('hero.conversion'), value: '4.8%', trend: '+0.6pt' },
   ]
 
+  // Sparkline mini-charts for each stat card (viewBox 0 0 80 24)
+  const dashboardSparkPaths = [
+    'M2,18 L12,16 L22,17 L32,13 L42,12 L52,9 L62,7 L72,5 L78,3',
+    'M2,14 L12,17 L22,13 L32,15 L42,11 L52,12 L62,8 L72,6 L78,4',
+    'M2,16 L12,15 L22,16 L32,12 L42,13 L52,10 L62,11 L72,7 L78,6',
+  ]
+
+  // Bar chart heights (% of container)
+  const dashboardBars = [40, 65, 50, 80, 55, 90, 70, 95, 60, 85, 75, 100]
+
+  // Compact system metrics row
+  const dashboardMiniMetrics = [
+    { label: 'CPU', value: '42%' },
+    { label: 'Memory', value: '68%' },
+    { label: 'API', value: '12ms' },
+    { label: 'Uptime', value: '99.9%' },
+  ]
+
   return (
     <div className="overflow-hidden">
       {/* ===== HERO ===== */}
@@ -187,37 +205,235 @@ export function HomeView() {
             transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="relative mx-auto mt-16 max-w-5xl"
           >
-            <div className="absolute -inset-4 -z-10 rounded-3xl bg-gradient-to-tr from-primary/20 via-accent/10 to-transparent blur-2xl" />
+            {/* Pulsing gradient glow behind the entire dashboard */}
+            <motion.div
+              aria-hidden
+              initial={{ opacity: 0.5 }}
+              animate={{
+                opacity: [0.5, 0.85, 0.5],
+                background: [
+                  'radial-gradient(circle at 30% 30%, rgba(37,99,235,0.30), rgba(20,184,166,0.06) 60%, transparent 80%)',
+                  'radial-gradient(circle at 70% 55%, rgba(20,184,166,0.30), rgba(37,99,235,0.06) 60%, transparent 80%)',
+                  'radial-gradient(circle at 30% 30%, rgba(37,99,235,0.30), rgba(20,184,166,0.06) 60%, transparent 80%)',
+                ],
+              }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -inset-6 -z-10 rounded-[2rem] blur-2xl"
+            />
+
             <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft">
+              {/* Browser chrome bar */}
               <div className="flex items-center gap-1.5 border-b border-border/60 bg-muted/40 px-4 py-3">
                 <span className="h-3 w-3 rounded-full bg-red-400/80" />
                 <span className="h-3 w-3 rounded-full bg-yellow-400/80" />
                 <span className="h-3 w-3 rounded-full bg-green-400/80" />
                 <span className="ml-3 text-xs text-muted-foreground">devstudio.com/dashboard</span>
+
+                {/* Live activity indicator */}
+                <div className="ml-auto flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/5 px-2 py-0.5">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
+                  </span>
+                  <span className="text-[10px] font-semibold text-accent">{t('hero.live')}</span>
+                </div>
               </div>
+
+              {/* Dashboard body */}
               <div className="grid gap-4 p-5 sm:grid-cols-3">
-                {dashboardStats.map((stat) => (
-                  <div key={stat.label} className="rounded-xl border border-border/60 bg-background p-4">
-                    <p className="text-xs text-muted-foreground">{stat.label}</p>
-                    <p className="mt-1 text-2xl font-bold ltr-num">{stat.value}</p>
-                    <p className="mt-1 text-xs font-medium text-accent ltr-num">{stat.trend} ↑</p>
+                {/* Enhanced stat cards with sparklines */}
+                {dashboardStats.map((stat, idx) => (
+                  <div
+                    key={stat.label}
+                    className="group relative overflow-hidden rounded-xl border border-border/60 bg-background p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft"
+                  >
+                    {/* Subtle gradient background on hover */}
+                    <div className="absolute inset-0 -z-0 bg-gradient-to-br from-primary/0 via-transparent to-accent/0 opacity-0 transition-opacity duration-300 group-hover:from-primary/5 group-hover:to-accent/10 group-hover:opacity-100" />
+                    <div className="relative">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">{stat.label}</p>
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent ltr-num">
+                          <ArrowUpRight className="h-2.5 w-2.5" />
+                          {stat.trend}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-2xl font-bold ltr-num">{stat.value}</p>
+                      {/* Sparkline mini-chart */}
+                      <svg viewBox="0 0 80 24" className="mt-2 h-6 w-full" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id={`spark-${idx}`} x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#2563EB" />
+                            <stop offset="100%" stopColor="#14B8A6" />
+                          </linearGradient>
+                        </defs>
+                        <motion.path
+                          d={dashboardSparkPaths[idx]}
+                          fill="none"
+                          stroke={`url(#spark-${idx})`}
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          vectorEffect="non-scaling-stroke"
+                          initial={{ pathLength: 0, opacity: 0 }}
+                          animate={{ pathLength: 1, opacity: 1 }}
+                          transition={{ duration: 1, delay: 0.9 + idx * 0.12, ease: 'easeInOut' }}
+                        />
+                      </svg>
+                    </div>
                   </div>
                 ))}
+
+                {/* Chart area: bar chart + line overlay + donut ring */}
                 <div className="sm:col-span-3">
-                  <div className="flex h-32 items-end gap-2 rounded-xl border border-border/60 bg-background p-4">
-                    {[40, 65, 50, 80, 55, 90, 70, 95, 60, 85, 75, 100].map((h, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ height: 0 }}
-                        animate={{ height: `${h}%` }}
-                        transition={{ duration: 0.6, delay: 0.6 + i * 0.05 }}
-                        className="flex-1 rounded-t bg-gradient-to-t from-primary/40 to-accent"
-                      />
+                  <div className="grid grid-cols-1 gap-4 rounded-xl border border-border/60 bg-background p-4 sm:grid-cols-3">
+                    {/* Bar chart with animated line overlay */}
+                    <div className="relative sm:col-span-2">
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-xs font-medium text-muted-foreground">Weekly Activity</p>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary ltr-num">
+                          <ArrowUpRight className="h-2.5 w-2.5" />
+                          +18.2%
+                        </span>
+                      </div>
+                      <div className="relative h-32 w-full">
+                        {/* Bars */}
+                        <div className="absolute inset-0 flex items-end gap-2">
+                          {dashboardBars.map((h, i) => (
+                            <div key={i} className="group/bar relative flex-1">
+                              <motion.div
+                                initial={{ height: 0 }}
+                                animate={{ height: `${h}%` }}
+                                transition={{ duration: 0.6, delay: 0.6 + i * 0.05 }}
+                                className="rounded-t-md bg-gradient-to-t from-primary/40 to-accent"
+                              />
+                              {/* Hover tooltip (visual only) */}
+                              <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 rounded bg-foreground px-1.5 py-0.5 text-[9px] font-medium text-background opacity-0 shadow-soft transition-opacity duration-200 group-hover/bar:opacity-100">
+                                <span className="ltr-num">{h}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Trending line chart overlay */}
+                        <svg
+                          className="absolute inset-0 h-full w-full"
+                          viewBox="0 0 100 100"
+                          preserveAspectRatio="none"
+                          aria-hidden
+                        >
+                          <defs>
+                            <linearGradient id="trend-line" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#2563EB" />
+                              <stop offset="100%" stopColor="#14B8A6" />
+                            </linearGradient>
+                          </defs>
+                          <motion.path
+                            d="M2,75 Q15,65 22,58 T42,42 T62,32 T98,15"
+                            fill="none"
+                            stroke="url(#trend-line)"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            vectorEffect="non-scaling-stroke"
+                            initial={{ pathLength: 0 }}
+                            animate={{ pathLength: 1 }}
+                            transition={{ duration: 1.2, delay: 1.1, ease: 'easeInOut' }}
+                          />
+                        </svg>
+                      </div>
+                    </div>
+
+                    {/* Donut / circular progress indicator */}
+                    <div className="flex flex-col items-center justify-center gap-2 sm:border-l sm:border-border/60 sm:pl-4">
+                      <div className="relative h-24 w-24">
+                        <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100" aria-hidden>
+                          <defs>
+                            <linearGradient id="donut-grad" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor="#2563EB" />
+                              <stop offset="100%" stopColor="#14B8A6" />
+                            </linearGradient>
+                          </defs>
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="10"
+                            className="text-muted/40"
+                          />
+                          <motion.circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="none"
+                            stroke="url(#donut-grad)"
+                            strokeWidth="10"
+                            strokeLinecap="round"
+                            strokeDasharray="251.2"
+                            initial={{ strokeDashoffset: 251.2 }}
+                            animate={{ strokeDashoffset: 251.2 * (1 - 0.87) }}
+                            transition={{ duration: 1.4, delay: 0.8, ease: 'easeOut' }}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-xl font-bold ltr-num">87%</span>
+                          <span className="text-[9px] text-muted-foreground">Goal</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Monthly Target</p>
+                    </div>
+                  </div>
+
+                  {/* Mini metrics row */}
+                  <div className="mt-4 grid grid-cols-4 gap-2 rounded-xl border border-border/60 bg-background p-3">
+                    {dashboardMiniMetrics.map((m) => (
+                      <div key={m.label} className="text-center">
+                        <p className="text-[9px] uppercase tracking-wide text-muted-foreground">{m.label}</p>
+                        <p className="mt-0.5 text-xs font-semibold ltr-num">{m.value}</p>
+                      </div>
                     ))}
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Floating notification card — left edge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, x: -20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 18, delay: 1.2 }}
+              className="pointer-events-none absolute -left-4 top-1/3 hidden rounded-xl border border-border/60 bg-card/80 p-2.5 shadow-glow backdrop-blur-md sm:block"
+            >
+              <div className="flex items-center gap-2">
+                <div className="grid h-7 w-7 place-items-center rounded-lg bg-green-500/15 text-green-600">
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold">New signup +1</p>
+                  <p className="text-[8px] text-muted-foreground">2s ago</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Floating notification card — right edge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, x: 20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 18, delay: 1.5 }}
+              className="pointer-events-none absolute -right-4 bottom-1/4 hidden rounded-xl border border-border/60 bg-card/80 p-2.5 shadow-glow backdrop-blur-md sm:block"
+            >
+              <div className="flex items-center gap-2">
+                <div className="grid h-7 w-7 place-items-center rounded-lg bg-accent/15 text-accent">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold">Revenue goal reached</p>
+                  <p className="text-[8px] text-muted-foreground">Just now</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* AI insights floating card — top right */}
             <div className="pointer-events-none absolute -right-6 -top-6 hidden animate-float rounded-xl border border-border/60 bg-card p-3 shadow-soft sm:block">
               <div className="flex items-center gap-2">
                 <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15 text-accent">

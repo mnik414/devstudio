@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
-import { motion, useMotionValueEvent, useScroll, useSpring } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValueEvent, useScroll, useSpring } from 'framer-motion'
 import { format } from 'date-fns'
 import {
   ArrowLeft,
@@ -12,7 +12,9 @@ import {
   Calendar,
   Twitter,
   Linkedin,
+  Facebook,
   Link2,
+  Share2,
   Copy,
   FileText,
   AlertCircle,
@@ -147,6 +149,17 @@ function AuthorAvatar({
 
 /* ------------------------------ share buttons ------------------------------ */
 
+type ShareBrand = {
+  icon: LucideIcon
+  label: string
+  onClick: () => void
+  /** Tailwind gradient + brand text color classes applied on hover */
+  hoverRing: string
+  hoverBg: string
+  hoverText: string
+  glow: string
+}
+
 function ShareButtons({ title }: { title: string }) {
   const t = useT()
   const getUrl = () => (typeof window !== 'undefined' ? window.location.href : '')
@@ -169,6 +182,14 @@ function ShareButtons({ title }: { title: string }) {
       'noopener,noreferrer',
     )
   }
+  const onFacebook = () => {
+    const url = encodeURIComponent(getUrl())
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+      '_blank',
+      'noopener,noreferrer',
+    )
+  }
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(getUrl())
@@ -178,34 +199,106 @@ function ShareButtons({ title }: { title: string }) {
     }
   }
 
-  const buttons: { icon: LucideIcon; label: string; onClick: () => void }[] = [
-    { icon: Twitter, label: 'Share on Twitter/X', onClick: onTwitter },
-    { icon: Linkedin, label: 'Share on LinkedIn', onClick: onLinkedIn },
-    { icon: Link2, label: t('blogDetail.copyLink'), onClick: onCopy },
+  const brands: ShareBrand[] = [
+    {
+      icon: Twitter,
+      label: 'Share on Twitter/X',
+      onClick: onTwitter,
+      hoverRing: 'group-hover:border-sky-400/60',
+      hoverBg: 'group-hover:bg-gradient-to-br group-hover:from-sky-500 group-hover:to-blue-600',
+      hoverText: 'group-hover:text-white',
+      glow: 'group-hover:shadow-[0_8px_24px_-6px_rgba(2,132,199,0.55)]',
+    },
+    {
+      icon: Linkedin,
+      label: 'Share on LinkedIn',
+      onClick: onLinkedIn,
+      hoverRing: 'group-hover:border-blue-500/60',
+      hoverBg: 'group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-blue-800',
+      hoverText: 'group-hover:text-white',
+      glow: 'group-hover:shadow-[0_8px_24px_-6px_rgba(29,78,216,0.55)]',
+    },
+    {
+      icon: Facebook,
+      label: 'Share on Facebook',
+      onClick: onFacebook,
+      hoverRing: 'group-hover:border-blue-600/60',
+      hoverBg: 'group-hover:bg-gradient-to-br group-hover:from-blue-700 group-hover:to-indigo-700',
+      hoverText: 'group-hover:text-white',
+      glow: 'group-hover:shadow-[0_8px_24px_-6px_rgba(37,99,235,0.55)]',
+    },
+    {
+      icon: Link2,
+      label: t('blogDetail.copyLink'),
+      onClick: onCopy,
+      hoverRing: 'group-hover:border-primary/60',
+      hoverBg: 'group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-accent',
+      hoverText: 'group-hover:text-white',
+      glow: 'group-hover:shadow-[0_8px_24px_-6px_rgba(20,184,166,0.55)]',
+    },
   ]
 
   return (
-    <div className="flex items-center gap-2" aria-label={t('blogDetail.share')}>
-      {buttons.map(({ icon: Icon, label, onClick }) => (
+    <div className="flex flex-col gap-3" aria-label={t('blogDetail.share')}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+          <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-primary">
+            <Share2 className="h-4 w-4" />
+          </span>
+          {t('blogDetail.share')}
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+          <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+          <span className="ltr-num">0</span>
+          <span>shares</span>
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2.5">
+        {brands.map(({ icon: Icon, label, onClick, hoverRing, hoverBg, hoverText, glow }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={onClick}
+            aria-label={label}
+            title={label}
+            className={cn(
+              'group relative grid size-11 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all duration-300',
+              'hover:-translate-y-0.5 hover:border-transparent hover:shadow-soft',
+              hoverRing,
+              hoverBg,
+              hoverText,
+              glow,
+            )}
+          >
+            <AnimatePresence mode="wait">
+              <motion.span
+                key="icon"
+                initial={false}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                className="grid place-items-center"
+              >
+                <Icon className="h-[18px] w-[18px]" />
+              </motion.span>
+            </AnimatePresence>
+            {/* sheen on hover */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-white/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            />
+          </button>
+        ))}
         <button
-          key={label}
           type="button"
-          onClick={onClick}
-          aria-label={label}
-          title={label}
-          className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all duration-200 hover:scale-110 hover:border-primary/40 hover:bg-primary/10 hover:text-primary hover:shadow-soft"
+          onClick={onCopy}
+          className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:text-primary hover:shadow-soft"
         >
-          <Icon className="h-4 w-4" />
+          <Copy className="h-3.5 w-3.5" />
+          {t('blogDetail.copyLink')}
         </button>
-      ))}
-      <button
-        type="button"
-        onClick={onCopy}
-        className="hidden items-center gap-1.5 rounded-full border border-border/60 bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:text-primary sm:inline-flex"
-      >
-        <Copy className="h-3.5 w-3.5" />
-        {t('blogDetail.copyLink')}
-      </button>
+      </div>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft,
@@ -179,17 +179,11 @@ export function PortfolioDetailView() {
                 <div className="relative mt-2">
                   <span className="absolute -bottom-1 left-0 h-1 w-32 rounded-full bg-gradient-to-r from-primary to-accent" aria-hidden />
                 </div>
-                <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {related.map((r, i) => (
-                    <Reveal key={r.id} delay={Math.min(i * 0.08, 0.3)}>
-                      <RelatedCard
-                        item={r}
-                        lang={lang}
-                        onClick={() => openDetail('portfolio', r.slug)}
-                      />
-                    </Reveal>
-                  ))}
-                </div>
+                <RelatedProjects
+                  items={related}
+                  lang={lang}
+                  onOpen={(slug) => openDetail('portfolio', slug)}
+                />
               </div>
             </section>
           )}
@@ -708,16 +702,263 @@ function CaseStudySection({ item }: { item: Portfolio }) {
   )
 }
 
+/* ------------------------- Related projects carousel ------------------------- */
+
+function RelatedProjects({
+  items,
+  lang,
+  onOpen,
+}: {
+  items: Portfolio[]
+  lang: 'en' | 'fa'
+  onOpen: (slug: string) => void
+}) {
+  const isRtl = lang === 'fa'
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [canPrev, setCanPrev] = useState(false)
+  const [canNext, setCanNext] = useState(true)
+
+  /** Distance to advance when an arrow is clicked — uses the first card width. */
+  const getStep = useCallback(() => {
+    const el = scrollerRef.current
+    if (!el) return 320
+    const first = el.querySelector<HTMLElement>('[data-card]')
+    if (!first) return 320
+    const style = getComputedStyle(el)
+    const gap = parseFloat(style.columnGap || style.gap || '24') || 24
+    return first.offsetWidth + gap
+  }, [])
+
+  const updateState = useCallback(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    const cards = el.querySelectorAll<HTMLElement>('[data-card]')
+    if (cards.length === 0) return
+
+    // In RTL, scrollLeft is reported as a non-positive number in most browsers.
+    // Normalize to a 0..maxScroll positive distance from the visual start.
+    const maxScroll = el.scrollWidth - el.clientWidth
+    const raw = el.scrollLeft
+    const pos = isRtl ? Math.min(Math.abs(raw), maxScroll) : Math.min(Math.max(raw, 0), maxScroll)
+
+    setCanPrev(isRtl ? raw > -1 : pos > 1)
+    setCanNext(pos < maxScroll - 1)
+
+    // Determine the closest card to the visual start
+    const containerLeft = el.getBoundingClientRect().left
+    let closest = 0
+    let closestDist = Infinity
+    cards.forEach((card, i) => {
+      const dist = Math.abs(card.getBoundingClientRect().left - containerLeft)
+      if (dist < closestDist) {
+        closestDist = dist
+        closest = i
+      }
+    })
+    setActiveIndex(closest)
+  }, [isRtl])
+
+  useEffect(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    // Defer the initial measurement so we don't trigger a cascading render
+    // from inside the effect body.
+    const raf = requestAnimationFrame(updateState)
+    el.addEventListener('scroll', updateState, { passive: true })
+    window.addEventListener('resize', updateState)
+    return () => {
+      cancelAnimationFrame(raf)
+      el.removeEventListener('scroll', updateState)
+      window.removeEventListener('resize', updateState)
+    }
+  }, [updateState])
+
+  const scrollByCards = useCallback(
+    (dir: 1 | -1) => {
+      const el = scrollerRef.current
+      if (!el) return
+      // dir=1 means "next" visually. In RTL the scrollLeft value is negative,
+      // so we invert the sign to keep semantics consistent.
+      const step = getStep() * dir
+      el.scrollBy({ left: isRtl ? -step : step, behavior: 'smooth' })
+    },
+    [getStep, isRtl],
+  )
+
+  const scrollToIndex = useCallback(
+    (i: number) => {
+      const el = scrollerRef.current
+      if (!el) return
+      const cards = el.querySelectorAll<HTMLElement>('[data-card]')
+      const card = cards[i]
+      if (!card) return
+      el.scrollTo({
+        left: isRtl ? -(card.offsetLeft + card.offsetWidth - el.clientWidth) : card.offsetLeft,
+        behavior: 'smooth',
+      })
+    },
+    [isRtl],
+  )
+
+  const prev = () => scrollByCards(-1)
+  const next = () => scrollByCards(1)
+
+  return (
+    <div className="mt-8">
+      {/* Toolbar: hint + arrows */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        {/* Swipe hint — mobile only */}
+        <AnimatePresence>
+          <motion.span
+            key="swipe-hint"
+            initial={{ opacity: 0, x: isRtl ? 8 : -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:hidden"
+          >
+            <motion.span
+              animate={{ x: isRtl ? [0, 5, 0] : [0, -5, 0] }}
+              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+              className="inline-flex"
+            >
+              {isRtl ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
+            </motion.span>
+            <span>Swipe to explore</span>
+          </motion.span>
+        </AnimatePresence>
+
+        {/* Arrows — desktop */}
+        <div className="ml-auto hidden items-center gap-2 sm:flex">
+          <button
+            type="button"
+            onClick={prev}
+            disabled={!canPrev}
+            aria-label={isRtl ? 'Next projects' : 'Previous projects'}
+            className={cn(
+              'group grid size-10 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all duration-300',
+              'hover:-translate-y-0.5 hover:border-transparent hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-white hover:shadow-[0_8px_24px_-6px_rgba(20,184,166,0.55)]',
+              'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-background disabled:hover:text-muted-foreground disabled:hover:shadow-none',
+            )}
+          >
+            {isRtl ? <ChevronRight className="size-5 transition-transform group-hover:scale-110" /> : <ChevronLeft className="size-5 transition-transform group-hover:scale-110" />}
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            disabled={!canNext}
+            aria-label={isRtl ? 'Previous projects' : 'Next projects'}
+            className={cn(
+              'group grid size-10 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all duration-300',
+              'hover:-translate-y-0.5 hover:border-transparent hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-white hover:shadow-[0_8px_24px_-6px_rgba(20,184,166,0.55)]',
+              'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-background disabled:hover:text-muted-foreground disabled:hover:shadow-none',
+            )}
+          >
+            {isRtl ? <ChevronLeft className="size-5 transition-transform group-hover:scale-110" /> : <ChevronRight className="size-5 transition-transform group-hover:scale-110" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Carousel */}
+      <div className="relative">
+        <div
+          ref={scrollerRef}
+          className={cn(
+            'related-scroller flex gap-6 overflow-x-auto scroll-smooth pb-4',
+            'snap-x snap-mandatory',
+            '[scrollbar-width:none] [-ms-overflow-style:none]',
+            isRtl && 'flex-row-reverse',
+          )}
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {items.map((r, i) => (
+            <div
+              key={r.id}
+              data-card
+              className="snap-start shrink-0"
+            >
+              <RelatedCard
+                item={r}
+                lang={lang}
+                onClick={() => onOpen(r.slug)}
+                index={i}
+                active={i === activeIndex}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Edge fade overlays */}
+        <div
+          aria-hidden
+          className={cn(
+            'pointer-events-none absolute inset-y-0 w-12 bg-gradient-to-r from-muted/30 to-transparent',
+            isRtl ? 'left-0' : 'right-0',
+          )}
+        />
+        <div
+          aria-hidden
+          className={cn(
+            'pointer-events-none absolute inset-y-0 w-12 bg-gradient-to-l from-muted/30 to-transparent',
+            isRtl ? 'right-0' : 'left-0',
+          )}
+        />
+
+        {/* Hide native scrollbar — webkit */}
+        <style>{`
+          .related-scroller::-webkit-scrollbar { display: none; }
+        `}</style>
+      </div>
+
+      {/* Progress dots */}
+      <div className="mt-5 flex items-center justify-center gap-2 sm:justify-start">
+        {items.map((r, i) => {
+          const isActive = i === activeIndex
+          return (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => scrollToIndex(i)}
+              aria-label={`Go to project ${i + 1}`}
+              aria-current={isActive ? 'true' : undefined}
+              className="group p-1"
+            >
+              <span
+                className={cn(
+                  'block h-2 rounded-full transition-all duration-300',
+                  isActive
+                    ? 'w-6 bg-gradient-to-r from-primary to-accent'
+                    : 'w-2 bg-border group-hover:bg-primary/40',
+                )}
+              />
+            </button>
+          )
+        })}
+        <span className="ml-2 text-xs font-medium tabular-nums text-muted-foreground">
+          <span className="ltr-num text-foreground">{activeIndex + 1}</span>
+          <span className="mx-1">/</span>
+          <span className="ltr-num">{items.length}</span>
+        </span>
+      </div>
+    </div>
+  )
+}
+
 /* ------------------------- Related card ------------------------- */
 
 function RelatedCard({
   item,
   lang,
   onClick,
+  index = 0,
+  active = false,
 }: {
   item: Portfolio
   lang: 'en' | 'fa'
   onClick: () => void
+  index?: number
+  active?: boolean
 }) {
   const t = useT()
   const title = tc('portfolio', item.slug, 'title', item.title, lang)
@@ -726,35 +967,58 @@ function RelatedCard({
     <motion.button
       type="button"
       onClick={onClick}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -6 }}
+      whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="group block h-full w-full cursor-pointer text-left focus-visible:outline-none"
+      className={cn(
+        'group relative block h-full w-72 shrink-0 cursor-pointer overflow-hidden rounded-2xl border bg-card text-left shadow-soft transition-all duration-300 focus-visible:outline-none',
+        active ? 'border-primary/40 ring-2 ring-primary/20' : 'border-border/60 hover:shadow-glow',
+      )}
     >
-      <Card className="h-full overflow-hidden p-0 shadow-soft transition-all duration-300 hover:shadow-glow">
-        <div className="relative aspect-video overflow-hidden">
-          <img
-            src={item.coverImage}
-            alt={`${title} cover`}
-            loading="lazy"
-            className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-          {item.category && (
-            <Badge className="absolute top-3 left-3 border-0 bg-white/90 text-foreground backdrop-blur">
+      {/* Cover image */}
+      <div className="relative aspect-[16/10] overflow-hidden">
+        <img
+          src={item.coverImage}
+          alt={`${title} cover`}
+          loading="lazy"
+          className="size-full object-cover transition-transform duration-500 group-hover:scale-110"
+        />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100" />
+        {/* Top row: category + index */}
+        <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
+          {item.category ? (
+            <Badge className="border-0 bg-white/90 text-foreground backdrop-blur">
               {item.category.name}
             </Badge>
+          ) : (
+            <span />
           )}
+          <span className="rounded-full bg-slate-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur">
+            <span className="ltr-num">{String(index + 1).padStart(2, '0')}</span>
+          </span>
         </div>
-        <div className="p-5">
-          <h3 className="line-clamp-1 text-base font-semibold">{title}</h3>
-          <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
-            {summary}
-          </p>
-          <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-            {t('portfolio.viewProject')}
-            <ArrowRight className={cn('size-4 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
-          </div>
+        {/* Bottom title over image */}
+        <div className="absolute inset-x-0 bottom-0 p-4">
+          <h3 className="line-clamp-2 text-base font-semibold leading-snug text-white drop-shadow-sm">
+            {title}
+          </h3>
         </div>
-      </Card>
+      </div>
+
+      {/* Body */}
+      <div className="flex flex-col gap-3 p-4">
+        <p className="line-clamp-2 text-sm text-muted-foreground">{summary}</p>
+        <span
+          className={cn(
+            'inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary transition-all duration-200',
+            'group-hover:border-primary/50 group-hover:bg-primary group-hover:text-primary-foreground',
+          )}
+        >
+          {t('portfolio.viewProject')}
+          <ArrowRight className={cn('size-3.5 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
+        </span>
+      </div>
     </motion.button>
   )
 }
