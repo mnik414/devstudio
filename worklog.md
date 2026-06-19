@@ -449,3 +449,44 @@ Stage Summary:
 - Vazirmatn font for Persian, Geist for English; direction-aware layout throughout
 - Language preference persists via localStorage (zustand persist)
 - Site is now a professional bilingual platform ready for both English and Persian-speaking markets
+
+---
+Task ID: 7
+Agent: Main (orchestrator) — cron review round
+Task: QA testing, bug fixes, new features (newsletter, command palette, favorites, compare), styling improvements
+
+Work Log:
+- QA tested all views via agent-browser: Home, Portfolio (+detail), Blog (+detail), Case Studies (+detail), Contact, Estimate, About, Admin
+- Fixed critical bug: BlogDetailView crashed with "Target ref is defined but not hydrated" (framer-motion useScroll target ref attached before article rendered). Fixed by conditionally passing target only when item is loaded.
+- Fixed critical bug: Portfolio card was a <button> containing FavoriteButton (also <button>) → HTML nesting hydration error. Changed card from motion.button to motion.div with role="button" + keyboard handler.
+- Added Newsletter model to Prisma schema + db:push
+- Created /api/newsletter POST route with email validation + upsert logic. Added raw SQL fallback because dev server's cached Prisma client didn't have the newsletter delegate.
+- Added newsletter management to /api/admin (raw query fallback for GET + DELETE)
+- Created Newsletter component (email input + subscribe button + loading/success states)
+- Added Newsletter signup to footer
+- Added "newsletter" resource to Admin panel (MODEL_CONFIGS + MODEL_ORDER)
+- Added i18n keys for newsletter, command palette, back-to-top, favorites, admin.newsletter in both en + fa
+- Created CommandPalette component (Cmd+K / Ctrl+K) with global search across pages, projects, and articles
+- Created BackToTop button (appears on scroll, smooth scroll to top)
+- Created Favorites store (zustand + localStorage persist) + FavoriteButton component
+- Added FavoriteButton to portfolio cards (bookmark icon, toggle save/unsave)
+- Added "Saved" filter toggle + count badge to portfolio filter bar
+- Created CompareProjects modal — compare favorited projects side-by-side with comparison table (category, year, client, views, featured, technologies, features count)
+- Added CompareButton to portfolio filter bar
+- Improved Home view styling:
+  * Hero: added 2 more floating gradient blobs (animate-float with delays) for premium layered mesh effect
+  * Stats section: added per-stat icons (Rocket, Calendar, Star, Sparkles), gradient glow on hover, lift animation, icon color transition
+  * Services section: added gradient top border on hover, number badge (01-08), icon scale + shadow-glow on hover
+- Fixed Calendar import error (was used in stats array but not imported from lucide-react)
+- Verified all features work in both English (LTR) and Persian (RTL) modes
+- Verified admin panel shows newsletter subscribers (3 test subscribers confirmed)
+- Lint passes with 0 errors; no console errors
+
+Stage Summary:
+- 2 critical bugs fixed (blog detail crash, portfolio card hydration)
+- 4 new features added: Newsletter subscription, Command Palette (Cmd+K), Favorites/Bookmarks, Project Comparison
+- 2 new UI components: BackToTop, CompareProjects modal
+- Home view styling significantly enhanced (hero gradient mesh, stat icons, service card gradient borders + number badges)
+- All new features are bilingual (en/fa) with RTL support
+- Admin panel now manages 15 resource types (added Newsletter)
+- Platform is stable, fully functional, and more premium than before

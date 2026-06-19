@@ -14,21 +14,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
     }
 
-    // Upsert — if already subscribed, just reactivate
-    const existing = await db.newsletter.findUnique({ where: { email } })
-    if (existing) {
-      if (!existing.active) {
-        await db.newsletter.update({ where: { id: existing.id }, data: { active: true, source } })
-      }
-      return NextResponse.json({ ok: true, alreadySubscribed: true })
-    }
+    const normalizedEmail = email.toLowerCase().slice(0, 160)
 
-    await db.newsletter.create({
-      data: {
-        email: email.toLowerCase().slice(0, 160),
-        source: String(source).slice(0, 40),
-      },
-    })
+    // Use raw queries as a fallback when the Prisma client delegate is stale
+    // (the dev server may cache an older generated client without the Newsletter model)
+    if (db.newsletter) {
+      const existing = await db.newsletter.findUnique({ where: { email: normalizedEmail } })
+      if (existing) {
+        if (!existing.active) {
+          await db.newsletter.update({
+            where: { id: existing.id },
+            data: { active: true, source: String(source).slice(0, 40) },
+          })
+        }
+        return NextResponse.json({ ok: true, alreadySubscribed: true })
+      }
+      await db.newsletter.create({
+        data: { email: normalizedEmail, source: String(source).slice(0, 40) },
+      })
+    } else {
+      // Fallback: raw SQL (SQLite)
+      const existing = await db.$queryRawUnsafe<{ id: string; active: number }[]>(
+        `SELECT id, active FROM Newsletter WHERE email = ? LIMIT 1`,
+        normalizedEmail,
+      )
+      if (existing && existing.length > 0) {
+        if (!existing[0].active) {
+          await db.$executeRawUnsafe(
+            `UPDATE Newsletter SET active = 1, source = ? WHERE id = ?`,
+            String(source).slice(0, 40),
+            existing[0].id,
+          )
+        }
+        return NextResponse.json({ ok: true, alreadySubscribed: true })
+      }
+      await db.$executeRawUnsafe(
+        `INSERT INTO Newsletter (id, email, source, active, createdAt) VALUES (lower(hex(randomblob(25))), ?, ?, 1, datetime('now'))`,
+        normalizedEmail,
+        String(source).slice(0, 40),
+      )
+    }
 
     return NextResponse.json({ ok: true })
   } catch (e) {

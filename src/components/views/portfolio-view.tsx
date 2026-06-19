@@ -28,6 +28,7 @@ import {
 import { Reveal } from '@/components/site/reveal'
 import { SectionHeading } from '@/components/site/section-heading'
 import { FavoriteButton } from '@/components/site/favorite-button'
+import { CompareButton } from '@/components/site/compare-projects'
 import {
   usePortfolios,
   usePortfolioFilters,
@@ -128,8 +129,8 @@ export function PortfolioView() {
               />
             </div>
 
-            {/* Sort + Saved */}
-            <div className="flex items-center gap-3">
+            {/* Sort + Saved + Compare */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setSavedOnly((v) => !v)}
                 className={cn(
@@ -148,6 +149,7 @@ export function PortfolioView() {
                   </span>
                 )}
               </button>
+              <CompareButton />
               <span className="hidden items-center gap-2 text-sm font-medium text-muted-foreground sm:inline-flex">
                 <SlidersHorizontal className="size-4" />
                 {t('portfolio.sort')}

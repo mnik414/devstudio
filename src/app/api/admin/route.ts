@@ -56,6 +56,16 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const model = searchParams.get('model') as ModelName
   if (!MODELS.includes(model)) return NextResponse.json({ error: 'Invalid model' }, { status: 400 })
+
+  // Newsletter: use raw queries as a fallback when the Prisma client delegate
+  // is stale (the dev server may cache an older generated client).
+  if (model === 'newsletter') {
+    const rows = await db.$queryRawUnsafe(
+      `SELECT id, email, source, active, createdAt FROM Newsletter ORDER BY createdAt DESC`,
+    )
+    return NextResponse.json({ items: rows })
+  }
+
   const delegate = getDelegate(model)
   // Setting model has no createdAt; sort by updatedAt instead
   const sortField = model === 'setting' ? 'updatedAt' : 'createdAt'
@@ -95,6 +105,13 @@ export async function DELETE(req: NextRequest) {
   const model = searchParams.get('model') as ModelName
   const id = searchParams.get('id')
   if (!MODELS.includes(model) || !id) return NextResponse.json({ error: 'Invalid params' }, { status: 400 })
+
+  // Newsletter: raw delete fallback
+  if (model === 'newsletter') {
+    await db.$executeRawUnsafe(`DELETE FROM Newsletter WHERE id = ?`, id)
+    return NextResponse.json({ ok: true })
+  }
+
   const delegate = getDelegate(model)
   // @ts-expect-error dynamic
   await delegate.delete({ where: { id } })

@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   Code2,
   ShoppingCart,
+  Calendar,
   CalendarCheck,
   Cloud,
   LayoutDashboard,
@@ -106,8 +107,11 @@ export function HomeView() {
     <div className="overflow-hidden">
       {/* ===== HERO ===== */}
       <section className="relative isolate overflow-hidden bg-radial-fade pb-24 pt-20 sm:pt-28">
+        {/* Premium layered gradient mesh background */}
         <div className="absolute inset-0 -z-10 bg-grid opacity-60 [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)]" />
         <div className="absolute -top-24 left-1/2 -z-10 h-72 w-[40rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -top-10 right-1/4 -z-10 h-48 w-96 rounded-full bg-accent/15 blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-40 left-1/4 -z-10 h-40 w-80 rounded-full bg-primary/10 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl text-center">
             <motion.div
@@ -252,14 +256,20 @@ export function HomeView() {
           />
           <div className="mt-14 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
             {[
-              { label: t('stats.projects'), value: Number(settings.stats_projects || 180), suffix: '+' },
-              { label: t('stats.experience'), value: Number(settings.stats_experience || 12), suffix: '+' },
-              { label: t('stats.satisfaction'), value: Number(settings.stats_satisfaction || 98), suffix: '%' },
-              { label: t('stats.technologies'), value: Number(settings.stats_technologies || 25), suffix: '+' },
+              { label: t('stats.projects'), value: Number(settings.stats_projects || 180), suffix: '+', icon: Rocket },
+              { label: t('stats.experience'), value: Number(settings.stats_experience || 12), suffix: '+', icon: Calendar },
+              { label: t('stats.satisfaction'), value: Number(settings.stats_satisfaction || 98), suffix: '%', icon: Star },
+              { label: t('stats.technologies'), value: Number(settings.stats_technologies || 25), suffix: '+', icon: Sparkles },
             ].map((stat, i) => (
               <Reveal key={stat.label} delay={i * 0.1}>
-                <Card className="group relative overflow-hidden border-border/60 p-6 text-center transition hover:shadow-soft sm:p-8">
+                <Card className="group relative overflow-hidden border-border/60 p-6 text-center transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-soft sm:p-8">
+                  {/* Gradient glow on hover */}
+                  <div className="absolute -inset-px -z-10 rounded-2xl bg-gradient-to-br from-primary/0 via-primary/0 to-accent/0 opacity-0 blur transition duration-300 group-hover:from-primary/5 group-hover:to-accent/5 group-hover:opacity-100" />
                   <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 transition group-hover:opacity-100" />
+                  {/* Icon */}
+                  <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+                    <stat.icon className="h-5 w-5" />
+                  </div>
                   <div className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl ltr-num">
                     <Counter to={stat.value} suffix={stat.suffix} />
                   </div>
@@ -519,9 +529,16 @@ function ServiceCard({ service, index, onCta }: { service: Service; index: numbe
   return (
     <Reveal delay={index * 0.06}>
       <Card className="group relative h-full overflow-hidden border-border/60 p-6 transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-soft">
-        <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/5 transition group-hover:scale-150" />
+        {/* Gradient top border on hover */}
+        <div className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-primary to-accent transition-transform duration-300 group-hover:scale-x-100" />
+        {/* Decorative blob */}
+        <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/5 transition duration-500 group-hover:scale-150" />
+        {/* Number badge */}
+        <span className="absolute right-4 top-4 text-3xl font-bold text-muted-foreground/8 transition group-hover:text-primary/15 ltr-num">
+          {String(index + 1).padStart(2, '0')}
+        </span>
         <div className="relative">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+          <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary transition duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-glow">
             <Icon className="h-6 w-6" />
           </div>
           <h3 className="mt-4 text-lg font-semibold">{service.title}</h3>
