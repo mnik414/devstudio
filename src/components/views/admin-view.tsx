@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   ArrowLeft,
+  ArrowRight,
   Plus,
   Pencil,
   Trash2,
@@ -19,6 +20,7 @@ import {
   Tags,
   Cpu,
   Newspaper,
+  BookOpen,
   Bookmark,
   FlaskConical,
   Quote,
@@ -27,11 +29,15 @@ import {
   HelpCircle,
   Inbox,
   Mail,
+  Megaphone,
+  TrendingUp,
   Settings as SettingsIcon,
   Loader2,
   KeyRound,
   RefreshCw,
 } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -90,6 +96,8 @@ type ModelKey =
   | 'contactRequest'
   | 'setting'
   | 'newsletter'
+
+type ActiveView = ModelKey | 'dashboard'
 
 type FieldType = 'text' | 'textarea' | 'number' | 'switch' | 'json' | 'select'
 
@@ -1201,12 +1209,500 @@ function DeleteDialog({
 }
 
 // ---------------------------------------------------------------------------
+// Dashboard overview (post-login landing)
+// ---------------------------------------------------------------------------
+
+interface DashboardStats {
+  portfolios: number
+  blogPosts: number
+  contactRequests: RecordData[]
+  leads: RecordData[]
+  newsletter: number
+  caseStudies: number
+}
+
+interface StatCardConfig {
+  key: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  value: number
+  /** Tailwind text color class for the icon circle */
+  iconColor: string
+  /** Tailwind background tint class for the icon circle */
+  iconBg: string
+  /** Tailwind `from-*` token rendered behind the card on hover */
+  hoverFrom: string
+  /** Tailwind `to-*` token rendered behind the card on hover */
+  hoverTo: string
+  /** Optional click target (jump to that resource) */
+  onClick?: () => void
+}
+
+function StatCard({ config, loading }: { config: StatCardConfig; loading: boolean }) {
+  const Icon = config.icon
+  return (
+    <button
+      type="button"
+      onClick={config.onClick}
+      className={cn(
+        'group relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-5 text-left shadow-soft transition-all duration-300',
+        'hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow',
+      )}
+    >
+      {/* Subtle gradient wash on hover */}
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-300 group-hover:opacity-100',
+          config.hoverFrom,
+          config.hoverTo,
+        )}
+      />
+      <div className="relative flex items-center justify-between">
+        <div
+          className={cn(
+            'flex size-11 items-center justify-center rounded-xl transition-colors duration-300',
+            config.iconBg,
+            config.iconColor,
+            'group-hover:scale-110',
+          )}
+        >
+          <Icon className="size-5" />
+        </div>
+        <TrendingUp className="size-4 text-muted-foreground/40 transition-colors group-hover:text-accent" />
+      </div>
+      <div className="relative space-y-1">
+        {loading ? (
+          <Skeleton className="h-8 w-20" />
+        ) : (
+          <p className="text-3xl font-bold tracking-tight text-foreground">
+            {config.value.toLocaleString()}
+          </p>
+        )}
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {config.label}
+        </p>
+      </div>
+    </button>
+  )
+}
+
+function contactStatusBadge(status?: string) {
+  switch (status) {
+    case 'new':
+      return <Badge className="bg-primary/15 text-primary hover:bg-primary/20">New</Badge>
+    case 'read':
+      return <Badge className="bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400">Read</Badge>
+    case 'replied':
+      return <Badge className="bg-accent/15 text-accent hover:bg-accent/20">Replied</Badge>
+    case 'archived':
+      return <Badge variant="outline" className="text-muted-foreground">Archived</Badge>
+    default:
+      return <Badge variant="outline" className="text-muted-foreground">{status || '—'}</Badge>
+  }
+}
+
+function leadStatusBadge(status?: string) {
+  switch (status) {
+    case 'new':
+      return <Badge className="bg-primary/15 text-primary hover:bg-primary/20">New</Badge>
+    case 'contacted':
+      return <Badge className="bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400">Contacted</Badge>
+    case 'qualified':
+      return <Badge className="bg-accent/15 text-accent hover:bg-accent/20">Qualified</Badge>
+    case 'won':
+      return <Badge className="bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400">Won</Badge>
+    case 'lost':
+      return <Badge className="bg-rose-500/15 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400">Lost</Badge>
+    default:
+      return <Badge variant="outline" className="text-muted-foreground">{status || '—'}</Badge>
+  }
+}
+
+function getInitials(name?: string) {
+  if (!name) return '?'
+  const parts = String(name).trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+function ActivityRow({
+  name,
+  email,
+  date,
+  badge,
+}: {
+  name: string
+  email: string
+  date?: string
+  badge: React.ReactNode
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/50 p-3 transition-all duration-200 hover:border-primary/30 hover:bg-muted/40">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-accent/15 text-xs font-semibold text-primary">
+          {getInitials(name)}
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">{name}</p>
+          <p className="truncate text-xs text-muted-foreground">{email}</p>
+        </div>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        {badge}
+        <p className="text-[10px] text-muted-foreground">{formatDate(date)}</p>
+      </div>
+    </div>
+  )
+}
+
+function ActivityColumn({
+  title,
+  icon: Icon,
+  iconColor,
+  iconBg,
+  items,
+  loading,
+  emptyLabel,
+  onSeeAll,
+  seeAllLabel,
+}: {
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  iconColor: string
+  iconBg: string
+  items: { name: string; email: string; date?: string; badge: React.ReactNode }[]
+  loading: boolean
+  emptyLabel: string
+  onSeeAll: () => void
+  seeAllLabel: string
+}) {
+  return (
+    <Card className="flex flex-col border-border/60 shadow-soft">
+      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className={cn('flex size-9 items-center justify-center rounded-lg', iconBg, iconColor)}>
+            <Icon className="size-4" />
+          </div>
+          <div>
+            <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+            <CardDescription className="text-[11px]">Most recent 5 entries</CardDescription>
+          </div>
+        </div>
+        <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs text-muted-foreground" onClick={onSeeAll}>
+          {seeAllLabel}
+          <ArrowRight className="size-3.5" />
+        </Button>
+      </CardHeader>
+      <CardContent className="flex-1 space-y-2">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
+        ) : items.length === 0 ? (
+          <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border/60 text-xs text-muted-foreground">
+            {emptyLabel}
+          </div>
+        ) : (
+          items.map((item, i) => (
+            <ActivityRow
+              key={`${item.email}-${i}`}
+              name={item.name}
+              email={item.email}
+              date={item.date}
+              badge={item.badge}
+            />
+          ))
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function DashboardOverview({
+  token,
+  onNavigate,
+  onNewRecord,
+}: {
+  token: string
+  onNavigate: (model: ModelKey) => void
+  onNewRecord: (model: ModelKey) => void
+}) {
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+    queryKey: ['admin', 'dashboard-stats'],
+    queryFn: async (): Promise<DashboardStats> => {
+      if (!token) throw new Error('Not authenticated')
+      const headers = { 'X-Admin-Token': token }
+      const models: ModelKey[] = [
+        'portfolio',
+        'blogPost',
+        'contactRequest',
+        'lead',
+        'newsletter',
+        'caseStudy',
+      ]
+      const responses = await Promise.all(
+        models.map((m) =>
+          fetch(`/api/admin?model=${encodeURIComponent(m)}`, { headers }).then(async (r) => {
+            if (r.status === 401) throw new Error('Unauthorized — check your admin token.')
+            if (!r.ok) throw new Error(`Failed to load ${m} (${r.status})`)
+            const json = await r.json()
+            return { model: m, items: (json.items ?? []) as RecordData[] }
+          }),
+        ),
+      )
+      const byModel = Object.fromEntries(responses.map((r) => [r.model, r.items])) as Record<ModelKey, RecordData[]>
+      return {
+        portfolios: byModel.portfolio.length,
+        blogPosts: byModel.blogPost.length,
+        contactRequests: byModel.contactRequest,
+        leads: byModel.lead,
+        newsletter: byModel.newsletter.length,
+        caseStudies: byModel.caseStudy.length,
+      }
+    },
+    enabled: !!token,
+    staleTime: 30_000,
+  })
+
+  const recentContacts = React.useMemo(() => {
+    const list = data?.contactRequests ?? []
+    return [...list]
+      .sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt as string).getTime() : 0
+        const tb = b.createdAt ? new Date(b.createdAt as string).getTime() : 0
+        return tb - ta
+      })
+      .slice(0, 5)
+      .map((r) => ({
+        name: String(r.fullName || r.name || 'Anonymous'),
+        email: String(r.email || '—'),
+        date: r.createdAt as string | undefined,
+        badge: contactStatusBadge(r.status as string | undefined),
+      }))
+  }, [data?.contactRequests])
+
+  const recentLeads = React.useMemo(() => {
+    const list = data?.leads ?? []
+    return [...list]
+      .sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt as string).getTime() : 0
+        const tb = b.createdAt ? new Date(b.createdAt as string).getTime() : 0
+        return tb - ta
+      })
+      .slice(0, 5)
+      .map((r) => ({
+        name: String(r.name || 'Anonymous'),
+        email: String(r.email || '—'),
+        date: r.createdAt as string | undefined,
+        badge: leadStatusBadge(r.status as string | undefined),
+      }))
+  }, [data?.leads])
+
+  const statCards: StatCardConfig[] = [
+    {
+      key: 'portfolio',
+      label: 'Portfolios',
+      icon: FolderKanban,
+      value: data?.portfolios ?? 0,
+      iconColor: 'text-primary',
+      iconBg: 'bg-primary/10',
+      hoverFrom: 'from-primary/[0.06]',
+      hoverTo: 'to-primary/[0.01]',
+      onClick: () => onNavigate('portfolio'),
+    },
+    {
+      key: 'blogPost',
+      label: 'Blog Posts',
+      icon: BookOpen,
+      value: data?.blogPosts ?? 0,
+      iconColor: 'text-accent',
+      iconBg: 'bg-accent/10',
+      hoverFrom: 'from-accent/[0.06]',
+      hoverTo: 'to-accent/[0.01]',
+      onClick: () => onNavigate('blogPost'),
+    },
+    {
+      key: 'contactRequest',
+      label: 'Contact Requests',
+      icon: Mail,
+      value: data?.contactRequests?.length ?? 0,
+      iconColor: 'text-rose-600 dark:text-rose-400',
+      iconBg: 'bg-rose-500/10',
+      hoverFrom: 'from-rose-500/[0.06]',
+      hoverTo: 'to-rose-500/[0.01]',
+      onClick: () => onNavigate('contactRequest'),
+    },
+    {
+      key: 'lead',
+      label: 'Leads',
+      icon: Inbox,
+      value: data?.leads?.length ?? 0,
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      iconBg: 'bg-amber-500/10',
+      hoverFrom: 'from-amber-500/[0.06]',
+      hoverTo: 'to-amber-500/[0.01]',
+      onClick: () => onNavigate('lead'),
+    },
+    {
+      key: 'newsletter',
+      label: 'Newsletter',
+      icon: Megaphone,
+      value: data?.newsletter ?? 0,
+      iconColor: 'text-violet-600 dark:text-violet-400',
+      iconBg: 'bg-violet-500/10',
+      hoverFrom: 'from-violet-500/[0.06]',
+      hoverTo: 'to-violet-500/[0.01]',
+      onClick: () => onNavigate('newsletter'),
+    },
+    {
+      key: 'caseStudy',
+      label: 'Case Studies',
+      icon: FlaskConical,
+      value: data?.caseStudies ?? 0,
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      iconBg: 'bg-emerald-500/10',
+      hoverFrom: 'from-emerald-500/[0.06]',
+      hoverTo: 'to-emerald-500/[0.01]',
+      onClick: () => onNavigate('caseStudy'),
+    },
+  ]
+
+  const quickActions: {
+    label: string
+    icon: React.ComponentType<{ className?: string }>
+    onClick: () => void
+    variant: 'default' | 'outline'
+  }[] = [
+    { label: 'New Portfolio', icon: Plus, onClick: () => onNewRecord('portfolio'), variant: 'default' },
+    { label: 'New Blog Post', icon: Plus, onClick: () => onNewRecord('blogPost'), variant: 'outline' },
+    { label: 'View Contact Requests', icon: Mail, onClick: () => onNavigate('contactRequest'), variant: 'outline' },
+    { label: 'View Leads', icon: Inbox, onClick: () => onNavigate('lead'), variant: 'outline' },
+  ]
+
+  return (
+    <div className="space-y-6">
+      {/* Welcome header */}
+      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.04] via-background to-accent/[0.04] p-6 shadow-soft sm:p-8">
+        <div className="absolute -right-10 -top-10 size-40 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <div className="absolute -bottom-12 right-24 size-32 rounded-full bg-accent/10 blur-3xl" aria-hidden />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur">
+              <LayoutDashboard className="size-3 text-primary" />
+              Admin Dashboard
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              Welcome back, <span className="text-gradient">Studio</span>
+            </h1>
+            <p className="max-w-xl text-sm text-muted-foreground">
+              Here&apos;s a quick snapshot of your platform. Jump into a resource from the sidebar or use the
+              quick actions below.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
+            <RefreshCw className={cn('size-4', isFetching && 'animate-spin')} />
+            Refresh stats
+          </Button>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <TrendingUp className="size-4 text-accent" />
+            Platform Snapshot
+          </h2>
+          {isError && (
+            <span className="text-xs text-destructive">{(error as Error).message}</span>
+          )}
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {statCards.map((c) => (
+            <StatCard key={c.key} config={c} loading={isLoading} />
+          ))}
+        </div>
+        {isError && (
+          <div className="mt-3 flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-sm">
+            <span className="text-destructive">{(error as Error).message}</span>
+            <Button size="sm" variant="outline" onClick={() => refetch()} className="h-7 gap-1.5 text-xs">
+              <RefreshCw className="size-3.5" />
+              Retry
+            </Button>
+          </div>
+        )}
+      </section>
+
+      {/* Quick actions */}
+      <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft sm:p-6">
+        <div className="mb-4 flex items-center gap-2">
+          <Sparkles className="size-4 text-primary" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Quick Actions</h2>
+        </div>
+        <div className="flex flex-wrap gap-2.5">
+          {quickActions.map((a) => {
+            const Icon = a.icon
+            return (
+              <Button
+                key={a.label}
+                variant={a.variant}
+                size="sm"
+                onClick={a.onClick}
+                className={cn(
+                  'h-9 gap-1.5 rounded-full',
+                  a.variant === 'default' && 'shadow-soft',
+                )}
+              >
+                <Icon className="size-4" />
+                {a.label}
+                {a.variant === 'outline' && <ArrowRight className="size-3.5 text-muted-foreground" />}
+              </Button>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Recent activity */}
+      <section>
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <Inbox className="size-4 text-accent" />
+          Recent Activity
+        </h2>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <ActivityColumn
+            title="Contact Requests"
+            icon={Mail}
+            iconColor="text-rose-600 dark:text-rose-400"
+            iconBg="bg-rose-500/10"
+            items={recentContacts}
+            loading={isLoading}
+            emptyLabel="No contact requests yet."
+            onSeeAll={() => onNavigate('contactRequest')}
+            seeAllLabel="See all"
+          />
+          <ActivityColumn
+            title="Leads"
+            icon={Inbox}
+            iconColor="text-amber-600 dark:text-amber-400"
+            iconBg="bg-amber-500/10"
+            items={recentLeads}
+            loading={isLoading}
+            emptyLabel="No leads yet."
+            onSeeAll={() => onNavigate('lead')}
+            seeAllLabel="See all"
+          />
+        </div>
+      </section>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Dashboard (post-login)
 // ---------------------------------------------------------------------------
 
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
   const setView = useNav((s) => s.setView)
-  const [active, setActive] = React.useState<ModelKey>('portfolio')
+  const [active, setActive] = React.useState<ActiveView>('dashboard')
   const [editOpen, setEditOpen] = React.useState(false)
   const [viewOpen, setViewOpen] = React.useState(false)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
@@ -1214,6 +1710,11 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [viewRecord, setViewRecord] = React.useState<RecordData | null>(null)
   const [deleteRecord, setDeleteRecord] = React.useState<RecordData | null>(null)
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
+
+  // Defensive: when the dashboard is active the edit/view/delete dialogs cannot
+  // be meaningfully rendered for a specific model. We fall back to `portfolio`
+  // so the dialog has a valid configuration object even though it stays closed.
+  const activeModel: ModelKey = active === 'dashboard' ? 'portfolio' : active
 
   const openEdit = (rec: RecordData) => {
     setEditRecord(rec)
@@ -1226,6 +1727,18 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const openDelete = (rec: RecordData) => {
     setDeleteRecord(rec)
     setDeleteOpen(true)
+  }
+
+  // Quick-action helpers used by the dashboard overview.
+  const handleQuickNew = (m: ModelKey) => {
+    setActive(m)
+    setSidebarOpen(false)
+    setEditRecord({})
+    setEditOpen(true)
+  }
+  const handleQuickNavigate = (m: ModelKey) => {
+    setActive(m)
+    setSidebarOpen(false)
   }
 
   return (
@@ -1279,6 +1792,27 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           <div className="flex h-full flex-col">
             <div className="px-3 py-4">
               <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Overview
+              </p>
+              <nav className="space-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActive('dashboard')
+                    setSidebarOpen(false)
+                  }}
+                  className={cn(
+                    'flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
+                    active === 'dashboard'
+                      ? 'bg-primary text-primary-foreground shadow-xs'
+                      : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                  )}
+                >
+                  <LayoutDashboard className="size-4 shrink-0" />
+                  <span className="truncate text-left">Dashboard</span>
+                </button>
+              </nav>
+              <p className="px-2 pb-2 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Resources
               </p>
               <nav className="space-y-0.5">
@@ -1294,18 +1828,22 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                         setActive(m)
                         setSidebarOpen(false)
                       }}
-                      className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
+                      className={cn(
+                        'flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
                         isActive
                           ? 'bg-primary text-primary-foreground shadow-xs'
-                          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                      }`}
+                          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                      )}
                     >
                       <Icon className="size-4 shrink-0" />
                       <span className="truncate text-left">{cfg.label}</span>
                       {cfg.readOnly && (
-                        <span className={`ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                          isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
-                        }`}>
+                        <span className={cn(
+                          'ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium',
+                          isActive
+                            ? 'bg-primary-foreground/20 text-primary-foreground'
+                            : 'bg-muted text-muted-foreground',
+                        )}>
                           RO
                         </span>
                       )}
@@ -1336,32 +1874,40 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
         {/* Main */}
         <main className="flex-1 overflow-x-hidden p-4 sm:p-6">
-          <RecordTable
-            model={active}
-            token={token}
-            onEdit={openEdit}
-            onView={openView}
-            onDeleteRequest={openDelete}
-          />
+          {active === 'dashboard' ? (
+            <DashboardOverview
+              token={token}
+              onNavigate={handleQuickNavigate}
+              onNewRecord={handleQuickNew}
+            />
+          ) : (
+            <RecordTable
+              model={active}
+              token={token}
+              onEdit={openEdit}
+              onView={openView}
+              onDeleteRequest={openDelete}
+            />
+          )}
         </main>
       </div>
 
       {/* Dialogs */}
       <EditDialog
-        model={active}
+        model={activeModel}
         token={token}
         open={editOpen}
         onOpenChange={setEditOpen}
         record={editRecord}
       />
       <ViewDialog
-        model={active}
+        model={activeModel}
         open={viewOpen}
         onOpenChange={setViewOpen}
         record={viewRecord}
       />
       <DeleteDialog
-        model={active}
+        model={activeModel}
         token={token}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

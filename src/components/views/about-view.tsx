@@ -67,10 +67,10 @@ export function AboutView() {
   const team = (data?.team ?? []).slice().sort((a, b) => a.order - b.order)
 
   const STATS = [
-    { label: t('stats.projects'), value: 180, suffix: '+' },
-    { label: t('stats.experience'), value: 12, suffix: '+' },
-    { label: t('stats.satisfaction'), value: 98, suffix: '%' },
-    { label: t('about.statsTeam'), value: 30, suffix: '+' },
+    { icon: TrendingUp, label: t('stats.projects'), value: 180, suffix: '+' },
+    { icon: Award, label: t('stats.experience'), value: 12, suffix: '+' },
+    { icon: Heart, label: t('stats.satisfaction'), value: 98, suffix: '%' },
+    { icon: Users, label: t('about.statsTeam'), value: 30, suffix: '+' },
   ]
 
   return (
@@ -243,14 +243,19 @@ export function AboutView() {
       {/* ========================================================= */}
       <section className="bg-secondary py-20 text-secondary-foreground sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-6">
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-6">
             {STATS.map((stat, i) => (
-              <Reveal key={stat.label} delay={i * 0.08} className="text-center">
-                <div className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl ltr-num">
-                  <Counter to={stat.value} suffix={stat.suffix} />
-                </div>
-                <div className="mt-2 text-xs font-medium uppercase tracking-wider text-secondary-foreground/70 sm:text-sm">
-                  {stat.label}
+              <Reveal key={stat.label} delay={i * 0.08}>
+                <div className="group relative flex flex-col items-center rounded-2xl border border-secondary-foreground/10 bg-secondary-foreground/[0.04] p-6 text-center transition-all duration-300 hover:-translate-y-1 hover:border-secondary-foreground/25 hover:bg-secondary-foreground/[0.08] hover:shadow-glow">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-glow transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                    <stat.icon className="h-6 w-6" />
+                  </div>
+                  <div className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl ltr-num text-gradient">
+                    <Counter to={stat.value} suffix={stat.suffix} />
+                  </div>
+                  <div className="mt-2 text-xs font-medium uppercase tracking-wider text-secondary-foreground/70 sm:text-sm">
+                    {stat.label}
+                  </div>
                 </div>
               </Reveal>
             ))}
@@ -261,8 +266,51 @@ export function AboutView() {
       {/* ========================================================= */}
       {/* 5. TEAM */}
       {/* ========================================================= */}
-      <section className="py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden py-20 sm:py-28">
+        {/* Background visuals */}
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-radial-fade" aria-hidden />
+        <div
+          className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-50"
+          aria-hidden
+          style={{
+            maskImage:
+              'radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 75%)',
+            WebkitMaskImage:
+              'radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 75%)',
+          }}
+        />
+        {/* Gradient mesh blobs */}
+        <div
+          className="pointer-events-none absolute -left-32 top-1/4 -z-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl animate-float"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -right-32 bottom-1/4 -z-10 h-72 w-72 rounded-full bg-accent/10 blur-3xl animate-float [animation-delay:2s]"
+          aria-hidden
+        />
+        {/* Decorative floating dots */}
+        <div
+          className="pointer-events-none absolute left-[8%] top-24 -z-10 h-2 w-2 rounded-full bg-primary/30 animate-float [animation-delay:1s]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute right-[12%] top-32 -z-10 h-1.5 w-1.5 rounded-full bg-accent/50 animate-float [animation-delay:3s]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute left-[35%] bottom-20 -z-10 h-2 w-2 rounded-full bg-primary/20 animate-float [animation-delay:4s]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute right-[42%] bottom-32 -z-10 h-1.5 w-1.5 rounded-full bg-accent/40 animate-float [animation-delay:5s]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute left-[60%] top-1/2 -z-10 h-1 w-1 rounded-full bg-primary/40 animate-float [animation-delay:2.5s]"
+          aria-hidden
+        />
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             eyebrow={t('about.teamEyebrow')}
             title={t('about.teamTitle')}
@@ -296,8 +344,24 @@ export function AboutView() {
       {/* ========================================================= */}
       {/* 6. VALUES DEEP-DIVE */}
       {/* ========================================================= */}
-      <section className="bg-muted/40 py-20 sm:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden bg-muted/40 py-20 sm:py-28">
+        {/* Gradient top border for visual distinction */}
+        <div
+          className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-primary"
+          aria-hidden
+        />
+        {/* Subtle grid pattern background */}
+        <div
+          className="pointer-events-none absolute inset-0 bg-grid opacity-50"
+          aria-hidden
+          style={{
+            maskImage:
+              'radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 75%)',
+            WebkitMaskImage:
+              'radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 75%)',
+          }}
+        />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             eyebrow={t('about.valuesEyebrow')}
             title={t('about.valuesTitle')}
@@ -306,16 +370,28 @@ export function AboutView() {
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {CORE_VALUES.map((value, i) => (
               <Reveal key={value.titleKey} delay={(i % 3) * 0.08}>
-                <div className="group h-full rounded-2xl border border-border/60 bg-card p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-glow">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10 text-accent transition-transform duration-300 group-hover:scale-110">
-                      <value.icon className="h-5 w-5" />
+                <div className="group relative h-full">
+                  {/* Gradient border on hover */}
+                  <span
+                    className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-br from-primary/50 via-accent/20 to-primary/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                    aria-hidden
+                  />
+                  <div className="relative h-full overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-soft transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/30 group-hover:shadow-glow">
+                    {/* Top accent line on hover */}
+                    <span
+                      className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                      aria-hidden
+                    />
+                    <div className="relative flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-soft transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                        <value.icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="text-base font-semibold sm:text-lg">{t(value.titleKey)}</h3>
                     </div>
-                    <h3 className="text-base font-semibold sm:text-lg">{t(value.titleKey)}</h3>
+                    <p className="relative mt-4 text-sm leading-relaxed text-muted-foreground">
+                      {t(value.descKey)}
+                    </p>
                   </div>
-                  <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                    {t(value.descKey)}
-                  </p>
                 </div>
               </Reveal>
             ))}
@@ -339,10 +415,20 @@ export function AboutView() {
             {[...TECH_STACK, ...TECH_STACK].map((tech, i) => (
               <span
                 key={`${tech}-${i}`}
-                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border/60 bg-card px-5 py-2.5 text-sm font-medium text-foreground shadow-soft"
+                className="group/pill relative inline-flex shrink-0 items-center gap-2 rounded-full border border-border/60 bg-card px-5 py-2.5 text-sm font-medium text-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                {tech}
+                {/* Gradient border overlay on hover */}
+                <span
+                  className="pointer-events-none absolute -inset-px rounded-full bg-gradient-to-r from-primary/50 via-accent/40 to-primary/50 opacity-0 transition-opacity duration-300 group-hover/pill:opacity-100"
+                  aria-hidden
+                />
+                {/* Subtle glow on hover */}
+                <span
+                  className="pointer-events-none absolute -inset-2 rounded-full bg-primary/20 opacity-0 blur-md transition-opacity duration-300 group-hover/pill:opacity-100"
+                  aria-hidden
+                />
+                <span className="relative h-1.5 w-1.5 rounded-full bg-gradient-to-r from-primary to-accent transition-transform duration-300 group-hover/pill:scale-150" />
+                <span className="relative">{tech}</span>
               </span>
             ))}
           </div>
@@ -397,43 +483,67 @@ function TeamCard({ member, delay }: { member: TeamMember; delay: number }) {
 
   return (
     <Reveal delay={delay}>
-      <Card className="group h-full overflow-hidden rounded-2xl p-6 shadow-soft transition-all duration-300 hover:-translate-y-1.5 hover:shadow-glow">
-        <div className="flex items-start gap-4">
-          <div className="relative shrink-0">
-            <div className="overflow-hidden rounded-2xl ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/40">
-              <img
-                src={member.avatar}
-                alt={member.name}
-                className="h-16 w-16 object-cover transition-transform duration-300 group-hover:scale-110"
-                loading="lazy"
-              />
+      <div className="group relative h-full">
+        {/* Gradient border on hover */}
+        <span
+          className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-br from-primary/50 via-accent/30 to-primary/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          aria-hidden
+        />
+        {/* Shimmer sweep on hover */}
+        <span
+          className="pointer-events-none absolute -inset-px overflow-hidden rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          aria-hidden
+        >
+          <span
+            className="absolute inset-0 animate-[shimmer_2.5s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent"
+            style={{ transform: 'translateX(-100%)' }}
+          />
+        </span>
+        <Card className="relative h-full overflow-hidden rounded-2xl p-6 shadow-soft transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-glow">
+          {/* Top gradient accent line on hover */}
+          <span
+            className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            aria-hidden
+          />
+          <div className="flex items-start gap-4">
+            <div className="relative shrink-0">
+              <div className="overflow-hidden rounded-2xl ring-2 ring-primary/20 ring-offset-2 ring-offset-card transition-all duration-300 group-hover:ring-primary/50 group-hover:ring-offset-accent/20">
+                <img
+                  src={member.avatar}
+                  alt={member.name}
+                  className="h-20 w-20 object-cover transition-transform duration-300 group-hover:scale-110"
+                  loading="lazy"
+                />
+              </div>
+              {/* Status dot */}
+              <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-card bg-accent shadow-soft" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate text-base font-semibold sm:text-lg">{member.name}</h3>
+              <p className="mt-0.5 text-sm font-medium text-primary">{member.role}</p>
             </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate text-base font-semibold sm:text-lg">{member.name}</h3>
-            <p className="mt-0.5 text-sm font-medium text-primary">{member.role}</p>
-          </div>
-        </div>
-        <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-          {member.bio}
-        </p>
-        {socials.length > 0 && (
-          <div className="mt-5 flex items-center gap-2">
-            {socials.map((s) => (
-              <a
-                key={s.key}
-                href={s.href!}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`${member.name} on ${s.label}`}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
-              >
-                <s.icon className="h-4 w-4" />
-              </a>
-            ))}
-          </div>
-        )}
-      </Card>
+          <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+            {member.bio}
+          </p>
+          {socials.length > 0 && (
+            <div className="mt-5 flex items-center gap-2">
+              {socials.map((s) => (
+                <a
+                  key={s.key}
+                  href={s.href!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${member.name} on ${s.label}`}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all duration-300 hover:-translate-y-0.5 hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-white hover:shadow-glow"
+                >
+                  <s.icon className="h-4 w-4" />
+                </a>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
     </Reveal>
   )
 }

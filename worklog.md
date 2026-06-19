@@ -746,3 +746,105 @@ Stage Summary:
 - Portfolio gallery lightbox now has full keyboard navigation + prev/next buttons + image counter + smooth transitions
 - All features bilingual (en/fa) with RTL-aware keyboard navigation
 - Platform continues to be stable and increasingly premium
+
+---
+Task ID: 11-a
+Agent: full-stack-developer (admin dashboard stats)
+Task: Add a dashboard overview screen as the default landing view inside the Admin panel, showing platform stat cards, recent contact-request + lead activity, and quick-action shortcuts — without breaking existing resource CRUD tables.
+
+Work Log:
+- Read worklog.md to understand the project architecture and reviewed the full admin-view.tsx (1389 lines pre-change) to understand the existing ModelKey type, MODEL_CONFIGS, MODEL_ORDER, useAdminFetch/useAdminMutations hooks, LoginCard, DynamicForm, RecordTable, EditDialog/ViewDialog/DeleteDialog and Dashboard components.
+- Verified design tokens exist in globals.css (shadow-soft, shadow-glow, text-gradient) and that `cn` from @/lib/utils was NOT yet imported in admin-view.
+- Added new lucide-react imports (BookOpen, Megaphone, ArrowRight, TrendingUp) and the `cn` import from @/lib/utils.
+- Introduced a new `ActiveView = ModelKey | 'dashboard'` type so the dashboard can be a peer of the resource models without polluting ModelKey (which is used as a typed API query parameter).
+- Refactored the Dashboard component:
+  * Changed `active` state from `useState<ModelKey>('portfolio')` to `useState<ActiveView>('dashboard')` so the admin lands on the dashboard instead of the Portfolios table after login.
+  * Added `activeModel: ModelKey = active === 'dashboard' ? 'portfolio' : active` defensive fallback so the always-mounted EditDialog/ViewDialog/DeleteDialog receive a valid `ModelKey` even when the dashboard is the active view (the dialogs stay closed because their record state is null).
+  * Added two new helpers wired to the dashboard's quick actions: `handleQuickNavigate(m)` (set active + close sidebar) and `handleQuickNew(m)` (set active + close sidebar + set editRecord={} + open EditDialog). Because React batches state updates and the dialog only renders its form once `open=true`, by the time EditDialog paints, `active` is the target model and the correct MODEL_CONFIGS entry is used.
+  * Sidebar now has an "Overview" section above "Resources" containing a Dashboard button (LayoutDashboard icon) that sets active back to 'dashboard'. The button uses the same active styling as resource items (bg-primary + text-primary-foreground + shadow-xs) when active==='dashboard'. Migrated the sidebar buttons' template literals to `cn()` for consistency with the new section.
+  * Main content area now conditionally renders `<DashboardOverview .../>` when `active === 'dashboard'` and the existing `<RecordTable model={active} .../>` otherwise (TS narrows `active` to ModelKey in the else branch).
+  * Updated the three dialog components to receive `model={activeModel}` instead of `model={active}` for type-safety.
+- Built the new `DashboardOverview` component (plus supporting `StatCard`, `ActivityRow`, `ActivityColumn`, `contactStatusBadge`, `leadStatusBadge`, `getInitials` helpers and `DashboardStats`/`StatCardConfig` interfaces) inserted right above the Dashboard component:
+  * Data fetching: a single `useQuery({ queryKey: ['admin', 'dashboard-stats'], ... })` that fires `Promise.all` of six parallel `fetch('/api/admin?model=...')` requests (portfolio, blogPost, contactRequest, lead, newsletter, caseStudy) using the admin token header. Each response is unwrapped to `json.items ?? []` and reshaped into a `DashboardStats` object where contactRequests and leads are kept as arrays (so we can render the recent-activity lists from the same payload — no extra requests). `staleTime: 30_000` and `enabled: !!token` match the existing `useAdminFetch` pattern. Loading skeletons and an error banner with Retry button are wired in.
+  * Welcome header: rounded-2xl gradient card (`from-primary/[0.04] via-background to-accent/[0.04]`) with two blurred accent blobs, an "Admin Dashboard" pill (LayoutDashboard icon), a `Welcome back, Studio` headline using `text-gradient`, an intro paragraph, and a "Refresh stats" button bound to `refetch()` with a spinning RefreshCw while fetching.
+  * Stat cards row: 6 cards in a responsive grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6`) so the layout stays perfectly tiled at every breakpoint (6 cards → 1×6 on xl, 2×3 on lg, 3×2 on sm). Each `StatCard` is a `<button>` with: colored icon circle (primary/accent/rose/amber/violet/emerald), TrendingUp glyph in the top-right corner (muted → accent on hover), big bold count (3xl), uppercase muted label, subtle gradient wash on hover (per-card from/to tokens), shadow-soft → hover:-translate-y-1 + hover:border-primary/40 + hover:shadow-glow. Loading state shows a Skeleton block instead of the number. Clicking a card navigates to the corresponding resource via `onNavigate(model)`.
+  * Quick actions: rounded-2xl card with 4 pill buttons (New Portfolio = primary default, New Blog Post / View Contact Requests / View Leads = outline) — outline buttons get an ArrowRight suffix for affordance. "New" actions call `onNewRecord(model)` (which opens the create dialog for that model); "View" actions call `onNavigate(model)`.
+  * Recent activity: two-column grid (`lg:grid-cols-2`) of `ActivityColumn` cards. Each card has a header with colored icon, title, "Most recent 5 entries" caption, and a "See all" ghost button (ArrowRight suffix) that navigates to the full resource table. The body lists up to 5 `ActivityRow` entries — each with a gradient initials avatar, name + email (truncated), and a right-aligned status badge + formatted date. Contact-request statuses use contactStatusBadge (New/Read/Replied/Archived → primary/amber/accent/muted); lead statuses use leadStatusBadge (New/Contacted/Qualified/Won/Lost → primary/amber/accent/emerald/rose). Loading state shows 3 skeleton rows; empty state shows a dashed-border placeholder.
+  * Recent lists are computed with `React.useMemo` from `data.contactRequests` / `data.leads`, sorted by `createdAt` descending and sliced to 5 — robust against missing createdAt.
+- Ran `cd /home/z/my-project && bun run lint 2>&1 | tail -15` — zero errors, zero warnings. dev.log shows healthy compiles (`✓ Compiled in ...`) with no warnings introduced.
+
+Stage Summary:
+- File modified: `src/components/views/admin-view.tsx` (single file, ~490 lines added; total now ~1880 lines).
+- Admin panel now lands on a premium dashboard overview after login instead of the Portfolios table; a "Dashboard" item was added to the top of the sidebar (under a new "Overview" heading) so users can return to it at any time.
+- Dashboard shows: 6 stat cards (Portfolios, Blog Posts, Contact Requests, Leads, Newsletter, Case Studies) in a responsive 1/2/3/6 grid with gradient hover washes + hover lift + colored icon circles; quick-action pill buttons (New Portfolio, New Blog Post, View Contact Requests, View Leads); and a two-column recent-activity section (top-5 contact requests + top-5 leads, sorted by date desc) with gradient avatars, status badges, and "See all" links to the corresponding resource table.
+- All counts are fetched in a single `Promise.all` of six parallel admin GET requests under the TanStack Query key `['admin', 'dashboard-stats']`, reusing the existing `/api/admin?model=...` endpoint and the admin token header — no API changes needed. The contact-request and lead arrays are kept client-side so the recent-activity lists reuse the same payload.
+- Existing functionality preserved: sidebar navigation, record tables, search/refresh, create/edit/view/delete dialogs, login gate, mobile sheet behavior, dark-mode tokens. The new `ActiveView` type and `activeModel` fallback ensure the always-mounted dialogs stay type-safe and inert while the dashboard is the active view.
+- Lint clean; dev.log shows successful compiles. No other files modified; no new i18n keys (admin is intentionally English-only, per task spec).
+
+---
+Task ID: 11-b
+Agent: full-stack-developer (About + Case Studies)
+Task: Apply premium styling enhancements to AboutView and CaseStudiesView without changing functionality, translations, or component structure.
+
+Work Log:
+- Read worklog.md, both target views, globals.css (text-gradient, bg-grid, bg-radial-fade, shadow-soft, shadow-glow, animate-float, shimmer keyframe), the Card/Badge/Counter components, and the portfolio-view hover pattern reference (-inset-px gradient ring + shimmer sweep + slide-up CTA).
+- Enhanced `src/components/views/about-view.tsx`:
+  * STATS array: added per-stat `icon` (TrendingUp / Award / Heart / Users — all already imported).
+  * Stats band: each stat now lives in its own rounded-2xl card with `border-secondary-foreground/10` + `bg-secondary-foreground/[0.04]`, hover lift (-translate-y-1) + shadow-glow + brighter border/bg; gradient icon circle (size-12, from-primary to-accent, shadow-glow, scale-110 + rotate-3 on hover); numbers now use `text-gradient` via the Counter's parent div (pattern verified against home-view line 281).
+  * Team section: wrapped in `relative overflow-hidden`; added `bg-radial-fade` + masked `bg-grid` (radial-gradient mask), two large blurred `animate-float` gradient-mesh blobs (primary left, accent right, staggered delays), and five decorative floating dots at varied positions/delays.
+  * TeamCard: wrapped Card in a relative `group` container so the gradient border (-inset-px from-primary/50 via-accent/30 to-primary/50) and shimmer sweep (animate-[shimmer_2.5s...]) can sit outside the Card's overflow-hidden; added a top accent gradient line on hover; enlarged avatar to h-20 w-20 with ring-2 ring-primary/20 ring-offset-2 ring-offset-card (intensifies to ring-primary/50 + ring-offset-accent/20 on hover); added an accent status dot at the avatar corner; social icons now use bg-muted base with hover fill of `bg-gradient-to-br from-primary to-accent text-white shadow-glow` and -translate-y-0.5 lift; replaced `hover:` with `group-hover:` for the lift/shadow so the wrapper-level hover drives them.
+  * Values deep-dive section: added a full-width gradient top border (from-primary via-accent to-primary), masked `bg-grid` pattern background, and relative positioning; each value card now sits inside a relative `group` wrapper that carries the -inset-px gradient border on hover; inside the (overflow-hidden) card a top accent gradient line appears on hover; the value icon container upgraded from `bg-accent/10 text-accent` to `bg-gradient-to-br from-primary to-accent text-white shadow-soft` with scale-110 + rotate-3 on hover.
+  * Technologies marquee: each tech pill is now `group/pill`-scoped with hover lift (-translate-y-0.5), hover:border-primary/40, hover:shadow-glow; layered a -inset-px gradient border (from-primary/50 via-accent/40 to-primary/50) and a -inset-2 bg-primary/20 blur-md glow on hover; the bullet dot is now `bg-gradient-to-r from-primary to-accent` and scales to 1.5x on hover; pill content wrapped in `relative` spans so it sits above the overlay layers.
+- Enhanced `src/components/views/case-studies-view.tsx`:
+  * Added `Building2` to lucide-react imports for the client-name row icon.
+  * MetricChip: changed value text from `text-accent` to `text-gradient` (verified pattern against case-study-detail-view line 121).
+  * Hero: applied a radial-gradient `maskImage`/`WebkitMaskImage` to the existing `bg-grid` so it fades out at the edges (mask already had bg-radial-fade overlaid).
+  * CaseStudyCard: motion.article upgraded to `group relative` + `hover:shadow-glow`; added a -inset-px gradient border ring (from-primary/50 via-accent/30 to-primary/50) + a shimmer sweep span (animate-[shimmer_2s...]) that fade in on hover (mirrors portfolio-view pattern); base cover gradient softened from black/55 to black/40; added a hover-only dark gradient overlay (from-black/80 via-black/20 to-transparent); industry Badge restyled to `bg-gradient-to-r from-primary to-accent text-white shadow-glow` with a white dot; the top-right circular ArrowUpRight indicator moved to top-right (was bottom-right) so it no longer collides with the new slide-up button; added a "Read Case Study" button that translates up from the cover bottom on hover (translate-y-full → 0); removed the redundant bottom-of-body "Read Case Study" text since the slide-up button now serves as the primary CTA (kept metrics with `mt-auto` so they pin to the bottom of the body for consistent card heights); client name now prefixed with a Building2 icon and a 1px vertical separator.
+  * Bottom CTA: converted from `bg-secondary` to `bg-gradient-to-r from-primary to-accent` with shadow-glow; swapped the accent/primary blur blobs for white/10 ones; heading now white, description white/80; the CTA button switched to `variant="secondary"` with `bg-white text-primary hover:bg-white/90` for proper contrast on the gradient band.
+- Ran `bun run lint` → 0 errors, 0 warnings.
+- Ran `bunx tsc --noEmit` → no errors in either modified file (all reported TS errors are pre-existing and in unrelated files: examples/, skills/, admin route, admin-view.tsx).
+- dev.log shows healthy `✓ Compiled` lines and `GET /api/case-studies 200` responses after edits.
+
+Stage Summary:
+- AboutView visually upgraded across 4 sub-sections: Stats band (gradient-icon cards + text-gradient numbers + hover lift), Team section (radial-fade + masked grid + floating mesh blobs + decorative dots, team cards with gradient-border + shimmer + larger ringed avatar + gradient-fill socials), Values deep-dive (gradient top border + masked grid background + gradient icons + gradient hover border + top accent line), Technologies marquee (premium pills with gradient border + glow + gradient dot scaling).
+- CaseStudiesView visually upgraded across 3 sub-sections: Hero (masked bg-grid for soft edges), Case study cards (gradient border + shimmer sweep on hover, hover-only dark gradient overlay, gradient industry badge, slide-up "Read Case Study" button on cover, top-right hover indicator, icon + separator on client name, text-gradient metric values), Bottom CTA (full-width from-primary to-accent gradient band with bg-grid overlay + white CTA button).
+- All design tokens used (text-gradient, bg-grid, bg-radial-fade, shadow-soft, shadow-glow, animate-float, animate-[shimmer...], ltr-num, rtl-flip) — no new CSS or i18n keys introduced.
+- All functionality preserved: useSite/useCaseStudies data fetching, parseList metric parsing, tc() translations, useNav navigation, RTL-aware classes (rtl-flip, conditional margins), useT/useLang hooks, framer-motion whileHover on case study cards, loading skeletons, empty state.
+- Two files modified: `src/components/views/about-view.tsx`, `src/components/views/case-studies-view.tsx`. Lint clean, TypeScript clean for both files, dev server compiles successfully.
+
+---
+Task ID: 11
+Agent: Main (orchestrator) — cron review round
+Task: QA testing (dark mode, all views), admin dashboard stats, About + Case Studies styling enhancements
+
+Work Log:
+- QA tested dark mode: toggle works, no console errors on home scroll
+- QA tested About page: team section, values, stats all render correctly
+- QA tested Case Studies listing: all 3 case studies load
+- Dispatched 2 parallel subagents:
+  * 11-a: Added admin dashboard stats overview
+    - Dashboard as default landing view (instead of jumping to Portfolios)
+    - "Dashboard" sidebar item at top with LayoutDashboard icon
+    - 6 stat cards: Portfolios (8), Blog Posts (6), Contact Requests (3), Leads (0), Newsletter (5), Case Studies (3) — each with colored icon circle, big number, label, gradient hover, click to navigate
+    - Quick Actions: New Portfolio, New Blog Post, View Contact Requests, View Leads
+    - Recent Activity: two-column layout showing top-5 contact requests + top-5 leads with initials avatar, name/email, status badge, date
+    - Welcome header with gradient card, "Welcome back, Studio" heading, Refresh stats button
+    - Single useQuery with Promise.all of 6 parallel admin API calls
+  * 11-b: Enhanced About page + Case Studies listing
+    - About team section: bg-radial-fade + masked bg-grid, floating gradient-mesh blur blobs, decorative dots, team cards with gradient border ring + shimmer sweep on hover, enlarged avatar with ring-2 ring-primary/20, social icons with gradient hover circles
+    - About values: full-width gradient top border, masked bg-grid, value cards with gradient border + gradient icon (from-primary to-accent) with scale+rotate on hover
+    - About stats: individual rounded-2xl cards with gradient icon circles, text-gradient numbers, hover lift + shadow-glow
+    - About tech marquee: pills with gradient border overlay, blurred primary glow, gradient dot on hover
+    - Case studies hero: radial-gradient mask on bg-grid
+    - Case study cards: gradient border ring + shimmer on hover, hover dark gradient overlay, slide-up "Read Case Study" button, industry badge with gradient background, Building2 icon + separator for client name, MetricChip with text-gradient values, top-right circular ArrowUpRight
+    - Case studies bottom CTA: full-width gradient band (from-primary to-accent) with bg-grid + white blur blobs
+- Verified admin dashboard: stat cards show real counts, clicking navigates to resource table, recent activity shows data
+- Verified About + Case Studies enhanced styling renders correctly in English and Persian RTL
+- Lint passes with 0 errors; all endpoints return 200
+
+Stage Summary:
+- Admin panel now has a comprehensive dashboard overview with real-time stats, quick actions, and recent activity
+- About page team + values + stats + tech sections significantly enhanced with premium styling
+- Case Studies listing cards enhanced with hover overlays, gradient borders, metrics display, slide-up CTAs
+- All features work in both English (LTR) and Persian (RTL) modes
+- Platform continues to be stable and increasingly premium

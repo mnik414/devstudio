@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   BarChart3,
+  Building2,
   FileSearch,
   Sparkles,
 } from 'lucide-react'
@@ -28,7 +29,7 @@ interface CaseStudyMetric {
 function MetricChip({ metric }: { metric: CaseStudyMetric }) {
   return (
     <div className="flex flex-col gap-0.5 rounded-lg border border-border/60 bg-muted/40 px-3 py-2">
-      <span className="text-sm font-bold leading-none text-accent sm:text-base">
+      <span className="text-sm font-bold leading-none text-gradient sm:text-base">
         {metric.value}
       </span>
       <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -60,8 +61,24 @@ function CaseStudyCard({
         whileHover={{ y: -6 }}
         transition={{ type: 'spring', stiffness: 260, damping: 22 }}
         onClick={() => onOpen(study.slug)}
-        className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-soft transition-colors hover:border-primary/40"
+        className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-soft transition-colors hover:border-primary/40 hover:shadow-glow"
       >
+        {/* Gradient border ring on hover */}
+        <span
+          className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-br from-primary/50 via-accent/30 to-primary/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          aria-hidden
+        />
+        {/* Shimmer sweep on hover */}
+        <span
+          className="pointer-events-none absolute -inset-px overflow-hidden rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          aria-hidden
+        >
+          <span
+            className="absolute inset-0 animate-[shimmer_2s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent"
+            style={{ transform: 'translateX(-100%)' }}
+          />
+        </span>
+
         <div className="relative aspect-video overflow-hidden bg-muted">
           {study.coverImage ? (
             <img
@@ -75,26 +92,45 @@ function CaseStudyCard({
               <FileSearch className="h-10 w-10 opacity-40" />
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/0 to-transparent" />
+          {/* Base subtle gradient (always visible) */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          {/* Hover gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          {/* Industry badge with gradient background */}
           <div className="absolute left-4 top-4">
             <Badge
               variant="secondary"
-              className="border-0 bg-white/15 text-white backdrop-blur-md"
+              className="border-0 bg-gradient-to-r from-primary to-accent text-white shadow-glow backdrop-blur-md"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              <span className="h-1.5 w-1.5 rounded-full bg-white" />
               {study.industry}
             </Badge>
           </div>
-          <div className="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-secondary opacity-0 shadow-soft transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 translate-x-2">
+          {/* Top-right circular indicator */}
+          <div className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-secondary opacity-0 shadow-soft transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-2">
             <ArrowUpRight className={cn('h-4 w-4', lang === 'fa' && 'rtl-flip')} />
+          </div>
+          {/* Read Case Study button slides up from bottom */}
+          <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+            <div className="p-3">
+              <span className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg">
+                {t('caseStudies.readCase')}
+                <ArrowRight className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-4 p-6">
+        <div className="relative flex flex-1 flex-col gap-4 p-6">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-              {study.clientName}
-            </p>
+            {/* Client name with icon + subtle separator */}
+            <div className="flex items-center gap-2">
+              <Building2 className="h-3.5 w-3.5 text-primary" />
+              <span className="h-3 w-px bg-border/60" aria-hidden />
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                {study.clientName}
+              </p>
+            </div>
             <h3 className="text-xl font-bold leading-snug tracking-tight text-balance">
               {title}
             </h3>
@@ -104,17 +140,12 @@ function CaseStudyCard({
           </div>
 
           {metrics.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="mt-auto grid grid-cols-3 gap-2">
               {metrics.map((m) => (
                 <MetricChip key={m.label} metric={m} />
               ))}
             </div>
           )}
-
-          <div className="mt-auto flex items-center gap-1.5 pt-2 text-sm font-semibold text-primary">
-            {t('caseStudies.readCase')}
-            <ArrowRight className={cn('h-4 w-4 transition-transform duration-300 group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
-          </div>
         </div>
       </motion.article>
     </Reveal>
@@ -177,7 +208,15 @@ export function CaseStudiesView() {
     <div className="relative">
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border/60 bg-muted/20">
-        <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
+        <div
+          className="pointer-events-none absolute inset-0 bg-grid opacity-40"
+          style={{
+            maskImage:
+              'radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 80%)',
+            WebkitMaskImage:
+              'radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 80%)',
+          }}
+        />
         <div className="pointer-events-none absolute inset-0 bg-radial-fade" />
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
           <SectionHeading
@@ -236,22 +275,23 @@ export function CaseStudiesView() {
       {!isError && items.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
           <Reveal>
-            <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-secondary px-6 py-12 text-center shadow-soft sm:px-12 sm:py-16">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-accent px-6 py-12 text-center shadow-glow sm:px-12 sm:py-16">
               <div className="pointer-events-none absolute inset-0 bg-grid opacity-10" />
-              <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+              <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
               <div className="relative">
-                <h3 className="text-2xl font-bold tracking-tight text-secondary-foreground sm:text-3xl">
+                <h3 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   {t('caseStudies.ctaTitle')}
                 </h3>
-                <p className="mx-auto mt-3 max-w-xl text-sm text-secondary-foreground/70 sm:text-base">
+                <p className="mx-auto mt-3 max-w-xl text-sm text-white/80 sm:text-base">
                   Have a tough problem worth a deep-dive? Let&apos;s build
                   something measurable together.
                 </p>
                 <Button
                   onClick={() => setView('contact')}
                   size="lg"
-                  className="mt-7"
+                  variant="secondary"
+                  className="mt-7 bg-white text-primary hover:bg-white/90"
                 >
                   {t('caseStudies.ctaButton')}
                   <ArrowRight className={cn('ml-2 h-4 w-4', lang === 'fa' && 'rtl-flip ml-0 mr-2')} />

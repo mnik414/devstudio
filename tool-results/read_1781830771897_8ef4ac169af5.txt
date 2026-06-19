@@ -1,0 +1,1389 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+     5→import { toast } from 'sonner'
+     6→import { useNav } from '@/lib/store'
+     7→import {
+     8→  LayoutDashboard,
+     9→  LogOut,
+    10→  ArrowLeft,
+    11→  Plus,
+    12→  Pencil,
+    13→  Trash2,
+    14→  Eye,
+    15→  Lock,
+    16→  ShieldCheck,
+    17→  Search,
+    18→  FolderKanban,
+    19→  Tags,
+    20→  Cpu,
+    21→  Newspaper,
+    22→  Bookmark,
+    23→  FlaskConical,
+    24→  Quote,
+    25→  Users,
+    26→  Sparkles,
+    27→  HelpCircle,
+    28→  Inbox,
+    29→  Mail,
+    30→  Settings as SettingsIcon,
+    31→  Loader2,
+    32→  KeyRound,
+    33→  RefreshCw,
+    34→} from 'lucide-react'
+    35→
+    36→import { Button } from '@/components/ui/button'
+    37→import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+    38→import { Input } from '@/components/ui/input'
+    39→import { Label } from '@/components/ui/label'
+    40→import { Textarea } from '@/components/ui/textarea'
+    41→import { Switch } from '@/components/ui/switch'
+    42→import { Badge } from '@/components/ui/badge'
+    43→import { Skeleton } from '@/components/ui/skeleton'
+    44→import { Separator } from '@/components/ui/separator'
+    45→import { ScrollArea } from '@/components/ui/scroll-area'
+    46→import {
+    47→  Table,
+    48→  TableHeader,
+    49→  TableBody,
+    50→  TableHead,
+    51→  TableRow,
+    52→  TableCell,
+    53→} from '@/components/ui/table'
+    54→import {
+    55→  Dialog,
+    56→  DialogContent,
+    57→  DialogDescription,
+    58→  DialogFooter,
+    59→  DialogHeader,
+    60→  DialogTitle,
+    61→} from '@/components/ui/dialog'
+    62→import {
+    63→  AlertDialog,
+    64→  AlertDialogAction,
+    65→  AlertDialogCancel,
+    66→  AlertDialogContent,
+    67→  AlertDialogDescription,
+    68→  AlertDialogFooter,
+    69→  AlertDialogHeader,
+    70→  AlertDialogTitle,
+    71→} from '@/components/ui/alert-dialog'
+    72→
+    73→// ---------------------------------------------------------------------------
+    74→// Types
+    75→// ---------------------------------------------------------------------------
+    76→
+    77→type ModelKey =
+    78→  | 'portfolio'
+    79→  | 'portfolioCategory'
+    80→  | 'technology'
+    81→  | 'blogPost'
+    82→  | 'blogCategory'
+    83→  | 'tag'
+    84→  | 'caseStudy'
+    85→  | 'testimonial'
+    86→  | 'teamMember'
+    87→  | 'service'
+    88→  | 'faq'
+    89→  | 'lead'
+    90→  | 'contactRequest'
+    91→  | 'setting'
+    92→  | 'newsletter'
+    93→
+    94→type FieldType = 'text' | 'textarea' | 'number' | 'switch' | 'json' | 'select'
+    95→
+    96→interface FieldConfig {
+    97→  key: string
+    98→  label: string
+    99→  type: FieldType
+   100→  placeholder?: string
+   101→  options?: { label: string; value: string }[]
+   102→  required?: boolean
+   103→  default?: unknown
+   104→}
+   105→
+   106→interface ModelConfig {
+   107→  label: string
+   108→  singular: string
+   109→  icon: React.ComponentType<{ className?: string }>
+   110→  description: string
+   111→  listColumns: { key: string; label: string; truncate?: number }[]
+   112→  formFields: FieldConfig[]
+   113→  readOnly?: boolean
+   114→}
+   115→
+   116→type RecordData = Record<string, unknown> & { id?: string; createdAt?: string }
+   117→
+   118→// ---------------------------------------------------------------------------
+   119→// Model configurations
+   120→// ---------------------------------------------------------------------------
+   121→
+   122→const MODEL_CONFIGS: Record<ModelKey, ModelConfig> = {
+   123→  portfolio: {
+   124→    label: 'Portfolios',
+   125→    singular: 'Portfolio',
+   126→    icon: FolderKanban,
+   127→    description: 'Showcase projects with full case-study metadata.',
+   128→    listColumns: [
+   129→      { key: 'title', label: 'Title' },
+   130→      { key: 'year', label: 'Year' },
+   131→      { key: 'featured', label: 'Featured' },
+   132→      { key: 'published', label: 'Published' },
+   133→    ],
+   134→    formFields: [
+   135→      { key: 'title', label: 'Title', type: 'text', required: true },
+   136→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   137→      { key: 'summary', label: 'Summary', type: 'textarea' },
+   138→      { key: 'description', label: 'Description', type: 'textarea' },
+   139→      { key: 'coverImage', label: 'Cover Image URL', type: 'text' },
+   140→      { key: 'gallery', label: 'Gallery (JSON array)', type: 'json', placeholder: '["/img/1.jpg", "/img/2.jpg"]' },
+   141→      { key: 'liveUrl', label: 'Live URL', type: 'text' },
+   142→      { key: 'repoUrl', label: 'Repo URL', type: 'text' },
+   143→      { key: 'clientName', label: 'Client Name', type: 'text' },
+   144→      { key: 'year', label: 'Year', type: 'number', default: new Date().getFullYear() },
+   145→      { key: 'featured', label: 'Featured', type: 'switch', default: false },
+   146→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   147→      { key: 'problem', label: 'Problem', type: 'textarea' },
+   148→      { key: 'solution', label: 'Solution', type: 'textarea' },
+   149→      { key: 'result', label: 'Result', type: 'textarea' },
+   150→      { key: 'challenge', label: 'Challenge', type: 'textarea' },
+   151→      { key: 'architecture', label: 'Architecture', type: 'textarea' },
+   152→      { key: 'implementation', label: 'Implementation', type: 'textarea' },
+   153→      { key: 'outcome', label: 'Outcome', type: 'textarea' },
+   154→      { key: 'features', label: 'Features (JSON array)', type: 'json', placeholder: '["Fast","Secure"]' },
+   155→    ],
+   156→  },
+   157→  portfolioCategory: {
+   158→    label: 'Portfolio Categories',
+   159→    singular: 'Portfolio Category',
+   160→    icon: Bookmark,
+   161→    description: 'Group portfolios by category.',
+   162→    listColumns: [
+   163→      { key: 'name', label: 'Name' },
+   164→      { key: 'slug', label: 'Slug' },
+   165→    ],
+   166→    formFields: [
+   167→      { key: 'name', label: 'Name', type: 'text', required: true },
+   168→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   169→      { key: 'icon', label: 'Icon (lucide name)', type: 'text' },
+   170→    ],
+   171→  },
+   172→  technology: {
+   173→    label: 'Technologies',
+   174→    singular: 'Technology',
+   175→    icon: Cpu,
+   176→    description: 'Tech stack used across portfolios.',
+   177→    listColumns: [
+   178→      { key: 'name', label: 'Name' },
+   179→      { key: 'color', label: 'Color' },
+   180→    ],
+   181→    formFields: [
+   182→      { key: 'name', label: 'Name', type: 'text', required: true },
+   183→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   184→      { key: 'icon', label: 'Icon (lucide name)', type: 'text' },
+   185→      { key: 'color', label: 'Color (hex)', type: 'text', placeholder: '#14B8A6' },
+   186→    ],
+   187→  },
+   188→  blogPost: {
+   189→    label: 'Blog Posts',
+   190→    singular: 'Blog Post',
+   191→    icon: Newspaper,
+   192→    description: 'Long-form articles with markdown content.',
+   193→    listColumns: [
+   194→      { key: 'title', label: 'Title' },
+   195→      { key: 'authorName', label: 'Author' },
+   196→      { key: 'published', label: 'Published' },
+   197→      { key: 'featured', label: 'Featured' },
+   198→    ],
+   199→    formFields: [
+   200→      { key: 'title', label: 'Title', type: 'text', required: true },
+   201→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   202→      { key: 'excerpt', label: 'Excerpt', type: 'textarea' },
+   203→      { key: 'content', label: 'Content (Markdown)', type: 'textarea' },
+   204→      { key: 'coverImage', label: 'Cover Image URL', type: 'text' },
+   205→      { key: 'readingTime', label: 'Reading Time (min)', type: 'number', default: 5 },
+   206→      { key: 'authorName', label: 'Author Name', type: 'text', default: 'Editorial Team' },
+   207→      { key: 'authorAvatar', label: 'Author Avatar URL', type: 'text' },
+   208→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   209→      { key: 'featured', label: 'Featured', type: 'switch', default: false },
+   210→    ],
+   211→  },
+   212→  blogCategory: {
+   213→    label: 'Blog Categories',
+   214→    singular: 'Blog Category',
+   215→    icon: Bookmark,
+   216→    description: 'Categories for blog posts.',
+   217→    listColumns: [
+   218→      { key: 'name', label: 'Name' },
+   219→      { key: 'slug', label: 'Slug' },
+   220→    ],
+   221→    formFields: [
+   222→      { key: 'name', label: 'Name', type: 'text', required: true },
+   223→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   224→      { key: 'icon', label: 'Icon (lucide name)', type: 'text' },
+   225→    ],
+   226→  },
+   227→  tag: {
+   228→    label: 'Tags',
+   229→    singular: 'Tag',
+   230→    icon: Tags,
+   231→    description: 'Tags for blog posts.',
+   232→    listColumns: [
+   233→      { key: 'name', label: 'Name' },
+   234→      { key: 'slug', label: 'Slug' },
+   235→    ],
+   236→    formFields: [
+   237→      { key: 'name', label: 'Name', type: 'text', required: true },
+   238→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   239→    ],
+   240→  },
+   241→  caseStudy: {
+   242→    label: 'Case Studies',
+   243→    singular: 'Case Study',
+   244→    icon: FlaskConical,
+   245→    description: 'In-depth project case studies.',
+   246→    listColumns: [
+   247→      { key: 'title', label: 'Title' },
+   248→      { key: 'clientName', label: 'Client' },
+   249→      { key: 'industry', label: 'Industry' },
+   250→      { key: 'featured', label: 'Featured' },
+   251→    ],
+   252→    formFields: [
+   253→      { key: 'title', label: 'Title', type: 'text', required: true },
+   254→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   255→      { key: 'clientName', label: 'Client Name', type: 'text', required: true },
+   256→      { key: 'industry', label: 'Industry', type: 'text' },
+   257→      { key: 'coverImage', label: 'Cover Image URL', type: 'text' },
+   258→      { key: 'summary', label: 'Summary', type: 'textarea' },
+   259→      { key: 'problem', label: 'Problem', type: 'textarea' },
+   260→      { key: 'analysis', label: 'Analysis', type: 'textarea' },
+   261→      { key: 'architecture', label: 'Architecture', type: 'textarea' },
+   262→      { key: 'process', label: 'Process', type: 'textarea' },
+   263→      { key: 'challenges', label: 'Challenges', type: 'textarea' },
+   264→      { key: 'results', label: 'Results', type: 'textarea' },
+   265→      { key: 'lessons', label: 'Lessons', type: 'textarea' },
+   266→      { key: 'metrics', label: 'Metrics (JSON array)', type: 'json', placeholder: '[{"label":"Uptime","value":"99.9%"}]' },
+   267→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   268→      { key: 'featured', label: 'Featured', type: 'switch', default: false },
+   269→    ],
+   270→  },
+   271→  testimonial: {
+   272→    label: 'Testimonials',
+   273→    singular: 'Testimonial',
+   274→    icon: Quote,
+   275→    description: 'Client testimonials and reviews.',
+   276→    listColumns: [
+   277→      { key: 'clientName', label: 'Client' },
+   278→      { key: 'company', label: 'Company' },
+   279→      { key: 'rating', label: 'Rating' },
+   280→      { key: 'published', label: 'Published' },
+   281→    ],
+   282→    formFields: [
+   283→      { key: 'clientName', label: 'Client Name', type: 'text', required: true },
+   284→      { key: 'role', label: 'Role', type: 'text' },
+   285→      { key: 'company', label: 'Company', type: 'text' },
+   286→      { key: 'avatar', label: 'Avatar URL', type: 'text' },
+   287→      { key: 'rating', label: 'Rating (1-5)', type: 'number', default: 5 },
+   288→      { key: 'quote', label: 'Quote', type: 'textarea' },
+   289→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   290→    ],
+   291→  },
+   292→  teamMember: {
+   293→    label: 'Team Members',
+   294→    singular: 'Team Member',
+   295→    icon: Users,
+   296→    description: 'Team member profiles.',
+   297→    listColumns: [
+   298→      { key: 'name', label: 'Name' },
+   299→      { key: 'role', label: 'Role' },
+   300→      { key: 'order', label: 'Order' },
+   301→      { key: 'published', label: 'Published' },
+   302→    ],
+   303→    formFields: [
+   304→      { key: 'name', label: 'Name', type: 'text', required: true },
+   305→      { key: 'role', label: 'Role', type: 'text' },
+   306→      { key: 'bio', label: 'Bio', type: 'textarea' },
+   307→      { key: 'avatar', label: 'Avatar URL', type: 'text' },
+   308→      { key: 'linkedin', label: 'LinkedIn URL', type: 'text' },
+   309→      { key: 'github', label: 'GitHub URL', type: 'text' },
+   310→      { key: 'twitter', label: 'Twitter URL', type: 'text' },
+   311→      { key: 'order', label: 'Display Order', type: 'number', default: 0 },
+   312→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   313→    ],
+   314→  },
+   315→  service: {
+   316→    label: 'Services',
+   317→    singular: 'Service',
+   318→    icon: Sparkles,
+   319→    description: 'Service offerings.',
+   320→    listColumns: [
+   321→      { key: 'title', label: 'Title' },
+   322→      { key: 'icon', label: 'Icon' },
+   323→      { key: 'order', label: 'Order' },
+   324→      { key: 'published', label: 'Published' },
+   325→    ],
+   326→    formFields: [
+   327→      { key: 'title', label: 'Title', type: 'text', required: true },
+   328→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   329→      { key: 'description', label: 'Description', type: 'textarea' },
+   330→      { key: 'icon', label: 'Icon (lucide name)', type: 'text' },
+   331→      { key: 'features', label: 'Features (JSON array)', type: 'json', placeholder: '["Fast","Secure"]' },
+   332→      { key: 'order', label: 'Display Order', type: 'number', default: 0 },
+   333→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   334→    ],
+   335→  },
+   336→  faq: {
+   337→    label: 'FAQs',
+   338→    singular: 'FAQ',
+   339→    icon: HelpCircle,
+   340→    description: 'Frequently asked questions.',
+   341→    listColumns: [
+   342→      { key: 'question', label: 'Question', truncate: 60 },
+   343→      { key: 'category', label: 'Category' },
+   344→      { key: 'order', label: 'Order' },
+   345→      { key: 'published', label: 'Published' },
+   346→    ],
+   347→    formFields: [
+   348→      { key: 'question', label: 'Question', type: 'text', required: true },
+   349→      { key: 'answer', label: 'Answer', type: 'textarea' },
+   350→      { key: 'category', label: 'Category', type: 'text', default: 'General' },
+   351→      { key: 'order', label: 'Display Order', type: 'number', default: 0 },
+   352→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   353→    ],
+   354→  },
+   355→  lead: {
+   356→    label: 'Leads',
+   357→    singular: 'Lead',
+   358→    icon: Inbox,
+   359→    description: 'Inbound estimate requests (read-only).',
+   360→    readOnly: true,
+   361→    listColumns: [
+   362→      { key: 'name', label: 'Name' },
+   363→      { key: 'email', label: 'Email' },
+   364→      { key: 'projectType', label: 'Project Type' },
+   365→      { key: 'budget', label: 'Budget' },
+   366→      { key: 'status', label: 'Status' },
+   367→    ],
+   368→    formFields: [
+   369→      { key: 'status', label: 'Status', type: 'select', options: [
+   370→        { label: 'New', value: 'new' },
+   371→        { label: 'Contacted', value: 'contacted' },
+   372→        { label: 'Qualified', value: 'qualified' },
+   373→        { label: 'Lost', value: 'lost' },
+   374→        { label: 'Won', value: 'won' },
+   375→      ], default: 'new' },
+   376→    ],
+   377→  },
+   378→  contactRequest: {
+   379→    label: 'Contact Requests',
+   380→    singular: 'Contact Request',
+   381→    icon: Mail,
+   382→    description: 'Inbound contact form submissions (read-only).',
+   383→    readOnly: true,
+   384→    listColumns: [
+   385→      { key: 'fullName', label: 'Name' },
+   386→      { key: 'email', label: 'Email' },
+   387→      { key: 'budget', label: 'Budget' },
+   388→      { key: 'status', label: 'Status' },
+   389→    ],
+   390→    formFields: [
+   391→      { key: 'status', label: 'Status', type: 'select', options: [
+   392→        { label: 'New', value: 'new' },
+   393→        { label: 'Read', value: 'read' },
+   394→        { label: 'Replied', value: 'replied' },
+   395→        { label: 'Archived', value: 'archived' },
+   396→      ], default: 'new' },
+   397→    ],
+   398→  },
+   399→  setting: {
+   400→    label: 'Settings',
+   401→    singular: 'Setting',
+   402→    icon: SettingsIcon,
+   403→    description: 'Global key/value site settings.',
+   404→    listColumns: [
+   405→      { key: 'key', label: 'Key' },
+   406→      { key: 'value', label: 'Value', truncate: 80 },
+   407→    ],
+   408→    formFields: [
+   409→      { key: 'key', label: 'Key', type: 'text', required: true },
+   410→      { key: 'value', label: 'Value', type: 'textarea' },
+   411→    ],
+   412→  },
+   413→  newsletter: {
+   414→    label: 'Newsletter',
+   415→    singular: 'Subscriber',
+   416→    icon: Mail,
+   417→    description: 'Newsletter email subscribers.',
+   418→    listColumns: [
+   419→      { key: 'email', label: 'Email' },
+   420→      { key: 'source', label: 'Source' },
+   421→      { key: 'active', label: 'Active', boolean: true },
+   422→    ],
+   423→    formFields: [
+   424→      { key: 'email', label: 'Email', type: 'text', required: true },
+   425→      { key: 'source', label: 'Source', type: 'text' },
+   426→      { key: 'active', label: 'Active', type: 'switch' },
+   427→    ],
+   428→  },
+   429→}
+   430→
+   431→const MODEL_ORDER: ModelKey[] = [
+   432→  'portfolio',
+   433→  'portfolioCategory',
+   434→  'technology',
+   435→  'blogPost',
+   436→  'blogCategory',
+   437→  'tag',
+   438→  'caseStudy',
+   439→  'testimonial',
+   440→  'teamMember',
+   441→  'service',
+   442→  'faq',
+   443→  'lead',
+   444→  'contactRequest',
+   445→  'setting',
+   446→  'newsletter',
+   447→]
+   448→
+   449→// ---------------------------------------------------------------------------
+   450→// Helpers
+   451→// ---------------------------------------------------------------------------
+   452→
+   453→function truncateId(id?: string) {
+   454→  if (!id) return '—'
+   455→  return id.length > 10 ? `${id.slice(0, 8)}…` : id
+   456→}
+   457→
+   458→function formatDate(value?: string) {
+   459→  if (!value) return '—'
+   460→  const d = new Date(value)
+   461→  if (Number.isNaN(d.getTime())) return '—'
+   462→  return d.toLocaleString(undefined, {
+   463→    year: 'numeric',
+   464→    month: 'short',
+   465→    day: '2-digit',
+   466→    hour: '2-digit',
+   467→    minute: '2-digit',
+   468→  })
+   469→}
+   470→
+   471→function buildInitialForm(model: ModelKey): Record<string, unknown> {
+   472→  const config = MODEL_CONFIGS[model]
+   473→  const form: Record<string, unknown> = {}
+   474→  for (const f of config.formFields) {
+   475→    if (f.type === 'switch') form[f.key] = f.default ?? false
+   476→    else if (f.type === 'number') form[f.key] = f.default ?? 0
+   477→    else if (f.type === 'json') form[f.key] = ''
+   478→    else if (f.type === 'select') form[f.key] = f.default ?? f.options?.[0]?.value ?? ''
+   479→    else form[f.key] = f.default ?? ''
+   480→  }
+   481→  return form
+   482→}
+   483→
+   484→function hydrateFormFromRecord(model: ModelKey, record: RecordData): Record<string, unknown> {
+   485→  const config = MODEL_CONFIGS[model]
+   486→  const form: Record<string, unknown> = {}
+   487→  for (const f of config.formFields) {
+   488→    const raw = record[f.key]
+   489→    if (f.type === 'switch') form[f.key] = Boolean(raw)
+   490→    else if (f.type === 'number') form[f.key] = raw === undefined || raw === null ? (f.default ?? 0) : Number(raw)
+   491→    else if (f.type === 'json') {
+   492→      if (typeof raw === 'string' && raw.length > 0) {
+   493→        form[f.key] = raw
+   494→      } else if (Array.isArray(raw) || (typeof raw === 'object' && raw !== null)) {
+   495→        form[f.key] = JSON.stringify(raw, null, 2)
+   496→      } else {
+   497→        form[f.key] = ''
+   498→      }
+   499→    } else if (f.type === 'select') {
+   500→      form[f.key] = typeof raw === 'string' ? raw : (f.default ?? '')
+   501→    } else {
+   502→      form[f.key] = typeof raw === 'string' ? raw : raw === null || raw === undefined ? '' : String(raw)
+   503→    }
+   504→  }
+   505→  return form
+   506→}
+   507→
+   508→function serializeForm(model: ModelKey, form: Record<string, unknown>): Record<string, unknown> {
+   509→  const config = MODEL_CONFIGS[model]
+   510→  const out: Record<string, unknown> = {}
+   511→  for (const f of config.formFields) {
+   512→    const val = form[f.key]
+   513→    if (f.type === 'switch') out[f.key] = Boolean(val)
+   514→    else if (f.type === 'number') {
+   515→      const n = Number(val)
+   516→      out[f.key] = Number.isNaN(n) ? 0 : n
+   517→    } else if (f.type === 'json') {
+   518→      const s = (val as string) ?? ''
+   519→      const trimmed = s.trim()
+   520→      if (trimmed === '') {
+   521→        out[f.key] = '[]'
+   522→      } else {
+   523→        try {
+   524→          out[f.key] = JSON.stringify(JSON.parse(trimmed))
+   525→        } catch {
+   526→          throw new Error(`Field "${f.label}" must be valid JSON.`)
+   527→        }
+   528→      }
+   529→    } else if (f.type === 'textarea' || f.type === 'text' || f.type === 'select') {
+   530→      out[f.key] = (val as string) ?? ''
+   531→    } else {
+   532→      out[f.key] = val
+   533→    }
+   534→  }
+   535→  return out
+   536→}
+   537→
+   538→// ---------------------------------------------------------------------------
+   539→// API helpers
+   540→// ---------------------------------------------------------------------------
+   541→
+   542→function useAdminFetch(model: ModelKey, token: string | null) {
+   543→  return useQuery({
+   544→    queryKey: ['admin', model],
+   545→    queryFn: async () => {
+   546→      if (!token) throw new Error('Not authenticated')
+   547→      const res = await fetch(`/api/admin?model=${encodeURIComponent(model)}`, {
+   548→        headers: { 'X-Admin-Token': token },
+   549→      })
+   550→      if (res.status === 401) throw new Error('Unauthorized — check your admin token.')
+   551→      if (!res.ok) throw new Error(`Failed to load ${model} (${res.status})`)
+   552→      const json = await res.json()
+   553→      return (json.items ?? []) as RecordData[]
+   554→    },
+   555→    enabled: !!token,
+   556→    staleTime: 30_000,
+   557→  })
+   558→}
+   559→
+   560→function useAdminMutations(model: ModelKey, token: string | null) {
+   561→  const qc = useQueryClient()
+   562→  const invalidate = () => {
+   563→    qc.invalidateQueries({ queryKey: ['admin', model] })
+   564→  }
+   565→
+   566→  const create = useMutation({
+   567→    mutationFn: async (data: Record<string, unknown>) => {
+   568→      const res = await fetch('/api/admin', {
+   569→        method: 'POST',
+   570→        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token! },
+   571→        body: JSON.stringify({ model, data }),
+   572→      })
+   573→      if (!res.ok) {
+   574→        const j = await res.json().catch(() => ({}))
+   575→        throw new Error(j.error || `Create failed (${res.status})`)
+   576→      }
+   577→      return res.json()
+   578→    },
+   579→    onSuccess: () => {
+   580→      invalidate()
+   581→      toast.success(`${MODEL_CONFIGS[model].singular} created`)
+   582→    },
+   583→    onError: (e: Error) => toast.error(e.message),
+   584→  })
+   585→
+   586→  const update = useMutation({
+   587→    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
+   588→      const res = await fetch('/api/admin', {
+   589→        method: 'PATCH',
+   590→        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token! },
+   591→        body: JSON.stringify({ model, id, data }),
+   592→      })
+   593→      if (!res.ok) {
+   594→        const j = await res.json().catch(() => ({}))
+   595→        throw new Error(j.error || `Update failed (${res.status})`)
+   596→      }
+   597→      return res.json()
+   598→    },
+   599→    onSuccess: () => {
+   600→      invalidate()
+   601→      toast.success(`${MODEL_CONFIGS[model].singular} updated`)
+   602→    },
+   603→    onError: (e: Error) => toast.error(e.message),
+   604→  })
+   605→
+   606→  const remove = useMutation({
+   607→    mutationFn: async (id: string) => {
+   608→      const res = await fetch(`/api/admin?model=${encodeURIComponent(model)}&id=${encodeURIComponent(id)}`, {
+   609→        method: 'DELETE',
+   610→        headers: { 'X-Admin-Token': token! },
+   611→      })
+   612→      if (!res.ok) {
+   613→        const j = await res.json().catch(() => ({}))
+   614→        throw new Error(j.error || `Delete failed (${res.status})`)
+   615→      }
+   616→      return res.json()
+   617→    },
+   618→    onSuccess: () => {
+   619→      invalidate()
+   620→      toast.success(`${MODEL_CONFIGS[model].singular} deleted`)
+   621→    },
+   622→    onError: (e: Error) => toast.error(e.message),
+   623→  })
+   624→
+   625→  return { create, update, remove, invalidate }
+   626→}
+   627→
+   628→// ---------------------------------------------------------------------------
+   629→// Login gate
+   630→// ---------------------------------------------------------------------------
+   631→
+   632→function LoginCard({ onLogin }: { onLogin: (token: string) => void }) {
+   633→  const [token, setToken] = React.useState('devstudio-admin')
+   634→  const [loading, setLoading] = React.useState(false)
+   635→
+   636→  const submit = async () => {
+   637→    if (!token.trim()) {
+   638→      toast.error('Please enter an admin token.')
+   639→      return
+   640→    }
+   641→    setLoading(true)
+   642→    try {
+   643→      const res = await fetch(`/api/admin?model=setting`, {
+   644→        headers: { 'X-Admin-Token': token.trim() },
+   645→      })
+   646→      if (res.status === 401) {
+   647→        toast.error('Invalid admin token.')
+   648→        return
+   649→      }
+   650→      if (!res.ok) {
+   651→        toast.error(`Login failed (${res.status})`)
+   652→        return
+   653→      }
+   654→      toast.success('Authenticated — welcome back.')
+   655→      onLogin(token.trim())
+   656→    } catch (e) {
+   657→      toast.error((e as Error).message)
+   658→    } finally {
+   659→      setLoading(false)
+   660→    }
+   661→  }
+   662→
+   663→  return (
+   664→    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+   665→      <Card className="w-full max-w-md border-border/60 shadow-lg">
+   666→        <CardHeader className="space-y-2 text-center">
+   667→          <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+   668→            <ShieldCheck className="size-6" />
+   669→          </div>
+   670→          <CardTitle className="text-2xl">Admin Panel</CardTitle>
+   671→          <CardDescription>Enter your admin token to access the CMS dashboard.</CardDescription>
+   672→        </CardHeader>
+   673→        <CardContent className="space-y-4">
+   674→          <div className="space-y-2">
+   675→            <Label htmlFor="admin-token" className="flex items-center gap-1.5">
+   676→              <KeyRound className="size-3.5 text-muted-foreground" />
+   677→              Admin Token
+   678→            </Label>
+   679→            <Input
+   680→              id="admin-token"
+   681→              type="password"
+   682→              autoComplete="off"
+   683→              value={token}
+   684→              onChange={(e) => setToken(e.target.value)}
+   685→              onKeyDown={(e) => {
+   686→                if (e.key === 'Enter') submit()
+   687→              }}
+   688→              placeholder="Enter admin token"
+   689→            />
+   690→            <p className="text-xs text-muted-foreground">
+   691→              Default token: <code className="rounded bg-muted px-1 py-0.5 font-mono">devstudio-admin</code>
+   692→            </p>
+   693→          </div>
+   694→        </CardContent>
+   695→        <CardFooter className="flex flex-col gap-2">
+   696→          <Button onClick={submit} disabled={loading} className="w-full">
+   697→            {loading ? <Loader2 className="size-4 animate-spin" /> : <Lock className="size-4" />}
+   698→            {loading ? 'Verifying…' : 'Login'}
+   699→          </Button>
+   700→          <Button
+   701→            variant="ghost"
+   702→            className="w-full"
+   703→            onClick={() => useNav.getState().setView('home')}
+   704→          >
+   705→            <ArrowLeft className="size-4" />
+   706→            Back to site
+   707→          </Button>
+   708→        </CardFooter>
+   709→      </Card>
+   710→    </div>
+   711→  )
+   712→}
+   713→
+   714→// ---------------------------------------------------------------------------
+   715→// Dynamic form
+   716→// ---------------------------------------------------------------------------
+   717→
+   718→function DynamicForm({
+   719→  model,
+   720→  values,
+   721→  onChange,
+   722→}: {
+   723→  model: ModelKey
+   724→  values: Record<string, unknown>
+   725→  onChange: (k: string, v: unknown) => void
+   726→}) {
+   727→  const config = MODEL_CONFIGS[model]
+   728→  return (
+   729→    <div className="grid max-h-[60vh] gap-4 overflow-y-auto pr-1">
+   730→      {config.formFields.map((f) => {
+   731→        const val = values[f.key]
+   732→        if (f.type === 'switch') {
+   733→          return (
+   734→            <div key={f.key} className="flex items-center justify-between rounded-lg border border-border/60 p-3">
+   735→              <div className="space-y-0.5">
+   736→                <Label htmlFor={f.key} className="text-sm font-medium">{f.label}</Label>
+   737→                <p className="text-xs text-muted-foreground">Toggle on/off</p>
+   738→              </div>
+   739→              <Switch id={f.key} checked={Boolean(val)} onCheckedChange={(c) => onChange(f.key, c)} />
+   740→            </div>
+   741→          )
+   742→        }
+   743→        if (f.type === 'textarea' || f.type === 'json') {
+   744→          return (
+   745→            <div key={f.key} className="space-y-1.5">
+   746→              <Label htmlFor={f.key} className="text-sm font-medium">
+   747→                {f.label}
+   748→                {f.required && <span className="ml-1 text-destructive">*</span>}
+   749→                {f.type === 'json' && <span className="ml-2 text-xs text-muted-foreground">(JSON)</span>}
+   750→              </Label>
+   751→              <Textarea
+   752→                id={f.key}
+   753→                value={typeof val === 'string' ? val : ''}
+   754→                onChange={(e) => onChange(f.key, e.target.value)}
+   755→                placeholder={f.placeholder}
+   756→                rows={f.type === 'json' ? 5 : 3}
+   757→                className="resize-y font-mono text-xs"
+   758→              />
+   759→            </div>
+   760→          )
+   761→        }
+   762→        if (f.type === 'number') {
+   763→          return (
+   764→            <div key={f.key} className="space-y-1.5">
+   765→              <Label htmlFor={f.key} className="text-sm font-medium">
+   766→                {f.label}
+   767→                {f.required && <span className="ml-1 text-destructive">*</span>}
+   768→              </Label>
+   769→              <Input
+   770→                id={f.key}
+   771→                type="number"
+   772→                value={val === undefined || val === null ? '' : String(val)}
+   773→                onChange={(e) => onChange(f.key, e.target.value === '' ? '' : Number(e.target.value))}
+   774→                placeholder={f.placeholder}
+   775→              />
+   776→            </div>
+   777→          )
+   778→        }
+   779→        if (f.type === 'select') {
+   780→          return (
+   781→            <div key={f.key} className="space-y-1.5">
+   782→              <Label htmlFor={f.key} className="text-sm font-medium">{f.label}</Label>
+   783→              <select
+   784→                id={f.key}
+   785→                value={typeof val === 'string' ? val : ''}
+   786→                onChange={(e) => onChange(f.key, e.target.value)}
+   787→                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+   788→              >
+   789→                {f.options?.map((o) => (
+   790→                  <option key={o.value} value={o.value}>{o.label}</option>
+   791→                ))}
+   792→              </select>
+   793→            </div>
+   794→          )
+   795→        }
+   796→        return (
+   797→          <div key={f.key} className="space-y-1.5">
+   798→            <Label htmlFor={f.key} className="text-sm font-medium">
+   799→              {f.label}
+   800→              {f.required && <span className="ml-1 text-destructive">*</span>}
+   801→            </Label>
+   802→            <Input
+   803→              id={f.key}
+   804→              value={typeof val === 'string' ? val : ''}
+   805→              onChange={(e) => onChange(f.key, e.target.value)}
+   806→              placeholder={f.placeholder}
+   807→            />
+   808→          </div>
+   809→        )
+   810→      })}
+   811→    </div>
+   812→  )
+   813→}
+   814→
+   815→// ---------------------------------------------------------------------------
+   816→// Record table
+   817→// ---------------------------------------------------------------------------
+   818→
+   819→function renderCell(value: unknown, truncate?: number) {
+   820→  if (value === undefined || value === null || value === '') return <span className="text-muted-foreground">—</span>
+   821→  if (typeof value === 'boolean') {
+   822→    return value ? (
+   823→      <Badge variant="default" className="bg-primary/15 text-primary">Yes</Badge>
+   824→    ) : (
+   825→      <Badge variant="outline" className="text-muted-foreground">No</Badge>
+   826→    )
+   827→  }
+   828→  let str: string
+   829→  if (typeof value === 'object') {
+   830→    str = JSON.stringify(value)
+   831→  } else {
+   832→    str = String(value)
+   833→  }
+   834→  if (truncate && str.length > truncate) {
+   835→    return <span title={str} className="text-muted-foreground">{str.slice(0, truncate)}…</span>
+   836→  }
+   837→  return <span className="text-foreground">{str}</span>
+   838→}
+   839→
+   840→function RecordTable({
+   841→  model,
+   842→  token,
+   843→  onEdit,
+   844→  onView,
+   845→  onDeleteRequest,
+   846→}: {
+   847→  model: ModelKey
+   848→  token: string
+   849→  onEdit: (record: RecordData) => void
+   850→  onView: (record: RecordData) => void
+   851→  onDeleteRequest: (record: RecordData) => void
+   852→}) {
+   853→  const { data, isLoading, isError, error, refetch, isFetching } = useAdminFetch(model, token)
+   854→  const config = MODEL_CONFIGS[model]
+   855→  const [query, setQuery] = React.useState('')
+   856→
+   857→  const filtered = React.useMemo(() => {
+   858→    if (!data) return []
+   859→    if (!query.trim()) return data
+   860→    const q = query.toLowerCase()
+   861→    return data.filter((row) =>
+   862→      config.listColumns.some((c) => {
+   863→        const v = row[c.key]
+   864→        return v !== undefined && v !== null && String(v).toLowerCase().includes(q)
+   865→      }),
+   866→    )
+   867→  }, [data, query, config.listColumns])
+   868→
+   869→  return (
+   870→    <div className="space-y-4">
+   871→      <div className="flex flex-wrap items-center justify-between gap-3">
+   872→        <div className="flex items-center gap-2">
+   873→          <config.icon className="size-5 text-primary" />
+   874→          <div>
+   875→            <h2 className="text-lg font-semibold text-foreground">{config.label}</h2>
+   876→            <p className="text-xs text-muted-foreground">{config.description}</p>
+   877→          </div>
+   878→        </div>
+   879→        <div className="flex items-center gap-2">
+   880→          <div className="relative">
+   881→            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+   882→            <Input
+   883→              value={query}
+   884→              onChange={(e) => setQuery(e.target.value)}
+   885→              placeholder="Search…"
+   886→              className="h-9 w-44 pl-8 text-sm"
+   887→            />
+   888→          </div>
+   889→          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+   890→            <RefreshCw className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
+   891→            Refresh
+   892→          </Button>
+   893→          {!config.readOnly && (
+   894→            <Button size="sm" onClick={() => onEdit({})}>
+   895→              <Plus className="size-4" />
+   896→              New {config.singular}
+   897→            </Button>
+   898→          )}
+   899→        </div>
+   900→      </div>
+   901→
+   902→      <Card className="border-border/60">
+   903→        <div className="max-h-[60vh] overflow-y-auto">
+   904→          <Table>
+   905→            <TableHeader className="sticky top-0 z-10 bg-background">
+   906→              <TableRow>
+   907→                <TableHead className="w-[110px]">ID</TableHead>
+   908→                {config.listColumns.map((c) => (
+   909→                  <TableHead key={c.key}>{c.label}</TableHead>
+   910→                ))}
+   911→                <TableHead className="w-[160px]">Created</TableHead>
+   912→                <TableHead className="w-[140px] text-right">Actions</TableHead>
+   913→              </TableRow>
+   914→            </TableHeader>
+   915→            <TableBody>
+   916→              {isLoading && (
+   917→                Array.from({ length: 5 }).map((_, i) => (
+   918→                  <TableRow key={`s-${i}`}>
+   919→                    <TableCell colSpan={config.listColumns.length + 3}>
+   920→                      <Skeleton className="h-7 w-full" />
+   921→                    </TableCell>
+   922→                  </TableRow>
+   923→                ))
+   924→              )}
+   925→              {!isLoading && !isError && filtered.length === 0 && (
+   926→                <TableRow>
+   927→                  <TableCell colSpan={config.listColumns.length + 3} className="py-10 text-center text-muted-foreground">
+   928→                    No records found.
+   929→                  </TableCell>
+   930→                </TableRow>
+   931→              )}
+   932→              {!isError && filtered.map((row) => (
+   933→                <TableRow key={row.id}>
+   934→                  <TableCell>
+   935→                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+   936→                      {truncateId(row.id)}
+   937→                    </code>
+   938→                  </TableCell>
+   939→                  {config.listColumns.map((c) => (
+   940→                    <TableCell key={c.key}>{renderCell(row[c.key], c.truncate)}</TableCell>
+   941→                  ))}
+   942→                  <TableCell className="text-xs text-muted-foreground">{formatDate(row.createdAt as string)}</TableCell>
+   943→                  <TableCell className="text-right">
+   944→                    <div className="flex items-center justify-end gap-1">
+   945→                      {config.readOnly ? (
+   946→                        <Button size="icon" variant="ghost" onClick={() => onView(row)} title="View details">
+   947→                          <Eye className="size-4" />
+   948→                        </Button>
+   949→                      ) : (
+   950→                        <>
+   951→                          <Button size="icon" variant="ghost" onClick={() => onEdit(row)} title="Edit">
+   952→                            <Pencil className="size-4" />
+   953→                          </Button>
+   954→                          <Button
+   955→                            size="icon"
+   956→                            variant="ghost"
+   957→                            className="text-destructive hover:text-destructive"
+   958→                            onClick={() => onDeleteRequest(row)}
+   959→                            title="Delete"
+   960→                          >
+   961→                            <Trash2 className="size-4" />
+   962→                          </Button>
+   963→                        </>
+   964→                      )}
+   965→                    </div>
+   966→                  </TableCell>
+   967→                </TableRow>
+   968→              ))}
+   969→            </TableBody>
+   970→          </Table>
+   971→        </div>
+   972→        {isError && (
+   973→          <div className="flex flex-col items-center gap-2 p-8 text-center">
+   974→            <p className="text-sm text-destructive">{(error as Error).message}</p>
+   975→            <Button size="sm" variant="outline" onClick={() => refetch()}>
+   976→              <RefreshCw className="size-4" />
+   977→              Retry
+   978→            </Button>
+   979→          </div>
+   980→        )}
+   981→        {!isError && filtered.length > 0 && (
+   982→          <div className="border-t border-border/60 px-4 py-2 text-xs text-muted-foreground">
+   983→            Showing {filtered.length} {filtered.length === 1 ? 'record' : 'records'}
+   984→            {data && filtered.length !== data.length && ` of ${data.length}`}
+   985→          </div>
+   986→        )}
+   987→      </Card>
+   988→    </div>
+   989→  )
+   990→}
+   991→
+   992→// ---------------------------------------------------------------------------
+   993→// Edit / create dialog
+   994→// ---------------------------------------------------------------------------
+   995→
+   996→function EditDialog({
+   997→  model,
+   998→  token,
+   999→  open,
+  1000→  onOpenChange,
+  1001→  record,
+  1002→}: {
+  1003→  model: ModelKey
+  1004→  token: string
+  1005→  open: boolean
+  1006→  onOpenChange: (o: boolean) => void
+  1007→  record: RecordData | null
+  1008→}) {
+  1009→  const config = MODEL_CONFIGS[model]
+  1010→  const isEdit = !!record?.id
+  1011→  const [values, setValues] = React.useState<Record<string, unknown>>(() => buildInitialForm(model))
+  1012→  const [submitting, setSubmitting] = React.useState(false)
+  1013→  const { create, update } = useAdminMutations(model, token)
+  1014→
+  1015→  React.useEffect(() => {
+  1016→    if (open) {
+  1017→      if (record && record.id) {
+  1018→        setValues(hydrateFormFromRecord(model, record))
+  1019→      } else {
+  1020→        setValues(buildInitialForm(model))
+  1021→      }
+  1022→    }
+  1023→  }, [open, record, model])
+  1024→
+  1025→  const handleChange = (k: string, v: unknown) => {
+  1026→    setValues((prev) => ({ ...prev, [k]: v }))
+  1027→  }
+  1028→
+  1029→  const handleSubmit = async () => {
+  1030→    setSubmitting(true)
+  1031→    try {
+  1032→      const data = serializeForm(model, values)
+  1033→      if (isEdit && record?.id) {
+  1034→        await update.mutateAsync({ id: record.id, data })
+  1035→      } else {
+  1036→        await create.mutateAsync(data)
+  1037→      }
+  1038→      onOpenChange(false)
+  1039→    } catch (e) {
+  1040→      toast.error((e as Error).message)
+  1041→    } finally {
+  1042→      setSubmitting(false)
+  1043→    }
+  1044→  }
+  1045→
+  1046→  return (
+  1047→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1048→      <DialogContent className="sm:max-w-2xl">
+  1049→        <DialogHeader>
+  1050→          <DialogTitle className="flex items-center gap-2">
+  1051→            {isEdit ? <Pencil className="size-4 text-primary" /> : <Plus className="size-4 text-primary" />}
+  1052→            {isEdit ? `Edit ${config.singular}` : `New ${config.singular}`}
+  1053→          </DialogTitle>
+  1054→          <DialogDescription>
+  1055→            {isEdit ? 'Update the fields below and save your changes.' : 'Fill in the fields below to create a new record.'}
+  1056→          </DialogDescription>
+  1057→        </DialogHeader>
+  1058→        <Separator />
+  1059→        <DynamicForm model={model} values={values} onChange={handleChange} />
+  1060→        <DialogFooter className="gap-2">
+  1061→          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+  1062→            Cancel
+  1063→          </Button>
+  1064→          <Button onClick={handleSubmit} disabled={submitting}>
+  1065→            {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
+  1066→            {isEdit ? 'Save Changes' : 'Create'}
+  1067→          </Button>
+  1068→        </DialogFooter>
+  1069→      </DialogContent>
+  1070→    </Dialog>
+  1071→  )
+  1072→}
+  1073→
+  1074→// ---------------------------------------------------------------------------
+  1075→// Read-only view dialog (leads + contact requests)
+  1076→// ---------------------------------------------------------------------------
+  1077→
+  1078→function ViewDialog({
+  1079→  model,
+  1080→  open,
+  1081→  onOpenChange,
+  1082→  record,
+  1083→}: {
+  1084→  model: ModelKey
+  1085→  open: boolean
+  1086→  onOpenChange: (o: boolean) => void
+  1087→  record: RecordData | null
+  1088→}) {
+  1089→  const config = MODEL_CONFIGS[model]
+  1090→  if (!record) return null
+  1091→  const entries = Object.entries(record).filter(([k]) => k !== 'id')
+  1092→
+  1093→  return (
+  1094→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1095→      <DialogContent className="sm:max-w-2xl">
+  1096→        <DialogHeader>
+  1097→          <DialogTitle className="flex items-center gap-2">
+  1098→            <Eye className="size-4 text-primary" />
+  1099→            {config.singular} Details
+  1100→          </DialogTitle>
+  1101→          <DialogDescription>
+  1102→            Submitted on {formatDate(record.createdAt as string)}
+  1103→          </DialogDescription>
+  1104→        </DialogHeader>
+  1105→        <Separator />
+  1106→        <ScrollArea className="max-h-[60vh]">
+  1107→          <div className="space-y-3 pr-2">
+  1108→            {entries.map(([k, v]) => (
+  1109→              <div key={k} className="grid grid-cols-3 gap-3 rounded-md border border-border/50 p-3">
+  1110→                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{k}</div>
+  1111→                <div className="col-span-2 break-words text-sm text-foreground">
+  1112→                  {renderCell(v, 400)}
+  1113→                </div>
+  1114→              </div>
+  1115→            ))}
+  1116→          </div>
+  1117→        </ScrollArea>
+  1118→        <DialogFooter>
+  1119→          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+  1120→        </DialogFooter>
+  1121→      </DialogContent>
+  1122→    </Dialog>
+  1123→  )
+  1124→}
+  1125→
+  1126→// ---------------------------------------------------------------------------
+  1127→// Delete confirmation
+  1128→// ---------------------------------------------------------------------------
+  1129→
+  1130→function DeleteDialog({
+  1131→  model,
+  1132→  token,
+  1133→  open,
+  1134→  onOpenChange,
+  1135→  record,
+  1136→}: {
+  1137→  model: ModelKey
+  1138→  token: string
+  1139→  open: boolean
+  1140→  onOpenChange: (o: boolean) => void
+  1141→  record: RecordData | null
+  1142→}) {
+  1143→  const config = MODEL_CONFIGS[model]
+  1144→  const { remove } = useAdminMutations(model, token)
+  1145→  const [deleting, setDeleting] = React.useState(false)
+  1146→
+  1147→  React.useEffect(() => {
+  1148→    if (!open) setDeleting(false)
+  1149→  }, [open])
+  1150→
+  1151→  const handleConfirm = async () => {
+  1152→    if (!record?.id) return
+  1153→    setDeleting(true)
+  1154→    try {
+  1155→      await remove.mutateAsync(record.id)
+  1156→      onOpenChange(false)
+  1157→    } catch {
+  1158→      // toast handled in mutation
+  1159→    } finally {
+  1160→      setDeleting(false)
+  1161→    }
+  1162→  }
+  1163→
+  1164→  const label = React.useMemo(() => {
+  1165→    if (!record) return ''
+  1166→    return String(
+  1167→      record.title || record.name || record.clientName || record.fullName || record.key || record.email || record.id,
+  1168→    )
+  1169→  }, [record])
+  1170→
+  1171→  return (
+  1172→    <AlertDialog open={open} onOpenChange={onOpenChange}>
+  1173→      <AlertDialogContent>
+  1174→        <AlertDialogHeader>
+  1175→          <AlertDialogTitle className="flex items-center gap-2">
+  1176→            <Trash2 className="size-5 text-destructive" />
+  1177→            Delete {config.singular}
+  1178→          </AlertDialogTitle>
+  1179→          <AlertDialogDescription>
+  1180→            Are you sure you want to delete <span className="font-medium text-foreground">{label}</span>? This action
+  1181→            cannot be undone.
+  1182→          </AlertDialogDescription>
+  1183→        </AlertDialogHeader>
+  1184→        <AlertDialogFooter>
+  1185→          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+  1186→          <AlertDialogAction
+  1187→            onClick={(e) => {
+  1188→              e.preventDefault()
+  1189→              handleConfirm()
+  1190→            }}
+  1191→            disabled={deleting}
+  1192→            className="bg-destructive text-white hover:bg-destructive/90"
+  1193→          >
+  1194→            {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+  1195→            Delete
+  1196→          </AlertDialogAction>
+  1197→        </AlertDialogFooter>
+  1198→      </AlertDialogContent>
+  1199→    </AlertDialog>
+  1200→  )
+  1201→}
+  1202→
+  1203→// ---------------------------------------------------------------------------
+  1204→// Dashboard (post-login)
+  1205→// ---------------------------------------------------------------------------
+  1206→
+  1207→function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
+  1208→  const setView = useNav((s) => s.setView)
+  1209→  const [active, setActive] = React.useState<ModelKey>('portfolio')
+  1210→  const [editOpen, setEditOpen] = React.useState(false)
+  1211→  const [viewOpen, setViewOpen] = React.useState(false)
+  1212→  const [deleteOpen, setDeleteOpen] = React.useState(false)
+  1213→  const [editRecord, setEditRecord] = React.useState<RecordData | null>(null)
+  1214→  const [viewRecord, setViewRecord] = React.useState<RecordData | null>(null)
+  1215→  const [deleteRecord, setDeleteRecord] = React.useState<RecordData | null>(null)
+  1216→  const [sidebarOpen, setSidebarOpen] = React.useState(false)
+  1217→
+  1218→  const openEdit = (rec: RecordData) => {
+  1219→    setEditRecord(rec)
+  1220→    setEditOpen(true)
+  1221→  }
+  1222→  const openView = (rec: RecordData) => {
+  1223→    setViewRecord(rec)
+  1224→    setViewOpen(true)
+  1225→  }
+  1226→  const openDelete = (rec: RecordData) => {
+  1227→    setDeleteRecord(rec)
+  1228→    setDeleteOpen(true)
+  1229→  }
+  1230→
+  1231→  return (
+  1232→    <div className="flex min-h-screen flex-col bg-muted/30">
+  1233→      {/* Top bar */}
+  1234→      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+  1235→        <div className="flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
+  1236→          <div className="flex items-center gap-3">
+  1237→            <button
+  1238→              type="button"
+  1239→              className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground lg:hidden"
+  1240→              onClick={() => setSidebarOpen((v) => !v)}
+  1241→              aria-label="Toggle sidebar"
+  1242→            >
+  1243→              <LayoutDashboard className="size-4" />
+  1244→            </button>
+  1245→            <div className="flex items-center gap-2">
+  1246→              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+  1247→                <LayoutDashboard className="size-4" />
+  1248→              </div>
+  1249→              <div className="hidden sm:block">
+  1250→                <p className="text-sm font-semibold leading-none text-foreground">Admin Panel</p>
+  1251→                <p className="text-[11px] text-muted-foreground">DevStudio CMS</p>
+  1252→              </div>
+  1253→            </div>
+  1254→          </div>
+  1255→          <div className="flex items-center gap-2">
+  1256→            <Badge variant="outline" className="hidden gap-1.5 sm:flex">
+  1257→              <span className="size-1.5 rounded-full bg-emerald-500" />
+  1258→              Authenticated
+  1259→            </Badge>
+  1260→            <Button variant="outline" size="sm" onClick={() => setView('home')}>
+  1261→              <ArrowLeft className="size-4" />
+  1262→              <span className="hidden sm:inline">Back to site</span>
+  1263→            </Button>
+  1264→            <Button variant="ghost" size="sm" onClick={onLogout} className="text-muted-foreground hover:text-foreground">
+  1265→              <LogOut className="size-4" />
+  1266→              <span className="hidden sm:inline">Logout</span>
+  1267→            </Button>
+  1268→          </div>
+  1269→        </div>
+  1270→      </header>
+  1271→
+  1272→      <div className="flex flex-1">
+  1273→        {/* Sidebar */}
+  1274→        <aside
+  1275→          className={`fixed inset-y-0 left-0 top-14 z-20 w-64 transform border-r border-border/60 bg-background transition-transform lg:static lg:top-0 lg:translate-x-0 ${
+  1276→            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+  1277→          }`}
+  1278→        >
+  1279→          <div className="flex h-full flex-col">
+  1280→            <div className="px-3 py-4">
+  1281→              <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+  1282→                Resources
+  1283→              </p>
+  1284→              <nav className="space-y-0.5">
+  1285→                {MODEL_ORDER.map((m) => {
+  1286→                  const cfg = MODEL_CONFIGS[m]
+  1287→                  const Icon = cfg.icon
+  1288→                  const isActive = active === m
+  1289→                  return (
+  1290→                    <button
+  1291→                      key={m}
+  1292→                      type="button"
+  1293→                      onClick={() => {
+  1294→                        setActive(m)
+  1295→                        setSidebarOpen(false)
+  1296→                      }}
+  1297→                      className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
+  1298→                        isActive
+  1299→                          ? 'bg-primary text-primary-foreground shadow-xs'
+  1300→                          : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+  1301→                      }`}
+  1302→                    >
+  1303→                      <Icon className="size-4 shrink-0" />
+  1304→                      <span className="truncate text-left">{cfg.label}</span>
+  1305→                      {cfg.readOnly && (
+  1306→                        <span className={`ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium ${
+  1307→                          isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
+  1308→                        }`}>
+  1309→                          RO
+  1310→                        </span>
+  1311→                      )}
+  1312→                    </button>
+  1313→                  )
+  1314→                })}
+  1315→              </nav>
+  1316→            </div>
+  1317→            <div className="mt-auto border-t border-border/60 p-3">
+  1318→              <div className="rounded-lg bg-muted/60 p-3">
+  1319→                <p className="text-[11px] font-medium text-foreground">DevStudio CMS</p>
+  1320→                <p className="mt-0.5 text-[10px] text-muted-foreground">
+  1321→                  Manage all site content from one place.
+  1322→                </p>
+  1323→              </div>
+  1324→            </div>
+  1325→          </div>
+  1326→        </aside>
+  1327→
+  1328→        {/* Click-away for mobile sidebar */}
+  1329→        {sidebarOpen && (
+  1330→          <div
+  1331→            className="fixed inset-0 top-14 z-10 bg-black/40 lg:hidden"
+  1332→            onClick={() => setSidebarOpen(false)}
+  1333→            aria-hidden
+  1334→          />
+  1335→        )}
+  1336→
+  1337→        {/* Main */}
+  1338→        <main className="flex-1 overflow-x-hidden p-4 sm:p-6">
+  1339→          <RecordTable
+  1340→            model={active}
+  1341→            token={token}
+  1342→            onEdit={openEdit}
+  1343→            onView={openView}
+  1344→            onDeleteRequest={openDelete}
+  1345→          />
+  1346→        </main>
+  1347→      </div>
+  1348→
+  1349→      {/* Dialogs */}
+  1350→      <EditDialog
+  1351→        model={active}
+  1352→        token={token}
+  1353→        open={editOpen}
+  1354→        onOpenChange={setEditOpen}
+  1355→        record={editRecord}
+  1356→      />
+  1357→      <ViewDialog
+  1358→        model={active}
+  1359→        open={viewOpen}
+  1360→        onOpenChange={setViewOpen}
+  1361→        record={viewRecord}
+  1362→      />
+  1363→      <DeleteDialog
+  1364→        model={active}
+  1365→        token={token}
+  1366→        open={deleteOpen}
+  1367→        onOpenChange={setDeleteOpen}
+  1368→        record={deleteRecord}
+  1369→      />
+  1370→    </div>
+  1371→  )
+  1372→}
+  1373→
+  1374→// ---------------------------------------------------------------------------
+  1375→// Public component
+  1376→// ---------------------------------------------------------------------------
+  1377→
+  1378→export function AdminView() {
+  1379→  const [token, setToken] = React.useState<string | null>(null)
+  1380→
+  1381→  if (!token) {
+  1382→    return <LoginCard onLogin={setToken} />
+  1383→  }
+  1384→
+  1385→  return <Dashboard token={token} onLogout={() => setToken(null)} />
+  1386→}
+  1387→
+  1388→export default AdminView
+  1389→
