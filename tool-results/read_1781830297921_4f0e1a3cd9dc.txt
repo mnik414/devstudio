@@ -1,0 +1,700 @@
+     1→'use client'
+     2→
+     3→import { useState } from 'react'
+     4→import { motion } from 'framer-motion'
+     5→import {
+     6→  ArrowLeft,
+     7→  ArrowRight,
+     8→  ArrowUpRight,
+     9→  Github,
+    10→  ExternalLink,
+    11→  AlertCircle,
+    12→  Lightbulb,
+    13→  TrendingUp,
+    14→  Check,
+    15→  Flag,
+    16→  Layers,
+    17→  Code2,
+    18→  Trophy,
+    19→  Calendar,
+    20→  Building2,
+    21→  Eye,
+    22→  FileQuestion,
+    23→} from 'lucide-react'
+    24→import { Button } from '@/components/ui/button'
+    25→import { Card } from '@/components/ui/card'
+    26→import { Badge } from '@/components/ui/badge'
+    27→import { Skeleton } from '@/components/ui/skeleton'
+    28→import {
+    29→  Dialog,
+    30→  DialogContent,
+    31→  DialogTitle,
+    32→  DialogDescription,
+    33→} from '@/components/ui/dialog'
+    34→import { Reveal } from '@/components/site/reveal'
+    35→import { SectionHeading } from '@/components/site/section-heading'
+    36→import { usePortfolio, parseList, type Portfolio } from '@/lib/hooks'
+    37→import { useNav } from '@/lib/store'
+    38→import { cn } from '@/lib/utils'
+    39→import { useT, useLang } from '@/lib/lang-store'
+    40→import { tc } from '@/lib/content-i18n'
+    41→
+    42→export function PortfolioDetailView() {
+    43→  const t = useT()
+    44→  const lang = useLang((s) => s.lang)
+    45→  const slug = useNav((s) => s.detailSlug)
+    46→  const closeDetail = useNav((s) => s.closeDetail)
+    47→  const setView = useNav((s) => s.setView)
+    48→  const openDetail = useNav((s) => s.openDetail)
+    49→
+    50→  const { data, isLoading, isError } = usePortfolio(slug)
+    51→  const item = data?.item
+    52→  const related = data?.related ?? []
+    53→
+    54→  return (
+    55→    <div className="relative">
+    56→      {/* Back button */}
+    57→      <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
+    58→        <Button
+    59→          variant="ghost"
+    60→          size="sm"
+    61→          onClick={closeDetail}
+    62→          className="text-muted-foreground hover:text-foreground"
+    63→        >
+    64→          <ArrowLeft className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
+    65→          {t('portfolioDetail.back')}
+    66→        </Button>
+    67→      </div>
+    68→
+    69→      {isLoading ? (
+    70→        <DetailSkeleton />
+    71→      ) : isError || !item ? (
+    72→        <NotFoundState onBack={closeDetail} />
+    73→      ) : (
+    74→        <>
+    75→          {/* Hero */}
+    76→          <Hero item={item} lang={lang} />
+    77→
+    78→          {/* Overview (Problem / Solution / Result) */}
+    79→          <section id="overview" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+    80→            <SectionHeading
+    81→              eyebrow="Overview"
+    82→              title={t('portfolioDetail.overview')}
+    83→              align="left"
+    84→            />
+    85→            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+    86→              <OverviewCard
+    87→                icon={AlertCircle}
+    88→                tone="primary"
+    89→                title={t('portfolioDetail.problem')}
+    90→                text={item.problem}
+    91→              />
+    92→              <OverviewCard
+    93→                icon={Lightbulb}
+    94→                tone="accent"
+    95→                title={t('portfolioDetail.solution')}
+    96→                text={item.solution}
+    97→              />
+    98→              <OverviewCard
+    99→                icon={TrendingUp}
+   100→                tone="emerald"
+   101→                title={t('portfolioDetail.result')}
+   102→                text={item.result}
+   103→              />
+   104→            </div>
+   105→          </section>
+   106→
+   107→          {/* Technologies Used */}
+   108→          {item.technologies && item.technologies.length > 0 && (
+   109→            <section id="technologies" className="scroll-mt-24 border-y bg-muted/30">
+   110→              <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   111→                <SectionHeading
+   112→                  eyebrow="Tech Stack"
+   113→                  title={t('portfolioDetail.technologies')}
+   114→                  align="left"
+   115→                />
+   116→                <Reveal delay={0.1} className="mt-8 flex flex-wrap gap-3">
+   117→                  {item.technologies.map((techItem) => (
+   118→                    <div
+   119→                      key={techItem.id}
+   120→                      title={techItem.name}
+   121→                      className="group inline-flex items-center gap-2.5 rounded-full border bg-background px-4 py-2 text-sm font-medium shadow-xs transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:shadow-soft"
+   122→                    >
+   123→                      <span
+   124→                        className="inline-block size-2.5 rounded-full ring-2 ring-transparent transition-all group-hover:ring-primary/20"
+   125→                        style={{ background: techItem.color ?? 'var(--accent)' }}
+   126→                      />
+   127→                      {techItem.name}
+   128→                    </div>
+   129→                  ))}
+   130→                </Reveal>
+   131→              </div>
+   132→            </section>
+   133→          )}
+   134→
+   135→          {/* Features */}
+   136→          {parseList<string>(item.features).length > 0 && (
+   137→            <section id="features" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   138→              <SectionHeading
+   139→                eyebrow="Capabilities"
+   140→                title={t('portfolioDetail.features')}
+   141→                align="left"
+   142→              />
+   143→              <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   144→                {parseList<string>(item.features).map((feature, i) => (
+   145→                  <Reveal key={`${feature}-${i}`} delay={Math.min(i * 0.04, 0.3)}>
+   146→                    <div className="group flex items-start gap-3 rounded-xl border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-soft">
+   147→                      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent ring-1 ring-accent/20 transition-all group-hover:bg-accent group-hover:text-accent-foreground">
+   148→                        <Check className="size-4" />
+   149→                      </span>
+   150→                      <span className="text-sm font-medium leading-relaxed">
+   151→                        {feature}
+   152→                      </span>
+   153→                    </div>
+   154→                  </Reveal>
+   155→                ))}
+   156→              </div>
+   157→            </section>
+   158→          )}
+   159→
+   160→          {/* Gallery */}
+   161→          {parseList<string>(item.gallery).length > 0 && (
+   162→            <GallerySection raw={item.gallery} />
+   163→          )}
+   164→
+   165→          {/* Case Study */}
+   166→          <CaseStudySection item={item} />
+   167→
+   168→          {/* Related Projects */}
+   169→          {related.length > 0 && (
+   170→            <section id="related" className="scroll-mt-24 border-t bg-muted/30">
+   171→              <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   172→                <SectionHeading
+   173→                  eyebrow="Keep exploring"
+   174→                  title={t('portfolioDetail.related')}
+   175→                  align="left"
+   176→                />
+   177→                <div className="relative mt-2">
+   178→                  <span className="absolute -bottom-1 left-0 h-1 w-32 rounded-full bg-gradient-to-r from-primary to-accent" aria-hidden />
+   179→                </div>
+   180→                <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+   181→                  {related.map((r, i) => (
+   182→                    <Reveal key={r.id} delay={Math.min(i * 0.08, 0.3)}>
+   183→                      <RelatedCard
+   184→                        item={r}
+   185→                        lang={lang}
+   186→                        onClick={() => openDetail('portfolio', r.slug)}
+   187→                      />
+   188→                    </Reveal>
+   189→                  ))}
+   190→                </div>
+   191→              </div>
+   192→            </section>
+   193→          )}
+   194→
+   195→          {/* Final CTA */}
+   196→          <section id="cta" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   197→            <Reveal>
+   198→              <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-accent px-6 py-12 text-primary-foreground shadow-soft sm:px-12 sm:py-16">
+   199→                <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+   200→                <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+   201→                <div className="pointer-events-none absolute -bottom-20 -left-20 size-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+   202→                <div className="relative flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+   203→                  <div className="max-w-xl">
+   204→                    <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">
+   205→                      {t('portfolioDetail.ctaTitle')}
+   206→                    </h3>
+   207→                    <p className="mt-2 text-sm text-primary-foreground/80 sm:text-base">
+   208→                      Inspired by what you see? Let's build something tailored to
+   209→                      your goals — start with a free discovery call.
+   210→                    </p>
+   211→                  </div>
+   212→                  <Button
+   213→                    size="lg"
+   214→                    variant="secondary"
+   215→                    className="group shrink-0"
+   216→                    onClick={() => setView('contact')}
+   217→                  >
+   218→                    {t('portfolioDetail.ctaButton')}
+   219→                    <ArrowRight className={cn('size-4 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
+   220→                  </Button>
+   221→                </div>
+   222→              </div>
+   223→            </Reveal>
+   224→          </section>
+   225→        </>
+   226→      )}
+   227→    </div>
+   228→  )
+   229→}
+   230→
+   231→/* ------------------------- Hero ------------------------- */
+   232→
+   233→function Hero({ item, lang }: { item: Portfolio; lang: 'en' | 'fa' }) {
+   234→  const t = useT()
+   235→  const title = tc('portfolio', item.slug, 'title', item.title, lang)
+   236→  const summary = tc('portfolio', item.slug, 'summary', item.summary, lang)
+   237→  return (
+   238→    <section className="relative overflow-hidden">
+   239→      <div className="bg-grid pointer-events-none absolute inset-0 opacity-40" />
+   240→      <div className="relative mx-auto max-w-7xl px-4 pt-6 pb-12 sm:px-6 sm:pt-10 sm:pb-16 lg:px-8">
+   241→        <motion.div
+   242→          initial={{ opacity: 0, y: 12 }}
+   243→          animate={{ opacity: 1, y: 0 }}
+   244→          transition={{ duration: 0.5, ease: 'easeOut' }}
+   245→        >
+   246→          {/* Meta row */}
+   247→          <div className="flex flex-wrap items-center gap-3">
+   248→            {item.category && (
+   249→              <Badge className="border-0 bg-primary/10 text-primary">
+   250→                {item.category.name}
+   251→              </Badge>
+   252→            )}
+   253→            {item.featured && (
+   254→              <Badge variant="outline" className="border-accent/40 text-accent">
+   255→                Featured
+   256→              </Badge>
+   257→            )}
+   258→          </div>
+   259→
+   260→          <h1 className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-balance sm:text-5xl md:text-6xl lg:text-[4rem] lg:leading-[1.05]">
+   261→            {title}
+   262→          </h1>
+   263→
+   264→          <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+   265→            {summary}
+   266→          </p>
+   267→
+   268→          {/* Meta details */}
+   269→          <div className="mt-6 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
+   270→            {item.clientName && (
+   271→              <span className="inline-flex items-center gap-2">
+   272→                <Building2 className="size-4 text-accent" />
+   273→                {item.clientName}
+   274→              </span>
+   275→            )}
+   276→            <span className="inline-flex items-center gap-2">
+   277→              <Calendar className="size-4 text-accent" />
+   278→              <span className="ltr-num">{item.year}</span>
+   279→            </span>
+   280→            <span className="inline-flex items-center gap-2">
+   281→              <Eye className="size-4 text-accent" />
+   282→              <span className="ltr-num">{item.views}</span>{' '}
+   283→              {t('portfolioDetail.views')}
+   284→            </span>
+   285→          </div>
+   286→
+   287→          {/* Action buttons */}
+   288→          {(item.liveUrl || item.repoUrl) && (
+   289→            <div className="mt-7 flex flex-wrap gap-3">
+   290→              {item.liveUrl && (
+   291→                <Button asChild size="lg" className="group">
+   292→                  <a
+   293→                    href={item.liveUrl}
+   294→                    target="_blank"
+   295→                    rel="noopener noreferrer"
+   296→                  >
+   297→                    <ExternalLink className="size-4" />
+   298→                    {t('portfolioDetail.visitLive')}
+   299→                    <ArrowUpRight className={cn('size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5', lang === 'fa' && 'rtl-flip')} />
+   300→                  </a>
+   301→                </Button>
+   302→              )}
+   303→              {item.repoUrl && (
+   304→                <Button asChild size="lg" variant="outline" className="group">
+   305→                  <a
+   306→                    href={item.repoUrl}
+   307→                    target="_blank"
+   308→                    rel="noopener noreferrer"
+   309→                  >
+   310→                    <Github className="size-4" />
+   311→                    {t('portfolioDetail.viewCode')}
+   312→                  </a>
+   313→                </Button>
+   314→              )}
+   315→            </div>
+   316→          )}
+   317→        </motion.div>
+   318→
+   319→        {/* Cover image */}
+   320→        <motion.div
+   321→          initial={{ opacity: 0, y: 16 }}
+   322→          animate={{ opacity: 1, y: 0 }}
+   323→          transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
+   324→          className="mt-10 overflow-hidden rounded-2xl border shadow-soft"
+   325→        >
+   326→          <div className="relative aspect-[16/9]">
+   327→            <img
+   328→              src={item.coverImage}
+   329→              alt={`${title} main cover`}
+   330→              className="size-full object-cover"
+   331→            />
+   332→            {/* Subtle gradient overlay for depth */}
+   333→            <div
+   334→              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"
+   335→              aria-hidden
+   336→            />
+   337→            <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-wrap items-center gap-2">
+   338→              {item.category && (
+   339→                <Badge className="border-0 bg-white/90 text-foreground backdrop-blur">
+   340→                  {item.category.name}
+   341→                </Badge>
+   342→              )}
+   343→            </div>
+   344→          </div>
+   345→        </motion.div>
+   346→      </div>
+   347→    </section>
+   348→  )
+   349→}
+   350→
+   351→/* ------------------------- Overview cards ------------------------- */
+   352→
+   353→const TONE_STYLES: Record<
+   354→  string,
+   355→  { bg: string; ring: string; text: string; border: string }
+   356→> = {
+   357→  rose: {
+   358→    bg: 'bg-rose-500/10',
+   359→    ring: 'ring-rose-500/20',
+   360→    text: 'text-rose-600 dark:text-rose-400',
+   361→    border: 'border-l-rose-500',
+   362→  },
+   363→  amber: {
+   364→    bg: 'bg-amber-500/10',
+   365→    ring: 'ring-amber-500/20',
+   366→    text: 'text-amber-600 dark:text-amber-400',
+   367→    border: 'border-l-amber-500',
+   368→  },
+   369→  emerald: {
+   370→    bg: 'bg-emerald-500/10',
+   371→    ring: 'ring-emerald-500/20',
+   372→    text: 'text-emerald-600 dark:text-emerald-400',
+   373→    border: 'border-l-emerald-500',
+   374→  },
+   375→  primary: {
+   376→    bg: 'bg-primary/10',
+   377→    ring: 'ring-primary/20',
+   378→    text: 'text-primary',
+   379→    border: 'border-l-primary',
+   380→  },
+   381→  accent: {
+   382→    bg: 'bg-accent/10',
+   383→    ring: 'ring-accent/20',
+   384→    text: 'text-accent',
+   385→    border: 'border-l-accent',
+   386→  },
+   387→}
+   388→
+   389→function OverviewCard({
+   390→  icon: Icon,
+   391→  tone,
+   392→  title,
+   393→  text,
+   394→}: {
+   395→  icon: React.ComponentType<{ className?: string }>
+   396→  tone: keyof typeof TONE_STYLES | string
+   397→  title: string
+   398→  text: string | null
+   399→}) {
+   400→  const styles = TONE_STYLES[tone] ?? TONE_STYLES.amber
+   401→  return (
+   402→    <Reveal delay={0.05}>
+   403→      <Card
+   404→        className={cn(
+   405→          'h-full gap-4 border-l-4 p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow',
+   406→          styles.border,
+   407→        )}
+   408→      >
+   409→        <div className="flex items-center gap-3">
+   410→          <span
+   411→            className={cn(
+   412→              'flex size-10 items-center justify-center rounded-xl ring-1',
+   413→              styles.bg,
+   414→              styles.ring,
+   415→              styles.text,
+   416→            )}
+   417→          >
+   418→            <Icon className="size-5" />
+   419→          </span>
+   420→          <h3 className="text-base font-semibold">{title}</h3>
+   421→        </div>
+   422→        <p className="text-sm leading-relaxed text-muted-foreground">
+   423→          {text || `No ${title.toLowerCase()} documented for this project.`}
+   424→        </p>
+   425→      </Card>
+   426→    </Reveal>
+   427→  )
+   428→}
+   429→
+   430→/* ------------------------- Gallery ------------------------- */
+   431→
+   432→function GallerySection({ raw }: { raw: string }) {
+   433→  const t = useT()
+   434→  const images = parseList<string>(raw)
+   435→  const [active, setActive] = useState<string | null>(null)
+   436→
+   437→  if (images.length === 0) return null
+   438→
+   439→  return (
+   440→    <section className="border-y bg-muted/30">
+   441→      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   442→        <SectionHeading
+   443→          eyebrow="Gallery"
+   444→          title={t('portfolioDetail.gallery')}
+   445→          align="left"
+   446→        />
+   447→        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   448→          {images.map((src, i) => (
+   449→            <Reveal
+   450→              key={`${src}-${i}`}
+   451→              delay={Math.min(i * 0.05, 0.3)}
+   452→              className={cn(
+   453→                'group cursor-pointer overflow-hidden rounded-xl border shadow-xs transition-shadow hover:shadow-soft',
+   454→                i % 5 === 0 ? 'sm:col-span-2 sm:row-span-1' : '',
+   455→              )}
+   456→            >
+   457→              <button
+   458→                type="button"
+   459→                onClick={() => setActive(src)}
+   460→                className="block w-full"
+   461→                aria-label={`Open image ${i + 1} in lightbox`}
+   462→              >
+   463→                <div className="relative aspect-video overflow-hidden">
+   464→                  <img
+   465→                    src={src}
+   466→                    alt={`Project screenshot ${i + 1}`}
+   467→                    loading="lazy"
+   468→                    className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+   469→                  />
+   470→                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/30 group-hover:opacity-100">
+   471→                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-foreground">
+   472→                      <ExternalLink className="size-3.5" />
+   473→                      View
+   474→                    </span>
+   475→                  </div>
+   476→                </div>
+   477→              </button>
+   478→            </Reveal>
+   479→          ))}
+   480→        </div>
+   481→      </div>
+   482→
+   483→      {/* Lightbox */}
+   484→      <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
+   485→        <DialogContent
+   486→          className="max-w-5xl border-0 bg-black/95 p-0 sm:rounded-2xl"
+   487→          showCloseButton
+   488→        >
+   489→          <DialogTitle className="sr-only">Screenshot preview</DialogTitle>
+   490→          <DialogDescription className="sr-only">
+   491→            Full-size project screenshot in a lightbox viewer
+   492→          </DialogDescription>
+   493→          {active && (
+   494→            <div className="relative max-h-[85vh] w-full overflow-auto">
+   495→              <img
+   496→                src={active}
+   497→                alt="Project screenshot large preview"
+   498→                className="mx-auto h-auto w-full object-contain"
+   499→              />
+   500→            </div>
+   501→          )}
+   502→        </DialogContent>
+   503→      </Dialog>
+   504→    </section>
+   505→  )
+   506→}
+   507→
+   508→/* ------------------------- Case study ------------------------- */
+   509→
+   510→const CASE_STUDY = [
+   511→  {
+   512→    key: 'challenge' as const,
+   513→    icon: Flag,
+   514→    titleKey: 'portfolioDetail.challenge',
+   515→    tone: 'rose',
+   516→  },
+   517→  {
+   518→    key: 'architecture' as const,
+   519→    icon: Layers,
+   520→    titleKey: 'portfolioDetail.architecture',
+   521→    tone: 'amber',
+   522→  },
+   523→  {
+   524→    key: 'implementation' as const,
+   525→    icon: Code2,
+   526→    titleKey: 'portfolioDetail.implementation',
+   527→    tone: 'primary',
+   528→  },
+   529→  {
+   530→    key: 'outcome' as const,
+   531→    icon: Trophy,
+   532→    titleKey: 'portfolioDetail.outcome',
+   533→    tone: 'emerald',
+   534→  },
+   535→]
+   536→
+   537→function CaseStudySection({ item }: { item: Portfolio }) {
+   538→  const t = useT()
+   539→  const hasAny = CASE_STUDY.some((s) => item[s.key])
+   540→  if (!hasAny) return null
+   541→
+   542→  return (
+   543→    <section id="case-study" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   544→      <SectionHeading
+   545→        eyebrow="Case Study"
+   546→        title={t('portfolioDetail.caseStudy')}
+   547→        description="A deeper look at the journey from problem to outcome."
+   548→        align="left"
+   549→      />
+   550→      <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+   551→        {CASE_STUDY.map((s, i) => {
+   552→          const text = item[s.key]
+   553→          if (!text) return null
+   554→          const Icon = s.icon
+   555→          const styles = TONE_STYLES[s.tone] ?? TONE_STYLES.amber
+   556→          return (
+   557→            <Reveal key={s.key} delay={Math.min(i * 0.08, 0.3)}>
+   558→              <Card
+   559→                className={cn(
+   560→                  'relative h-full gap-4 border-l-4 p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow',
+   561→                  styles.border,
+   562→                )}
+   563→              >
+   564→                {/* Timeline connector dot */}
+   565→                <span
+   566→                  className={cn(
+   567→                    'absolute -left-2.5 top-7 size-5 rounded-full border-4 border-background ring-1',
+   568→                    styles.bg,
+   569→                    styles.ring,
+   570→                  )}
+   571→                  aria-hidden
+   572→                />
+   573→                <div className="flex items-center gap-3">
+   574→                  <span
+   575→                    className={cn(
+   576→                      'flex size-11 items-center justify-center rounded-xl ring-1',
+   577→                      styles.bg,
+   578→                      styles.ring,
+   579→                      styles.text,
+   580→                    )}
+   581→                  >
+   582→                    <Icon className="size-5" />
+   583→                  </span>
+   584→                  <div>
+   585→                    <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+   586→                      Step <span className="ltr-num">{i + 1}</span>
+   587→                    </span>
+   588→                    <h3 className="text-base font-semibold">{t(s.titleKey)}</h3>
+   589→                  </div>
+   590→                </div>
+   591→                <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+   592→                  {text}
+   593→                </p>
+   594→              </Card>
+   595→            </Reveal>
+   596→          )
+   597→        })}
+   598→      </div>
+   599→    </section>
+   600→  )
+   601→}
+   602→
+   603→/* ------------------------- Related card ------------------------- */
+   604→
+   605→function RelatedCard({
+   606→  item,
+   607→  lang,
+   608→  onClick,
+   609→}: {
+   610→  item: Portfolio
+   611→  lang: 'en' | 'fa'
+   612→  onClick: () => void
+   613→}) {
+   614→  const t = useT()
+   615→  const title = tc('portfolio', item.slug, 'title', item.title, lang)
+   616→  const summary = tc('portfolio', item.slug, 'summary', item.summary, lang)
+   617→  return (
+   618→    <motion.button
+   619→      type="button"
+   620→      onClick={onClick}
+   621→      whileHover={{ y: -4 }}
+   622→      transition={{ duration: 0.25, ease: 'easeOut' }}
+   623→      className="group block h-full w-full cursor-pointer text-left focus-visible:outline-none"
+   624→    >
+   625→      <Card className="h-full overflow-hidden p-0 shadow-soft transition-all duration-300 hover:shadow-glow">
+   626→        <div className="relative aspect-video overflow-hidden">
+   627→          <img
+   628→            src={item.coverImage}
+   629→            alt={`${title} cover`}
+   630→            loading="lazy"
+   631→            className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+   632→          />
+   633→          {item.category && (
+   634→            <Badge className="absolute top-3 left-3 border-0 bg-white/90 text-foreground backdrop-blur">
+   635→              {item.category.name}
+   636→            </Badge>
+   637→          )}
+   638→        </div>
+   639→        <div className="p-5">
+   640→          <h3 className="line-clamp-1 text-base font-semibold">{title}</h3>
+   641→          <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
+   642→            {summary}
+   643→          </p>
+   644→          <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+   645→            {t('portfolio.viewProject')}
+   646→            <ArrowRight className={cn('size-4 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
+   647→          </div>
+   648→        </div>
+   649→      </Card>
+   650→    </motion.button>
+   651→  )
+   652→}
+   653→
+   654→/* ------------------------- Loading / Not found ------------------------- */
+   655→
+   656→function DetailSkeleton() {
+   657→  return (
+   658→    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   659→      <div className="pt-6">
+   660→        <Skeleton className="h-6 w-32" />
+   661→        <Skeleton className="mt-6 h-12 w-3/4" />
+   662→        <Skeleton className="mt-4 h-5 w-full max-w-2xl" />
+   663→        <Skeleton className="mt-2 h-5 w-5/6 max-w-2xl" />
+   664→        <div className="mt-6 flex gap-3">
+   665→          <Skeleton className="h-10 w-40" />
+   666→          <Skeleton className="h-10 w-40" />
+   667→        </div>
+   668→        <Skeleton className="mt-8 aspect-[16/9] w-full rounded-2xl" />
+   669→      </div>
+   670→      <div className="grid grid-cols-1 gap-5 py-16 md:grid-cols-3">
+   671→        {Array.from({ length: 3 }).map((_, i) => (
+   672→          <Skeleton key={i} className="h-40 w-full rounded-2xl" />
+   673→        ))}
+   674→      </div>
+   675→    </div>
+   676→  )
+   677→}
+   678→
+   679→function NotFoundState({ onBack }: { onBack: () => void }) {
+   680→  const t = useT()
+   681→  const lang = useLang((s) => s.lang)
+   682→  return (
+   683→    <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+   684→      <div className="mx-auto flex max-w-md flex-col items-center rounded-2xl border border-dashed bg-muted/30 px-6 py-16 text-center">
+   685→        <div className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+   686→          <FileQuestion className="size-8" />
+   687→        </div>
+   688→        <h2 className="mt-5 text-xl font-semibold">{t('portfolioDetail.notFound')}</h2>
+   689→        <p className="mt-2 text-sm text-muted-foreground">
+   690→          The project you're looking for may have been moved or unpublished.
+   691→        </p>
+   692→        <Button className="mt-6" onClick={onBack}>
+   693→          <ArrowLeft className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
+   694→          {t('portfolioDetail.back')}
+   695→        </Button>
+   696→      </div>
+   697→    </div>
+   698→  )
+   699→}
+   700→

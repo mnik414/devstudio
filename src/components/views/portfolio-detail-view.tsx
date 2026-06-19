@@ -1,13 +1,15 @@
 'use client'
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   Github,
   ExternalLink,
+  ChevronLeft,
+  ChevronRight,
   AlertCircle,
   Lightbulb,
   TrendingUp,
@@ -431,10 +433,55 @@ function OverviewCard({
 
 function GallerySection({ raw }: { raw: string }) {
   const t = useT()
+  const lang = useLang((s) => s.lang)
   const images = parseList<string>(raw)
-  const [active, setActive] = useState<string | null>(null)
+  const [active, setActive] = useState<number | null>(null)
+  const [direction, setDirection] = useState(0)
+
+  const isRTL = lang === 'fa'
+  const total = images.length
+
+  const goPrev = () => {
+    setActive((cur) => {
+      if (cur === null || cur <= 0) return cur
+      setDirection(-1)
+      return cur - 1
+    })
+  }
+  const goNext = () => {
+    setActive((cur) => {
+      if (cur === null || cur >= total - 1) return cur
+      setDirection(1)
+      return cur + 1
+    })
+  }
+
+  // Keyboard navigation with RTL awareness
+  // In LTR: ArrowLeft → prev, ArrowRight → next
+  // In RTL: ArrowLeft → next, ArrowRight → prev (mirrored)
+  useEffect(() => {
+    if (active === null) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') {
+        if (isRTL) goNext()
+        else goPrev()
+      } else if (e.key === 'ArrowRight') {
+        if (isRTL) goPrev()
+        else goNext()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [active, isRTL, total])
 
   if (images.length === 0) return null
+
+  // Framer-motion variants — fade + slight horizontal slide driven by direction
+  const variants = {
+    enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 40 : -40 }),
+    center: { opacity: 1, x: 0 },
+    exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -40 : 40 }),
+  }
 
   return (
     <section className="border-y bg-muted/30">
@@ -456,7 +503,10 @@ function GallerySection({ raw }: { raw: string }) {
             >
               <button
                 type="button"
-                onClick={() => setActive(src)}
+                onClick={() => {
+                  setDirection(0)
+                  setActive(i)
+                }}
                 className="block w-full"
                 aria-label={`Open image ${i + 1} in lightbox`}
               >
@@ -481,7 +531,7 @@ function GallerySection({ raw }: { raw: string }) {
       </div>
 
       {/* Lightbox */}
-      <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
+      <Dialog open={active !== null} onOpenChange={(o) => !o && setActive(null)}>
         <DialogContent
           className="max-w-5xl border-0 bg-black/95 p-0 sm:rounded-2xl"
           showCloseButton
@@ -490,13 +540,71 @@ function GallerySection({ raw }: { raw: string }) {
           <DialogDescription className="sr-only">
             Full-size project screenshot in a lightbox viewer
           </DialogDescription>
-          {active && (
-            <div className="relative max-h-[85vh] w-full overflow-auto">
-              <img
-                src={active}
-                alt="Project screenshot large preview"
-                className="mx-auto h-auto w-full object-contain"
-              />
+          {active !== null && images[active] && (
+            <div className="relative flex max-h-[85vh] items-center justify-center">
+              {/* Prev button — in RTL it visually sits on the right and points to next */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (isRTL) goNext()
+                  else goPrev()
+                }}
+                disabled={isRTL ? active >= total - 1 : active <= 0}
+                aria-label={isRTL ? 'Next image' : 'Previous image'}
+                className={cn(
+                  'absolute z-20 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur transition-all duration-200',
+                  'hover:border-white/30 hover:bg-gradient-to-br hover:from-white/25 hover:to-white/5',
+                  'disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-white/15 disabled:hover:from-transparent disabled:hover:to-transparent',
+                  isRTL ? 'right-3' : 'left-3',
+                )}
+              >
+                <ChevronLeft className="size-6" />
+              </button>
+              {/* Next button — in RTL it visually sits on the left and points to prev */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (isRTL) goPrev()
+                  else goNext()
+                }}
+                disabled={isRTL ? active <= 0 : active >= total - 1}
+                aria-label={isRTL ? 'Previous image' : 'Next image'}
+                className={cn(
+                  'absolute z-20 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur transition-all duration-200',
+                  'hover:border-white/30 hover:bg-gradient-to-br hover:from-white/25 hover:to-white/5',
+                  'disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-white/15 disabled:hover:from-transparent disabled:hover:to-transparent',
+                  isRTL ? 'left-3' : 'right-3',
+                )}
+              >
+                <ChevronRight className="size-6" />
+              </button>
+
+              {/* Image with framer-motion fade + slide transition */}
+              <AnimatePresence mode="wait" custom={direction}>
+                <motion.img
+                  key={active}
+                  src={images[active]}
+                  alt={`Project screenshot ${active + 1} of ${total}`}
+                  custom={direction}
+                  variants={variants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                  className="mx-auto h-auto w-full max-h-[85vh] object-contain"
+                />
+              </AnimatePresence>
+
+              {/* Image counter badge — bottom center */}
+              {total > 1 && (
+                <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/15 bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+                  <span className="ltr-num">{active + 1}</span>
+                  <span className="opacity-60">/</span>
+                  <span className="ltr-num">{total}</span>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

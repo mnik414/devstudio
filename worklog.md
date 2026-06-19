@@ -660,3 +660,89 @@ Stage Summary:
 - Blog detail gained a real-time reading time remaining indicator
 - All features bilingual (en/fa) with RTL support
 - Platform continues to be stable and increasingly premium
+
+---
+Task ID: 10-a
+Agent: full-stack-developer (testimonials + FAQ)
+Task: Enhance the TestimonialsSlider and FAQ section styling in home-view.tsx for a more premium, animated, on-brand presentation (blue/teal gradient language, radial-fade + grid backgrounds, floating accent blobs, gradient borders, framer-motion transitions).
+Work Log:
+- Read worklog.md, globals.css and the existing home-view.tsx to understand design tokens (bg-radial-fade, bg-grid, shadow-soft, shadow-glow, animate-float, text-gradient) and the current TestimonialsSlider + FAQ implementation.
+- Extended lucide-react imports with ChevronLeft, ChevronRight, HelpCircle, MessageCircleQuestion; added AnimatePresence to the framer-motion import.
+- Rewrote TestimonialsSlider:
+  * Section now has bg-radial-fade + faint bg-grid ambient background.
+  * Card uses rounded-3xl, larger padding (p-8 / sm:p-14), gradient hover border overlay, floating accent blobs (primary + teal) with animate-float, large decorative Quote icon at opacity-5.
+  * Star rating now renders 5 stars with per-star motion scale-in animation; unfilled stars are tinted muted.
+  * Slide transition uses AnimatePresence mode="wait" with x-translate + fade (RTL-aware direction).
+  * Larger avatar (h-14 w-14) with ring-2 ring-accent/20 + ring-offset-2; gradient-initials fallback preserved.
+  * Role and company separated by a small dot, company emphasized.
+  * Pagination dots now have gradient fill on active state and an animated progress fill (layoutId) as a visual autoplay indicator.
+  * Navigation replaced text buttons with circular ChevronLeft/ChevronRight buttons that fill with a primary->accent gradient + shadow-glow on hover (RTL-aware).
+  * "See more work" CTA upgraded to a gradient pill button (primary->accent) with shadow-glow.
+- Rewrote FAQ section:
+  * Replaced bg-muted/30 with bg-radial-fade + faint bg-grid; added two decorative floating HelpCircle icons (primary/teal, animate-float with staggered delay).
+  * Accordion items upgraded to rounded-2xl with hover lift (-translate-y-0.5) + shadow-soft on hover; open state has gradient tint (from-primary/[0.04] -> to-accent/[0.04]) and an animated gradient left-border (scale-y from primary to accent).
+  * Each question gets a gradient-tinted HelpCircle badge that fills with primary->accent gradient when the item is open.
+  * AccordionContent indented (pl-12) to align with the question text.
+  * "Still have questions?" CTA replaced link button with a prominent gradient pill button (primary->accent, h-12, shadow-glow) featuring a MessageCircleQuestion icon.
+- Preserved all existing logic: slider active state, prev/next navigation, accordion open/close, i18n keys (no new keys added), RTL handling.
+- Ran `bun run lint` (exit 0, no errors) and verified dev.log shows successful compilation with no warnings.
+Stage Summary:
+- TestimonialsSlider and FAQ sections visually upgraded to premium Stripe/Linear-grade presentation.
+- All enhancements use existing design tokens (bg-radial-fade, bg-grid, shadow-glow, animate-float, gradient utilities) and `cn()` for conditional classes.
+- Framer Motion animations added (AnimatePresence slide+fade transitions, animated star fills, progress-bar dot).
+- RTL support preserved and extended to new iconography and animations.
+- Lint clean; no translation logic or component structure changed; no new i18n keys introduced.
+
+---
+Task ID: 10-b
+Agent: full-stack-developer (gallery keyboard nav)
+Task: Add keyboard navigation (ArrowLeft/Right), prev/next circular buttons, image counter badge, and framer-motion fade+slide transitions to the portfolio detail gallery lightbox — all with RTL (Persian) awareness.
+Work Log:
+- Read worklog.md and portfolio-detail-view.tsx to understand the existing GallerySection component and design system (color/blue accent, rtl-flip, ltr-num conventions).
+- Verified `useLang` API in src/lib/lang-store.ts — `lang` is `'en' | 'fa'`, persists via zustand.
+- Added imports: `useEffect` from react, `AnimatePresence` from framer-motion, `ChevronLeft` / `ChevronRight` from lucide-react.
+- Rewrote `GallerySection`:
+  * Changed `active` state from `string | null` (URL) to `number | null` (image index) so we can navigate the array; added a `direction` state (+1 / -1) to drive the slide animation direction.
+  * Added `goPrev` / `goNext` helpers that clamp at the bounds and set the direction.
+  * Added a `useEffect` keyboard listener (mounted only while lightbox open) that maps ArrowLeft/Right to prev/next, mirrored when `lang === 'fa'` (RTL). Escape is still handled natively by the Radix Dialog.
+  * Two absolutely-positioned circular buttons (size-11) inside the lightbox: semi-transparent black/40 + backdrop-blur, hover gradient (from-white/25 to-white/5) with brighter border. Disabled at first/last image with reduced opacity and reset hover. In RTL the icons swap sides: ChevronLeft sits on the right and triggers next, ChevronRight sits on the left and triggers prev. `e.stopPropagation()` prevents the click from reaching the dialog overlay.
+  * Image swapped to `motion.img` wrapped in `<AnimatePresence mode="wait" custom={direction}>` with `enter/center/exit` variants — fade (opacity 0→1→0) plus a 40px horizontal slide whose direction matches navigation. `key={active}` ensures AnimatePresence re-mounts per image.
+  * Added a bottom-center counter badge ("1 / 3") with `ltr-num` on both numbers so Persian digits still render LTR, only shown when total > 1.
+- Preserved all existing functionality: gallery grid, hover overlay, click-outside / backdrop close, sr-only DialogTitle/Description, mobile/touch sizing (44px button targets).
+- Ran `bun run lint` — clean (no errors / no warnings). Confirmed dev.log shows healthy compiles.
+Stage Summary:
+- Lightbox now supports full keyboard, button, and swipe-equivalent navigation with smooth directional transitions.
+- RTL (Persian) users get mirrored arrow keys and swapped button positions, so ChevronLeft always points toward "previous content" visually.
+- Image counter keeps users oriented in multi-image galleries.
+- No new i18n keys, no changes to data fetching or translation logic, no new files, no test files — single-file enhancement to `src/components/views/portfolio-detail-view.tsx`.
+
+---
+Task ID: 10
+Agent: Main (orchestrator) — cron review round
+Task: QA testing (admin panel), styling enhancements (testimonials, FAQ), gallery keyboard navigation
+
+Work Log:
+- QA tested admin panel: login, all 15 resources, newsletter subscribers visible, create portfolio dialog with all form fields
+- QA tested testimonials slider: Previous/Next navigation works, no errors
+- QA tested FAQ accordion: opens/closes correctly
+- Dispatched 2 parallel subagents:
+  * 10-a: Enhanced TestimonialsSlider + FAQ in home-view.tsx
+    - Testimonials: bg-radial-fade + bg-grid, premium card with gradient hover border + floating accent blobs, large decorative Quote icon (opacity-5), animated star rating (per-star scale-in), AnimatePresence slide transitions, larger avatar with ring-2 ring-accent/20, gradient pagination dots with layoutId progress, circular ChevronLeft/Right nav buttons with gradient hover, gradient "See more work" pill button
+    - FAQ: bg-radial-fade + bg-grid, decorative floating HelpCircle icons, premium accordion items with hover lift + gradient tint on open, gradient HelpCircle icon badge per question, animated gradient left-border on open, gradient "Talk to our team" pill CTA
+  * 10-b: Added keyboard navigation to portfolio detail gallery lightbox
+    - Index-based tracking (active state changed from URL string to number index)
+    - Keyboard: ArrowLeft/ArrowRight with RTL awareness (mirrored in fa mode), Escape native
+    - Prev/Next circular buttons (size-11, bg-black/40 backdrop-blur, hover gradient), disabled at first/last
+    - Image counter badge "1 / 3" with ltr-num at bottom center
+    - AnimatePresence fade + 40px directional slide transitions
+    - RTL: icons swap sides (ChevronLeft on right for "next")
+- Verified gallery keyboard nav in English (LTR): ArrowLeft=prev, ArrowRight=next
+- Verified gallery keyboard nav in Persian (RTL): ArrowLeft=next, ArrowRight=prev (correctly mirrored)
+- Lint passes with 0 errors; all endpoints return 200
+
+Stage Summary:
+- Testimonials slider significantly enhanced with premium card, animated stars, gradient nav, slide transitions
+- FAQ section polished with gradient icons, hover lift, animated borders, gradient CTA
+- Portfolio gallery lightbox now has full keyboard navigation + prev/next buttons + image counter + smooth transitions
+- All features bilingual (en/fa) with RTL-aware keyboard navigation
+- Platform continues to be stable and increasingly premium

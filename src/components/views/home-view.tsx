@@ -1,9 +1,11 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowRight,
   ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
   Code2,
   ShoppingCart,
   Calendar,
@@ -23,6 +25,8 @@ import {
   LifeBuoy,
   Compass,
   CheckCircle2,
+  HelpCircle,
+  MessageCircleQuestion,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -410,8 +414,14 @@ export function HomeView() {
       </section>
 
       {/* ===== FAQ ===== */}
-      <section id="faq" className="scroll-mt-24 bg-muted/30 py-20 sm:py-28">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+      <section id="faq" className="scroll-mt-24 relative overflow-hidden py-20 sm:py-28">
+        <div className="absolute inset-0 bg-radial-fade" />
+        <div className="absolute inset-0 bg-grid opacity-[0.04]" />
+        {/* Decorative floating question mark */}
+        <HelpCircle className="pointer-events-none absolute -left-10 top-24 h-40 w-40 text-primary/[0.04] animate-float" />
+        <HelpCircle className="pointer-events-none absolute right-0 bottom-16 h-32 w-32 text-accent/[0.05] animate-float [animation-delay:1.5s]" />
+
+        <div className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
             eyebrow={t('faq.eyebrow')}
             title={t('faq.title')}
@@ -429,22 +439,37 @@ export function HomeView() {
                 <AccordionItem
                   key={faq.id}
                   value={faq.id}
-                  className="overflow-hidden rounded-xl border border-border/60 bg-card px-5 data-[state=open]:shadow-soft"
+                  className={cn(
+                    'group relative overflow-hidden rounded-2xl border border-border/60 bg-card px-5 py-1 transition-all duration-300',
+                    'hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft',
+                    'data-[state=open]:border-primary/30 data-[state=open]:bg-gradient-to-r data-[state=open]:from-primary/[0.04] data-[state=open]:to-accent/[0.04] data-[state=open]:shadow-soft'
+                  )}
                 >
+                  {/* Gradient left border on open */}
+                  <span className="pointer-events-none absolute inset-y-0 left-0 w-1 origin-top scale-y-0 bg-gradient-to-b from-primary to-accent transition-transform duration-300 group-data-[state=open]:scale-y-100" />
                   <AccordionTrigger className="hover:no-underline">
-                    <span className="text-left text-base font-semibold">{faq.question}</span>
+                    <span className="flex items-center gap-3 text-left text-base font-semibold">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 text-primary ring-1 ring-inset ring-primary/10 transition group-data-[state=open]:from-primary group-data-[state=open]:to-accent group-data-[state=open]:text-primary-foreground">
+                        <HelpCircle className="h-4 w-4" />
+                      </span>
+                      {faq.question}
+                    </span>
                   </AccordionTrigger>
-                  <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                  <AccordionContent className="pl-12 text-sm leading-relaxed text-muted-foreground">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
           )}
-          <div className="mt-10 text-center">
-            <p className="text-sm text-muted-foreground">{t('faq.stillQuestions')}</p>
-            <Button variant="link" className="mt-1 text-primary" onClick={() => setView('contact')}>
-              {t('faq.talkToTeam')} →
+          <div className="mt-12 flex flex-col items-center justify-center gap-4 text-center">
+            <p className="text-base text-muted-foreground">{t('faq.stillQuestions')}</p>
+            <Button
+              onClick={() => setView('contact')}
+              className="h-12 rounded-full bg-gradient-to-r from-primary to-accent px-7 text-base text-primary-foreground shadow-glow transition hover:opacity-90 hover:shadow-glow"
+            >
+              <MessageCircleQuestion className="mr-2 h-5 w-5" />
+              {t('faq.talkToTeam')}
             </Button>
           </div>
         </div>
@@ -574,6 +599,7 @@ function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Te
   const t = useT()
   const lang = useLang((s) => s.lang)
   const [active, setActive] = useState(0)
+  const isRtl = lang === 'fa'
 
   if (loading) {
     return (
@@ -587,67 +613,143 @@ function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Te
 
   if (testimonials.length === 0) return null
   const current = testimonials[active]
+  const initials = current.clientName.split(' ').map((n) => n[0]).join('').slice(0, 2)
+
+  const go = (dir: 1 | -1) => setActive((a) => (a + dir + testimonials.length) % testimonials.length)
 
   return (
-    <section className="py-20 sm:py-28">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+    <section className="relative overflow-hidden py-20 sm:py-28">
+      {/* Section ambient background */}
+      <div className="absolute inset-0 bg-radial-fade" />
+      <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.04]" />
+
+      <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow={t('testimonials.eyebrow')}
           title={t('testimonials.title')}
           description={t('testimonials.desc')}
         />
         <Reveal className="mt-14">
-          <Card className="relative overflow-hidden border-border/60 p-8 sm:p-12">
-            <Quote className={cn('absolute right-6 top-6 h-20 w-20 text-primary/5', lang === 'fa' && 'left-6 right-auto')} />
+          <Card className="group relative overflow-hidden rounded-3xl border-border/60 p-8 transition-all duration-300 hover:border-primary/30 hover:shadow-glow sm:p-14">
+            {/* Gradient border on hover */}
+            <span className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/20 via-transparent to-accent/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            {/* Grid + radial fade background */}
+            <div className="pointer-events-none absolute inset-0 bg-radial-fade" />
+            <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.05]" />
+            {/* Floating accent blobs */}
+            <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-accent/15 blur-3xl animate-float" />
+            <div className="pointer-events-none absolute -bottom-10 -left-10 h-44 w-44 rounded-full bg-primary/15 blur-3xl animate-float [animation-delay:2s]" />
+            {/* Large decorative quote icon */}
+            <Quote className={cn(
+              'pointer-events-none absolute h-32 w-32 text-primary opacity-5 sm:h-40 sm:w-40',
+              isRtl ? 'left-6 top-6 sm:left-10 sm:top-10' : 'right-6 top-6 sm:right-10 sm:top-10'
+            )} />
+
             <div className="relative">
-              <div className="flex gap-1">
-                {Array.from({ length: current.rating }).map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-accent text-accent" />
-                ))}
-              </div>
-              <blockquote className="mt-6 text-xl font-medium leading-relaxed text-foreground sm:text-2xl">
-                &ldquo;{current.quote}&rdquo;
-              </blockquote>
-              <div className="mt-8 flex items-center gap-4">
-                <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground">
-                  {current.avatar ? (
-                    <img src={current.avatar} alt={current.clientName} className="h-full w-full rounded-full object-cover" />
-                  ) : (
-                    current.clientName.split(' ').map((n) => n[0]).join('').slice(0, 2)
-                  )}
-                </div>
-                <div>
-                  <p className="font-semibold">{current.clientName}</p>
-                  <p className="text-sm text-muted-foreground">{current.role}, {current.company}</p>
-                </div>
-              </div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={current.id}
+                  initial={{ opacity: 0, x: isRtl ? -40 : 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: isRtl ? 40 : -40 }}
+                  transition={{ duration: 0.35, ease: 'easeOut' }}
+                >
+                  {/* Star rating with animated fill */}
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <motion.span
+                        key={i}
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.1 + i * 0.08, duration: 0.3 }}
+                      >
+                        <Star
+                          className={cn(
+                            'h-5 w-5 transition-colors',
+                            i < current.rating ? 'fill-accent text-accent' : 'fill-muted text-muted-foreground/30'
+                          )}
+                        />
+                      </motion.span>
+                    ))}
+                  </div>
+
+                  <blockquote className="mt-6 text-xl font-medium leading-relaxed text-foreground sm:text-2xl">
+                    &ldquo;{current.quote}&rdquo;
+                  </blockquote>
+
+                  <div className="mt-8 flex items-center gap-4">
+                    <div className="relative grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground ring-2 ring-accent/20 ring-offset-2 ring-offset-background">
+                      {current.avatar ? (
+                        <img src={current.avatar} alt={current.clientName} className="h-full w-full rounded-full object-cover" />
+                      ) : (
+                        initials
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-semibold">{current.clientName}</p>
+                      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{current.role}</span>
+                        <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+                        <span className="font-medium text-foreground/80">{current.company}</span>
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
           </Card>
         </Reveal>
 
-        <div className="mt-6 flex items-center justify-center gap-2">
+        {/* Pagination dots + progress indicator */}
+        <div className="mt-8 flex items-center justify-center gap-2">
           {testimonials.map((item, i) => (
             <button
               key={item.id}
               onClick={() => setActive(i)}
               aria-label={t('about.testimonialN', { n: i + 1 })}
-              className={`h-2 rounded-full transition-all ${
-                i === active ? 'w-8 bg-primary' : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
-              }`}
-            />
+              className="group/dot relative h-2 rounded-full transition-all"
+              style={{ width: i === active ? 32 : 8 }}
+            >
+              <span className={cn(
+                'absolute inset-0 rounded-full transition-colors',
+                i === active ? 'bg-gradient-to-r from-primary to-accent' : 'bg-muted-foreground/30 group-hover/dot:bg-muted-foreground/50'
+              )} />
+              {i === active && (
+                <motion.span
+                  layoutId="testimonial-progress"
+                  className="absolute inset-0 rounded-full bg-primary-foreground/40"
+                  initial={{ scaleX: 0, originX: isRtl ? 1 : 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                />
+              )}
+            </button>
           ))}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-3">
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => setActive((a) => (a - 1 + testimonials.length) % testimonials.length)}>
-            {t('testimonials.previous')}
-          </Button>
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => setActive((a) => (a + 1) % testimonials.length)}>
-            {t('testimonials.next')}
-          </Button>
-          <Button size="sm" className="rounded-full" onClick={onCta}>
+        {/* Navigation + CTA */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => go(-1)}
+            aria-label={t('testimonials.previous')}
+            className="grid h-11 w-11 place-items-center rounded-full border border-border/60 bg-card text-foreground transition hover:border-primary/40 hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-primary-foreground hover:shadow-glow"
+          >
+            <ChevronLeft className={cn('h-5 w-5', isRtl && 'rtl-flip')} />
+          </button>
+          <button
+            onClick={() => go(1)}
+            aria-label={t('testimonials.next')}
+            className="grid h-11 w-11 place-items-center rounded-full border border-border/60 bg-card text-foreground transition hover:border-primary/40 hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-primary-foreground hover:shadow-glow"
+          >
+            <ChevronRight className={cn('h-5 w-5', isRtl && 'rtl-flip')} />
+          </button>
+          <Button
+            size="sm"
+            onClick={onCta}
+            className="ml-2 h-11 rounded-full bg-gradient-to-r from-primary to-accent px-6 text-primary-foreground shadow-glow transition hover:opacity-90 hover:shadow-glow"
+          >
             {t('testimonials.seeMore')}
-            <ArrowRight className={cn('ml-1.5 h-4 w-4', lang === 'fa' && 'mr-1.5 ml-0', 'rtl-flip')} />
+            <ArrowRight className={cn('ml-1.5 h-4 w-4', isRtl && 'mr-1.5 ml-0', 'rtl-flip')} />
           </Button>
         </div>
       </div>
