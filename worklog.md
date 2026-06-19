@@ -1217,3 +1217,72 @@ Stage Summary:
 - فارسی‌نویسی کل سایت اصلاح شد: عنوان هیرو، ماکت داشبورد، دسته‌بندی‌ها، سرویس‌ها، نام مشتریان، آدرس فوتر
 - قابلیت آپلود عکس در پنل ادمین اضافه شد: ۶ فیلد تصویر (کاور، آواتار) حالا از آپلود فایل پشتیبانی می‌کنند
 - تمام متن‌های انگلیسی باقی‌مانده در صفحه اصلی و نمونه‌کارها ترجمه شدند
+
+---
+Task ID: 17-a
+Agent: full-stack-developer (admin Persian)
+Task: Localize the admin panel to Persian/Farsi — full RTL admin chrome (buttons, headings, labels, dialogs, toasts) using the `t()` translation helper from `@/lib/lang-store`.
+
+Work Log:
+- Read existing `admin-view.tsx` (1953 lines) and confirmed i18n keys exist in `src/lib/i18n.ts` for both en/fa dictionaries.
+- Added `import { useT } from '@/lib/lang-store'` and introduced a top-level `TFunc` type plus `resourceLabel(t, model)` helper that maps a `ModelKey` to `t('admin.r.<model>')`.
+- Updated `formatDate()` to use the `fa-IR` locale so timestamps render in Persian.
+- Extended `useAdminFetch` and `useAdminMutations` hooks to accept `t: TFunc`; replaced English toast/error strings with `t('admin.unauthorized')`, `t('admin.createdSuccess')`, `t('admin.updatedSuccess')`, `t('admin.deletedSuccess')`, and resource-labelled generic errors.
+- **LoginCard**: added `const t = useT()`, set `dir="rtl"`, replaced "Admin Panel"/"Enter your admin token…"/"Admin Token"/"Login"/"Verifying…"/"Back to site" with `t('admin.panel' | 'admin.loginDesc' | 'admin.tokenLabel' | 'admin.loginBtn' | 'admin.verifying' | 'admin.backToSite')`. Toasts → `t('admin.invalidToken' | 'admin.loginFailed' | 'admin.authSuccess')`. Swapped `<ArrowLeft>` → `<ArrowRight>` (RTL back-arrow).
+- **RecordTable**: added `t = useT()`, replaced `config.label` heading with `resourceLabel(t, model)`, "Search…" → `t('admin.search')` (with search icon swapped from `left-2.5`/`pl-8` to `right-2.5`/`pr-8` for RTL), "Refresh" → `t('admin.refreshStats')`, "New X" button → `t('admin.new') + ' ' + resourceLabel(t, model)`, "ID"/"Created"/"Actions" headers → `t('admin.id' | 'admin.created' | 'admin.actions')`, action column alignment flipped to `text-left`/`justify-start` (RTL), button titles → `t('admin.viewDetails' | 'admin.edit' | 'admin.delete')`, "No records found." → `t('admin.noData')`, simplified the "Showing X of Y" footer to `{filtered.length} / {data?.length}`.
+- **EditDialog**: added `t = useT()`, removed unused `config` var, set `dir="rtl"` on DialogContent, title → `${t('admin.edit'|'admin.new')} ${resourceLabel(t, model)}`, descriptions replaced with inline Persian ("برای ذخیرهٔ تغییرات…" / "برای ایجاد رکورد جدید…"), buttons "Cancel"/"Save Changes"/"Create" → `t('admin.cancel' | 'admin.saveChanges' | 'admin.create')`.
+- **ViewDialog**: added `t = useT()`, removed unused `config` var, set `dir="rtl"`, title → `${t('admin.details')} ${resourceLabel(t, model)}`, description → `${t('admin.submittedOn')} ${formatDate(...)}`, "Close" → `t('admin.cancel')`.
+- **DeleteDialog**: added `t = useT()`, removed unused `config` var, set `dir="rtl"` on AlertDialogContent, title → `${t('admin.confirmDeleteTitle')} ${resourceLabel(t, model)}`, body → `t('admin.confirmDelete')`, buttons "Cancel"/"Delete" → `t('admin.cancel' | 'admin.delete')`.
+- **DashboardOverview**: added `t = useT()`, set `dir="rtl"` on root div, swapped decorative `-right-*` blur orbs to `-left-*` (mirror layout). Stat-card labels → `t('admin.r.portfolio' | 'admin.r.blogPost' | 'admin.r.contactRequest' | 'admin.r.lead' | 'admin.r.newsletter' | 'admin.r.caseStudy')`. Quick-action labels → `${t('admin.new')} ${t('admin.r.portfolio')}` etc. Welcome header → `t('admin.welcome')`, badge text → `t('admin.panel')`, "Refresh stats" → `t('admin.refreshStats')`, "Platform Snapshot" section → `t('admin.overview')`, "QUICK ACTIONS" → `t('admin.quickActions')`, "RECENT ACTIVITY" → `t('admin.recentActivity')`, "Retry" → `t('admin.refreshStats')`. ActivityColumn titles → `t('admin.r.contactRequest' | 'admin.r.lead')`, empty labels → `t('admin.noData')`, "See all" → `t('admin.seeAll')`, "See all" arrow → `<ArrowLeft>` (RTL forward direction). Inline Persian "آخرین ۵ مورد" replaces "Most recent 5 entries".
+- **Dashboard layout**: added `t = useT()`, set `dir="rtl"` on root. Top bar: "Admin Panel" → `t('admin.panel')`, "Authenticated" → `t('admin.authenticated')`, "Back to site" + arrow → `t('admin.backToSite')` + `<ArrowRight>`, "Logout" → `t('admin.logout')`. Sidebar repositioned for RTL: `left-0` → `right-0`, `-translate-x-full` → `translate-x-full`, `border-r` → `border-l`. Sidebar text "Overview"/"Resources" → `t('admin.overview' | 'admin.resources')`, "Dashboard" button → `t('admin.overview')`, resource labels `{cfg.label}` → `resourceLabel(t, m)`, "RO" badge → `t('admin.readonly')` with `ml-auto`→`mr-auto`. Truncate alignment `text-left` → `text-right`. Footer tagline replaced with `t('admin.panel')`.
+- Ran `bun run lint` — clean (no errors). Verified dev.log shows successful `/api/admin?model=...` 200 responses after edits. Pre-existing TS errors in i18n.ts (duplicate fa keys from previous task) and in `MODEL_CONFIGS.listColumns` `boolean` property are untouched by this task.
+
+Stage Summary:
+- Admin panel is now fully Persian (RTL). All UI chrome — login card, top bar, sidebar, dashboard overview, record tables, edit/create/view/delete dialogs, toasts, error messages — uses `t()` from `useT()` and the new `resourceLabel(t, model)` helper.
+- All admin containers (`LoginCard` root, `Dashboard` root, `DashboardOverview` root, all dialog contents) carry `dir="rtl"`. Sidebar position, search-icon placement, decorative orbs, action-column alignment, and back/forward arrows were mirrored for RTL.
+- Date formatting uses the `fa-IR` locale so timestamps render in Persian numerals/months.
+- Form field labels in `MODEL_CONFIGS.formFields` intentionally kept English (per task spec — admins understand the field names; keys are dynamic). Resource labels everywhere use `t('admin.r.*')` (Option A from the spec).
+- Lint passes; no new TS errors introduced. The only TS error touching the file (`admin-view.tsx:431`) is the pre-existing `boolean` property on `newsletter.listColumns`, unrelated to this task.
+
+---
+Task ID: 17
+Agent: Main (orchestrator)
+Task: ایرانی‌سازی نام‌ها، فارسی‌سازی محتوا و پنل ادمین
+
+Work Log:
+- نام اعضای تیم به ایرانی تغییر یافت:
+  * Alex Morgan → آرش مهرآیین (بنیان‌گذار و معمار ارشد)
+  * Sarah Chen → سارا چنگیزی (مهندس فول‌استک ارشد)
+  * Marcus Reid → مرتضی رضایی (مدیر طراحی رابط و تجربه کاربری)
+  * Aisha Khan → عایشه خانمحمدی (استراتژیست سئو و رشد)
+  * Tom Becker → تیمور بقایی (مهندس دواپس)
+  * Priya Nair → پریا نیری (مدیر تضمین کیفیت و اتوماسیون)
+- نام مشتریان در نظرات به ایرانی تغییر یافت:
+  * David Martinez → دانیال مرادی (مدیرعامل، نکسوس فایننشال)
+  * Emily Roberts → الهام رستمی (بنیان‌گذار، واندرلاست)
+  * Dr. James Patel → دکتر جمشید پاتل (مدیر درمانی، گروه مدیکر)
+  * Laura Bennett → لادن بنی‌اسدی (مدیر بازاریابی، خرده‌فروشی شاپ‌ویو)
+  * Michael Tran → میلاد ترابی (مدیر فناوری، عملیات لوگی‌ترک)
+  * Sofia Almeida → صوفیا الماسی (مدیر آموزشی، آکادمی ادوپرو)
+- متن نظرات مشتریان به فارسی ترجمه شد
+- سوالات و پاسخ‌های متداول به فارسی ترجمه شد (۸ سوال)
+- پنل ادمین کاملاً فارسی‌سازی شد:
+  * صفحه ورود: عنوان، توضیح، برچسب توکن، دکمه ورود
+  * داشبورد: خوش آمدید، بازخوانی آمار، اقدامات سریع، فعالیت اخیر
+  * سایدبار: نمای کلی، منابع، تمام برچسب‌های منابع (نمونه‌کارها، پست‌های وبلاگ، etc.)
+  * جدول رکوردها: جستجو، جدید، شناسه، ایجادشده، عملیات، ویرایش، حذف
+  * دیالوگ ویرایش: ویرایش/جدید + نام منبع، انصراف، ذخیره تغییرات، ایجاد
+  * دیالوگ مشاهده: جزئیات، ارسال شده در
+  * دیالوگ حذف: تأیید حذف، انصراف، حذف
+  * پیام‌های toast: ایجاد/به‌روزرسانی/حذف موفق
+  * چیدمان RTL: سایدبار سمت راست، آیکن‌ها و حاشیه‌ها جابجا شدند
+  * تاریخ‌ها با فرمت فارسی (fa-IR) نمایش داده می‌شوند
+- افزودن ۳۵+ کلید i18n برای پنل ادمین (admin.*)
+- Lint passes with 0 errors; all endpoints return 200
+
+Stage Summary:
+- تمام نام‌های تیم و مشتریان ایرانی و فارسی شدند
+- متن نظرات و سوالات متداول فارسی شدند
+- پنل ادمین کاملاً فارسی‌سازی شد (ورود، داشبورد، جداول، دیالوگ‌ها، پیام‌ها)
+- چیدمان پنل ادمین RTL است
+- تاریخ‌ها با فرمت فارسی نمایش داده می‌شوند

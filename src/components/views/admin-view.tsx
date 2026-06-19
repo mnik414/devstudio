@@ -38,6 +38,7 @@ import {
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { useT } from '@/lib/lang-store'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -459,6 +460,12 @@ const MODEL_ORDER: ModelKey[] = [
 // Helpers
 // ---------------------------------------------------------------------------
 
+type TFunc = (key: string, vars?: Record<string, string | number>) => string
+
+function resourceLabel(t: TFunc, model: ModelKey): string {
+  return t(`admin.r.${model}`)
+}
+
 function truncateId(id?: string) {
   if (!id) return '—'
   return id.length > 10 ? `${id.slice(0, 8)}…` : id
@@ -468,7 +475,7 @@ function formatDate(value?: string) {
   if (!value) return '—'
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString('fa-IR', {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
@@ -548,16 +555,16 @@ function serializeForm(model: ModelKey, form: Record<string, unknown>): Record<s
 // API helpers
 // ---------------------------------------------------------------------------
 
-function useAdminFetch(model: ModelKey, token: string | null) {
+function useAdminFetch(model: ModelKey, token: string | null, t: TFunc) {
   return useQuery({
     queryKey: ['admin', model],
     queryFn: async () => {
-      if (!token) throw new Error('Not authenticated')
+      if (!token) throw new Error(t('admin.unauthorized'))
       const res = await fetch(`/api/admin?model=${encodeURIComponent(model)}`, {
         headers: { 'X-Admin-Token': token },
       })
-      if (res.status === 401) throw new Error('Unauthorized — check your admin token.')
-      if (!res.ok) throw new Error(`Failed to load ${model} (${res.status})`)
+      if (res.status === 401) throw new Error(t('admin.unauthorized'))
+      if (!res.ok) throw new Error(`${resourceLabel(t, model)} (${res.status})`)
       const json = await res.json()
       return (json.items ?? []) as RecordData[]
     },
@@ -566,7 +573,7 @@ function useAdminFetch(model: ModelKey, token: string | null) {
   })
 }
 
-function useAdminMutations(model: ModelKey, token: string | null) {
+function useAdminMutations(model: ModelKey, token: string | null, t: TFunc) {
   const qc = useQueryClient()
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['admin', model] })
@@ -581,13 +588,13 @@ function useAdminMutations(model: ModelKey, token: string | null) {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || `Create failed (${res.status})`)
+        throw new Error(j.error || `${t('admin.create')} (${res.status})`)
       }
       return res.json()
     },
     onSuccess: () => {
       invalidate()
-      toast.success(`${MODEL_CONFIGS[model].singular} created`)
+      toast.success(t('admin.createdSuccess'))
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -601,13 +608,13 @@ function useAdminMutations(model: ModelKey, token: string | null) {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || `Update failed (${res.status})`)
+        throw new Error(j.error || `${t('admin.saveChanges')} (${res.status})`)
       }
       return res.json()
     },
     onSuccess: () => {
       invalidate()
-      toast.success(`${MODEL_CONFIGS[model].singular} updated`)
+      toast.success(t('admin.updatedSuccess'))
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -620,13 +627,13 @@ function useAdminMutations(model: ModelKey, token: string | null) {
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error || `Delete failed (${res.status})`)
+        throw new Error(j.error || `${t('admin.delete')} (${res.status})`)
       }
       return res.json()
     },
     onSuccess: () => {
       invalidate()
-      toast.success(`${MODEL_CONFIGS[model].singular} deleted`)
+      toast.success(t('admin.deletedSuccess'))
     },
     onError: (e: Error) => toast.error(e.message),
   })
@@ -639,12 +646,13 @@ function useAdminMutations(model: ModelKey, token: string | null) {
 // ---------------------------------------------------------------------------
 
 function LoginCard({ onLogin }: { onLogin: (token: string) => void }) {
+  const t = useT()
   const [token, setToken] = React.useState('devstudio-admin')
   const [loading, setLoading] = React.useState(false)
 
   const submit = async () => {
     if (!token.trim()) {
-      toast.error('Please enter an admin token.')
+      toast.error(t('admin.invalidToken'))
       return
     }
     setLoading(true)
@@ -653,14 +661,14 @@ function LoginCard({ onLogin }: { onLogin: (token: string) => void }) {
         headers: { 'X-Admin-Token': token.trim() },
       })
       if (res.status === 401) {
-        toast.error('Invalid admin token.')
+        toast.error(t('admin.invalidToken'))
         return
       }
       if (!res.ok) {
-        toast.error(`Login failed (${res.status})`)
+        toast.error(`${t('admin.loginFailed')} (${res.status})`)
         return
       }
-      toast.success('Authenticated — welcome back.')
+      toast.success(t('admin.authSuccess'))
       onLogin(token.trim())
     } catch (e) {
       toast.error((e as Error).message)
@@ -670,20 +678,20 @@ function LoginCard({ onLogin }: { onLogin: (token: string) => void }) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+    <div dir="rtl" className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-md border-border/60 shadow-lg">
         <CardHeader className="space-y-2 text-center">
           <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <ShieldCheck className="size-6" />
           </div>
-          <CardTitle className="text-2xl">Admin Panel</CardTitle>
-          <CardDescription>Enter your admin token to access the CMS dashboard.</CardDescription>
+          <CardTitle className="text-2xl">{t('admin.panel')}</CardTitle>
+          <CardDescription>{t('admin.loginDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="admin-token" className="flex items-center gap-1.5">
               <KeyRound className="size-3.5 text-muted-foreground" />
-              Admin Token
+              {t('admin.tokenLabel')}
             </Label>
             <Input
               id="admin-token"
@@ -694,7 +702,7 @@ function LoginCard({ onLogin }: { onLogin: (token: string) => void }) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') submit()
               }}
-              placeholder="Enter admin token"
+              placeholder={t('admin.tokenLabel')}
             />
             <p className="text-xs text-muted-foreground">
               Default token: <code className="rounded bg-muted px-1 py-0.5 font-mono">devstudio-admin</code>
@@ -704,15 +712,15 @@ function LoginCard({ onLogin }: { onLogin: (token: string) => void }) {
         <CardFooter className="flex flex-col gap-2">
           <Button onClick={submit} disabled={loading} className="w-full">
             {loading ? <Loader2 className="size-4 animate-spin" /> : <Lock className="size-4" />}
-            {loading ? 'Verifying…' : 'Login'}
+            {loading ? t('admin.verifying') : t('admin.loginBtn')}
           </Button>
           <Button
             variant="ghost"
             className="w-full"
             onClick={() => useNav.getState().setView('home')}
           >
-            <ArrowLeft className="size-4" />
-            Back to site
+            <ArrowRight className="size-4" />
+            {t('admin.backToSite')}
           </Button>
         </CardFooter>
       </Card>
@@ -877,7 +885,8 @@ function RecordTable({
   onView: (record: RecordData) => void
   onDeleteRequest: (record: RecordData) => void
 }) {
-  const { data, isLoading, isError, error, refetch, isFetching } = useAdminFetch(model, token)
+  const t = useT()
+  const { data, isLoading, isError, error, refetch, isFetching } = useAdminFetch(model, token, t)
   const config = MODEL_CONFIGS[model]
   const [query, setQuery] = React.useState('')
 
@@ -899,28 +908,28 @@ function RecordTable({
         <div className="flex items-center gap-2">
           <config.icon className="size-5 text-primary" />
           <div>
-            <h2 className="text-lg font-semibold text-foreground">{config.label}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{resourceLabel(t, model)}</h2>
             <p className="text-xs text-muted-foreground">{config.description}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search…"
-              className="h-9 w-44 pl-8 text-sm"
+              placeholder={t('admin.search')}
+              className="h-9 w-44 pr-8 text-sm"
             />
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
-            Refresh
+            {t('admin.refreshStats')}
           </Button>
           {!config.readOnly && (
             <Button size="sm" onClick={() => onEdit({})}>
               <Plus className="size-4" />
-              New {config.singular}
+              {t('admin.new')} {resourceLabel(t, model)}
             </Button>
           )}
         </div>
@@ -931,12 +940,12 @@ function RecordTable({
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
-                <TableHead className="w-[110px]">ID</TableHead>
+                <TableHead className="w-[110px]">{t('admin.id')}</TableHead>
                 {config.listColumns.map((c) => (
                   <TableHead key={c.key}>{c.label}</TableHead>
                 ))}
-                <TableHead className="w-[160px]">Created</TableHead>
-                <TableHead className="w-[140px] text-right">Actions</TableHead>
+                <TableHead className="w-[160px]">{t('admin.created')}</TableHead>
+                <TableHead className="w-[140px] text-left">{t('admin.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -952,7 +961,7 @@ function RecordTable({
               {!isLoading && !isError && filtered.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={config.listColumns.length + 3} className="py-10 text-center text-muted-foreground">
-                    No records found.
+                    {t('admin.noData')}
                   </TableCell>
                 </TableRow>
               )}
@@ -967,15 +976,15 @@ function RecordTable({
                     <TableCell key={c.key}>{renderCell(row[c.key], c.truncate)}</TableCell>
                   ))}
                   <TableCell className="text-xs text-muted-foreground">{formatDate(row.createdAt as string)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
+                  <TableCell className="text-left">
+                    <div className="flex items-center justify-start gap-1">
                       {config.readOnly ? (
-                        <Button size="icon" variant="ghost" onClick={() => onView(row)} title="View details">
+                        <Button size="icon" variant="ghost" onClick={() => onView(row)} title={t('admin.viewDetails')}>
                           <Eye className="size-4" />
                         </Button>
                       ) : (
                         <>
-                          <Button size="icon" variant="ghost" onClick={() => onEdit(row)} title="Edit">
+                          <Button size="icon" variant="ghost" onClick={() => onEdit(row)} title={t('admin.edit')}>
                             <Pencil className="size-4" />
                           </Button>
                           <Button
@@ -983,7 +992,7 @@ function RecordTable({
                             variant="ghost"
                             className="text-destructive hover:text-destructive"
                             onClick={() => onDeleteRequest(row)}
-                            title="Delete"
+                            title={t('admin.delete')}
                           >
                             <Trash2 className="size-4" />
                           </Button>
@@ -1001,14 +1010,13 @@ function RecordTable({
             <p className="text-sm text-destructive">{(error as Error).message}</p>
             <Button size="sm" variant="outline" onClick={() => refetch()}>
               <RefreshCw className="size-4" />
-              Retry
+              {t('admin.refreshStats')}
             </Button>
           </div>
         )}
         {!isError && filtered.length > 0 && (
           <div className="border-t border-border/60 px-4 py-2 text-xs text-muted-foreground">
-            Showing {filtered.length} {filtered.length === 1 ? 'record' : 'records'}
-            {data && filtered.length !== data.length && ` of ${data.length}`}
+            {filtered.length} / {data?.length ?? 0}
           </div>
         )}
       </Card>
@@ -1033,11 +1041,11 @@ function EditDialog({
   onOpenChange: (o: boolean) => void
   record: RecordData | null
 }) {
-  const config = MODEL_CONFIGS[model]
+  const t = useT()
   const isEdit = !!record?.id
   const [values, setValues] = React.useState<Record<string, unknown>>(() => buildInitialForm(model))
   const [submitting, setSubmitting] = React.useState(false)
-  const { create, update } = useAdminMutations(model, token)
+  const { create, update } = useAdminMutations(model, token, t)
 
   React.useEffect(() => {
     if (open) {
@@ -1072,25 +1080,27 @@ function EditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isEdit ? <Pencil className="size-4 text-primary" /> : <Plus className="size-4 text-primary" />}
-            {isEdit ? `Edit ${config.singular}` : `New ${config.singular}`}
+            {isEdit ? `${t('admin.edit')} ${resourceLabel(t, model)}` : `${t('admin.new')} ${resourceLabel(t, model)}`}
           </DialogTitle>
           <DialogDescription>
-            {isEdit ? 'Update the fields below and save your changes.' : 'Fill in the fields below to create a new record.'}
+            {isEdit
+              ? 'برای ذخیرهٔ تغییرات، فیلدها را ویرایش کنید.'
+              : 'برای ایجاد رکورد جدید، فیلدها را پر کنید.'}
           </DialogDescription>
         </DialogHeader>
         <Separator />
         <DynamicForm model={model} values={values} onChange={handleChange} token={token} />
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-            Cancel
+            {t('admin.cancel')}
           </Button>
           <Button onClick={handleSubmit} disabled={submitting}>
             {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
-            {isEdit ? 'Save Changes' : 'Create'}
+            {isEdit ? t('admin.saveChanges') : t('admin.create')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1113,20 +1123,20 @@ function ViewDialog({
   onOpenChange: (o: boolean) => void
   record: RecordData | null
 }) {
-  const config = MODEL_CONFIGS[model]
+  const t = useT()
   if (!record) return null
   const entries = Object.entries(record).filter(([k]) => k !== 'id')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Eye className="size-4 text-primary" />
-            {config.singular} Details
+            {t('admin.details')} {resourceLabel(t, model)}
           </DialogTitle>
           <DialogDescription>
-            Submitted on {formatDate(record.createdAt as string)}
+            {t('admin.submittedOn')} {formatDate(record.createdAt as string)}
           </DialogDescription>
         </DialogHeader>
         <Separator />
@@ -1143,7 +1153,7 @@ function ViewDialog({
           </div>
         </ScrollArea>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t('admin.cancel')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1167,8 +1177,8 @@ function DeleteDialog({
   onOpenChange: (o: boolean) => void
   record: RecordData | null
 }) {
-  const config = MODEL_CONFIGS[model]
-  const { remove } = useAdminMutations(model, token)
+  const t = useT()
+  const { remove } = useAdminMutations(model, token, t)
   const [deleting, setDeleting] = React.useState(false)
 
   React.useEffect(() => {
@@ -1197,19 +1207,19 @@ function DeleteDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent dir="rtl">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             <Trash2 className="size-5 text-destructive" />
-            Delete {config.singular}
+            {t('admin.confirmDeleteTitle')} {resourceLabel(t, model)}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete <span className="font-medium text-foreground">{label}</span>? This action
-            cannot be undone.
+            {t('admin.confirmDelete')}{' '}
+            <span className="font-medium text-foreground">{label}</span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={deleting}>{t('admin.cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault()
@@ -1219,7 +1229,7 @@ function DeleteDialog({
             className="bg-destructive text-white hover:bg-destructive/90"
           >
             {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
-            Delete
+            {t('admin.delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -1405,12 +1415,12 @@ function ActivityColumn({
           </div>
           <div>
             <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-            <CardDescription className="text-[11px]">Most recent 5 entries</CardDescription>
+            <CardDescription className="text-[11px]">آخرین ۵ مورد</CardDescription>
           </div>
         </div>
         <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs text-muted-foreground" onClick={onSeeAll}>
           {seeAllLabel}
-          <ArrowRight className="size-3.5" />
+          <ArrowLeft className="size-3.5" />
         </Button>
       </CardHeader>
       <CardContent className="flex-1 space-y-2">
@@ -1445,6 +1455,7 @@ function DashboardOverview({
   onNavigate: (model: ModelKey) => void
   onNewRecord: (model: ModelKey) => void
 }) {
+  const t = useT()
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['admin', 'dashboard-stats'],
     queryFn: async (): Promise<DashboardStats> => {
@@ -1519,7 +1530,7 @@ function DashboardOverview({
   const statCards: StatCardConfig[] = [
     {
       key: 'portfolio',
-      label: 'Portfolios',
+      label: t('admin.r.portfolio'),
       icon: FolderKanban,
       value: data?.portfolios ?? 0,
       iconColor: 'text-primary',
@@ -1530,7 +1541,7 @@ function DashboardOverview({
     },
     {
       key: 'blogPost',
-      label: 'Blog Posts',
+      label: t('admin.r.blogPost'),
       icon: BookOpen,
       value: data?.blogPosts ?? 0,
       iconColor: 'text-accent',
@@ -1541,7 +1552,7 @@ function DashboardOverview({
     },
     {
       key: 'contactRequest',
-      label: 'Contact Requests',
+      label: t('admin.r.contactRequest'),
       icon: Mail,
       value: data?.contactRequests?.length ?? 0,
       iconColor: 'text-rose-600 dark:text-rose-400',
@@ -1552,7 +1563,7 @@ function DashboardOverview({
     },
     {
       key: 'lead',
-      label: 'Leads',
+      label: t('admin.r.lead'),
       icon: Inbox,
       value: data?.leads?.length ?? 0,
       iconColor: 'text-amber-600 dark:text-amber-400',
@@ -1563,7 +1574,7 @@ function DashboardOverview({
     },
     {
       key: 'newsletter',
-      label: 'Newsletter',
+      label: t('admin.r.newsletter'),
       icon: Megaphone,
       value: data?.newsletter ?? 0,
       iconColor: 'text-violet-600 dark:text-violet-400',
@@ -1574,7 +1585,7 @@ function DashboardOverview({
     },
     {
       key: 'caseStudy',
-      label: 'Case Studies',
+      label: t('admin.r.caseStudy'),
       icon: FlaskConical,
       value: data?.caseStudies ?? 0,
       iconColor: 'text-emerald-600 dark:text-emerald-400',
@@ -1591,35 +1602,31 @@ function DashboardOverview({
     onClick: () => void
     variant: 'default' | 'outline'
   }[] = [
-    { label: 'New Portfolio', icon: Plus, onClick: () => onNewRecord('portfolio'), variant: 'default' },
-    { label: 'New Blog Post', icon: Plus, onClick: () => onNewRecord('blogPost'), variant: 'outline' },
-    { label: 'View Contact Requests', icon: Mail, onClick: () => onNavigate('contactRequest'), variant: 'outline' },
-    { label: 'View Leads', icon: Inbox, onClick: () => onNavigate('lead'), variant: 'outline' },
+    { label: `${t('admin.new')} ${t('admin.r.portfolio')}`, icon: Plus, onClick: () => onNewRecord('portfolio'), variant: 'default' },
+    { label: `${t('admin.new')} ${t('admin.r.blogPost')}`, icon: Plus, onClick: () => onNewRecord('blogPost'), variant: 'outline' },
+    { label: t('admin.r.contactRequest'), icon: Mail, onClick: () => onNavigate('contactRequest'), variant: 'outline' },
+    { label: t('admin.r.lead'), icon: Inbox, onClick: () => onNavigate('lead'), variant: 'outline' },
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {/* Welcome header */}
       <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.04] via-background to-accent/[0.04] p-6 shadow-soft sm:p-8">
-        <div className="absolute -right-10 -top-10 size-40 rounded-full bg-primary/10 blur-3xl" aria-hidden />
-        <div className="absolute -bottom-12 right-24 size-32 rounded-full bg-accent/10 blur-3xl" aria-hidden />
+        <div className="absolute -left-10 -top-10 size-40 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+        <div className="absolute -bottom-12 left-24 size-32 rounded-full bg-accent/10 blur-3xl" aria-hidden />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur">
               <LayoutDashboard className="size-3 text-primary" />
-              Admin Dashboard
+              {t('admin.panel')}
             </div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Welcome back, <span className="text-gradient">Studio</span>
+              {t('admin.welcome')}
             </h1>
-            <p className="max-w-xl text-sm text-muted-foreground">
-              Here&apos;s a quick snapshot of your platform. Jump into a resource from the sidebar or use the
-              quick actions below.
-            </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
             <RefreshCw className={cn('size-4', isFetching && 'animate-spin')} />
-            Refresh stats
+            {t('admin.refreshStats')}
           </Button>
         </div>
       </div>
@@ -1629,7 +1636,7 @@ function DashboardOverview({
         <div className="mb-3 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             <TrendingUp className="size-4 text-accent" />
-            Platform Snapshot
+            {t('admin.overview')}
           </h2>
           {isError && (
             <span className="text-xs text-destructive">{(error as Error).message}</span>
@@ -1645,7 +1652,7 @@ function DashboardOverview({
             <span className="text-destructive">{(error as Error).message}</span>
             <Button size="sm" variant="outline" onClick={() => refetch()} className="h-7 gap-1.5 text-xs">
               <RefreshCw className="size-3.5" />
-              Retry
+              {t('admin.refreshStats')}
             </Button>
           </div>
         )}
@@ -1655,7 +1662,7 @@ function DashboardOverview({
       <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft sm:p-6">
         <div className="mb-4 flex items-center gap-2">
           <Sparkles className="size-4 text-primary" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Quick Actions</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t('admin.quickActions')}</h2>
         </div>
         <div className="flex flex-wrap gap-2.5">
           {quickActions.map((a) => {
@@ -1673,7 +1680,7 @@ function DashboardOverview({
               >
                 <Icon className="size-4" />
                 {a.label}
-                {a.variant === 'outline' && <ArrowRight className="size-3.5 text-muted-foreground" />}
+                {a.variant === 'outline' && <ArrowLeft className="size-3.5 text-muted-foreground" />}
               </Button>
             )
           })}
@@ -1684,30 +1691,30 @@ function DashboardOverview({
       <section>
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           <Inbox className="size-4 text-accent" />
-          Recent Activity
+          {t('admin.recentActivity')}
         </h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <ActivityColumn
-            title="Contact Requests"
+            title={t('admin.r.contactRequest')}
             icon={Mail}
             iconColor="text-rose-600 dark:text-rose-400"
             iconBg="bg-rose-500/10"
             items={recentContacts}
             loading={isLoading}
-            emptyLabel="No contact requests yet."
+            emptyLabel={t('admin.noData')}
             onSeeAll={() => onNavigate('contactRequest')}
-            seeAllLabel="See all"
+            seeAllLabel={t('admin.seeAll')}
           />
           <ActivityColumn
-            title="Leads"
+            title={t('admin.r.lead')}
             icon={Inbox}
             iconColor="text-amber-600 dark:text-amber-400"
             iconBg="bg-amber-500/10"
             items={recentLeads}
             loading={isLoading}
-            emptyLabel="No leads yet."
+            emptyLabel={t('admin.noData')}
             onSeeAll={() => onNavigate('lead')}
-            seeAllLabel="See all"
+            seeAllLabel={t('admin.seeAll')}
           />
         </div>
       </section>
@@ -1720,6 +1727,7 @@ function DashboardOverview({
 // ---------------------------------------------------------------------------
 
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
+  const t = useT()
   const setView = useNav((s) => s.setView)
   const [active, setActive] = React.useState<ActiveView>('dashboard')
   const [editOpen, setEditOpen] = React.useState(false)
@@ -1761,7 +1769,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted/30">
+    <div dir="rtl" className="flex min-h-screen flex-col bg-muted/30">
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
@@ -1779,7 +1787,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                 <LayoutDashboard className="size-4" />
               </div>
               <div className="hidden sm:block">
-                <p className="text-sm font-semibold leading-none text-foreground">Admin Panel</p>
+                <p className="text-sm font-semibold leading-none text-foreground">{t('admin.panel')}</p>
                 <p className="text-[11px] text-muted-foreground">DevStudio CMS</p>
               </div>
             </div>
@@ -1787,15 +1795,15 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="hidden gap-1.5 sm:flex">
               <span className="size-1.5 rounded-full bg-emerald-500" />
-              Authenticated
+              {t('admin.authenticated')}
             </Badge>
             <Button variant="outline" size="sm" onClick={() => setView('home')}>
-              <ArrowLeft className="size-4" />
-              <span className="hidden sm:inline">Back to site</span>
+              <ArrowRight className="size-4" />
+              <span className="hidden sm:inline">{t('admin.backToSite')}</span>
             </Button>
             <Button variant="ghost" size="sm" onClick={onLogout} className="text-muted-foreground hover:text-foreground">
               <LogOut className="size-4" />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">{t('admin.logout')}</span>
             </Button>
           </div>
         </div>
@@ -1804,14 +1812,14 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       <div className="flex flex-1">
         {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 left-0 top-14 z-20 w-64 transform border-r border-border/60 bg-background transition-transform lg:static lg:top-0 lg:translate-x-0 ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          className={`fixed inset-y-0 right-0 top-14 z-20 w-64 transform border-l border-border/60 bg-background transition-transform lg:static lg:top-0 lg:translate-x-0 ${
+            sidebarOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
           <div className="flex h-full flex-col">
             <div className="px-3 py-4">
               <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Overview
+                {t('admin.overview')}
               </p>
               <nav className="space-y-0.5">
                 <button
@@ -1828,11 +1836,11 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                   )}
                 >
                   <LayoutDashboard className="size-4 shrink-0" />
-                  <span className="truncate text-left">Dashboard</span>
+                  <span className="truncate text-right">{t('admin.overview')}</span>
                 </button>
               </nav>
               <p className="px-2 pb-2 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Resources
+                {t('admin.resources')}
               </p>
               <nav className="space-y-0.5">
                 {MODEL_ORDER.map((m) => {
@@ -1855,15 +1863,15 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                       )}
                     >
                       <Icon className="size-4 shrink-0" />
-                      <span className="truncate text-left">{cfg.label}</span>
+                      <span className="truncate text-right">{resourceLabel(t, m)}</span>
                       {cfg.readOnly && (
                         <span className={cn(
-                          'ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium',
+                          'mr-auto rounded px-1.5 py-0.5 text-[10px] font-medium',
                           isActive
                             ? 'bg-primary-foreground/20 text-primary-foreground'
                             : 'bg-muted text-muted-foreground',
                         )}>
-                          RO
+                          {t('admin.readonly')}
                         </span>
                       )}
                     </button>
@@ -1875,7 +1883,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
               <div className="rounded-lg bg-muted/60 p-3">
                 <p className="text-[11px] font-medium text-foreground">DevStudio CMS</p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
-                  Manage all site content from one place.
+                  {t('admin.panel')}
                 </p>
               </div>
             </div>

@@ -1,0 +1,1954 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+     5→import { toast } from 'sonner'
+     6→import { useNav } from '@/lib/store'
+     7→import {
+     8→  LayoutDashboard,
+     9→  LogOut,
+    10→  ArrowLeft,
+    11→  ArrowRight,
+    12→  Plus,
+    13→  Pencil,
+    14→  Trash2,
+    15→  Eye,
+    16→  Lock,
+    17→  ShieldCheck,
+    18→  Search,
+    19→  FolderKanban,
+    20→  Tags,
+    21→  Cpu,
+    22→  Newspaper,
+    23→  BookOpen,
+    24→  Bookmark,
+    25→  FlaskConical,
+    26→  Quote,
+    27→  Users,
+    28→  Sparkles,
+    29→  HelpCircle,
+    30→  Inbox,
+    31→  Mail,
+    32→  Megaphone,
+    33→  TrendingUp,
+    34→  Settings as SettingsIcon,
+    35→  Loader2,
+    36→  KeyRound,
+    37→  RefreshCw,
+    38→} from 'lucide-react'
+    39→
+    40→import { cn } from '@/lib/utils'
+    41→
+    42→import { Button } from '@/components/ui/button'
+    43→import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+    44→import { Input } from '@/components/ui/input'
+    45→import { Label } from '@/components/ui/label'
+    46→import { Textarea } from '@/components/ui/textarea'
+    47→import { Switch } from '@/components/ui/switch'
+    48→import { Badge } from '@/components/ui/badge'
+    49→import { Skeleton } from '@/components/ui/skeleton'
+    50→import { Separator } from '@/components/ui/separator'
+    51→import { ScrollArea } from '@/components/ui/scroll-area'
+    52→import {
+    53→  Table,
+    54→  TableHeader,
+    55→  TableBody,
+    56→  TableHead,
+    57→  TableRow,
+    58→  TableCell,
+    59→} from '@/components/ui/table'
+    60→import {
+    61→  Dialog,
+    62→  DialogContent,
+    63→  DialogDescription,
+    64→  DialogFooter,
+    65→  DialogHeader,
+    66→  DialogTitle,
+    67→} from '@/components/ui/dialog'
+    68→import {
+    69→  AlertDialog,
+    70→  AlertDialogAction,
+    71→  AlertDialogCancel,
+    72→  AlertDialogContent,
+    73→  AlertDialogDescription,
+    74→  AlertDialogFooter,
+    75→  AlertDialogHeader,
+    76→  AlertDialogTitle,
+    77→} from '@/components/ui/alert-dialog'
+    78→import { ImageUpload } from '@/components/admin/image-upload'
+    79→
+    80→// ---------------------------------------------------------------------------
+    81→// Types
+    82→// ---------------------------------------------------------------------------
+    83→
+    84→type ModelKey =
+    85→  | 'portfolio'
+    86→  | 'portfolioCategory'
+    87→  | 'technology'
+    88→  | 'blogPost'
+    89→  | 'blogCategory'
+    90→  | 'tag'
+    91→  | 'caseStudy'
+    92→  | 'testimonial'
+    93→  | 'teamMember'
+    94→  | 'service'
+    95→  | 'faq'
+    96→  | 'lead'
+    97→  | 'contactRequest'
+    98→  | 'setting'
+    99→  | 'newsletter'
+   100→
+   101→type ActiveView = ModelKey | 'dashboard'
+   102→
+   103→type FieldType = 'text' | 'textarea' | 'number' | 'switch' | 'json' | 'select' | 'image'
+   104→
+   105→interface FieldConfig {
+   106→  key: string
+   107→  label: string
+   108→  type: FieldType
+   109→  placeholder?: string
+   110→  options?: { label: string; value: string }[]
+   111→  required?: boolean
+   112→  default?: unknown
+   113→}
+   114→
+   115→interface ModelConfig {
+   116→  label: string
+   117→  singular: string
+   118→  icon: React.ComponentType<{ className?: string }>
+   119→  description: string
+   120→  listColumns: { key: string; label: string; truncate?: number }[]
+   121→  formFields: FieldConfig[]
+   122→  readOnly?: boolean
+   123→}
+   124→
+   125→type RecordData = Record<string, unknown> & { id?: string; createdAt?: string }
+   126→
+   127→// ---------------------------------------------------------------------------
+   128→// Model configurations
+   129→// ---------------------------------------------------------------------------
+   130→
+   131→const MODEL_CONFIGS: Record<ModelKey, ModelConfig> = {
+   132→  portfolio: {
+   133→    label: 'Portfolios',
+   134→    singular: 'Portfolio',
+   135→    icon: FolderKanban,
+   136→    description: 'Showcase projects with full case-study metadata.',
+   137→    listColumns: [
+   138→      { key: 'title', label: 'Title' },
+   139→      { key: 'year', label: 'Year' },
+   140→      { key: 'featured', label: 'Featured' },
+   141→      { key: 'published', label: 'Published' },
+   142→    ],
+   143→    formFields: [
+   144→      { key: 'title', label: 'Title', type: 'text', required: true },
+   145→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   146→      { key: 'summary', label: 'Summary', type: 'textarea' },
+   147→      { key: 'description', label: 'Description', type: 'textarea' },
+   148→      { key: 'coverImage', label: 'Cover Image', type: 'image' },
+   149→      { key: 'gallery', label: 'Gallery (JSON array)', type: 'json', placeholder: '["/img/1.jpg", "/img/2.jpg"]' },
+   150→      { key: 'liveUrl', label: 'Live URL', type: 'text' },
+   151→      { key: 'repoUrl', label: 'Repo URL', type: 'text' },
+   152→      { key: 'clientName', label: 'Client Name', type: 'text' },
+   153→      { key: 'year', label: 'Year', type: 'number', default: new Date().getFullYear() },
+   154→      { key: 'featured', label: 'Featured', type: 'switch', default: false },
+   155→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   156→      { key: 'problem', label: 'Problem', type: 'textarea' },
+   157→      { key: 'solution', label: 'Solution', type: 'textarea' },
+   158→      { key: 'result', label: 'Result', type: 'textarea' },
+   159→      { key: 'challenge', label: 'Challenge', type: 'textarea' },
+   160→      { key: 'architecture', label: 'Architecture', type: 'textarea' },
+   161→      { key: 'implementation', label: 'Implementation', type: 'textarea' },
+   162→      { key: 'outcome', label: 'Outcome', type: 'textarea' },
+   163→      { key: 'features', label: 'Features (JSON array)', type: 'json', placeholder: '["Fast","Secure"]' },
+   164→    ],
+   165→  },
+   166→  portfolioCategory: {
+   167→    label: 'Portfolio Categories',
+   168→    singular: 'Portfolio Category',
+   169→    icon: Bookmark,
+   170→    description: 'Group portfolios by category.',
+   171→    listColumns: [
+   172→      { key: 'name', label: 'Name' },
+   173→      { key: 'slug', label: 'Slug' },
+   174→    ],
+   175→    formFields: [
+   176→      { key: 'name', label: 'Name', type: 'text', required: true },
+   177→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   178→      { key: 'icon', label: 'Icon (lucide name)', type: 'text' },
+   179→    ],
+   180→  },
+   181→  technology: {
+   182→    label: 'Technologies',
+   183→    singular: 'Technology',
+   184→    icon: Cpu,
+   185→    description: 'Tech stack used across portfolios.',
+   186→    listColumns: [
+   187→      { key: 'name', label: 'Name' },
+   188→      { key: 'color', label: 'Color' },
+   189→    ],
+   190→    formFields: [
+   191→      { key: 'name', label: 'Name', type: 'text', required: true },
+   192→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   193→      { key: 'icon', label: 'Icon (lucide name)', type: 'text' },
+   194→      { key: 'color', label: 'Color (hex)', type: 'text', placeholder: '#14B8A6' },
+   195→    ],
+   196→  },
+   197→  blogPost: {
+   198→    label: 'Blog Posts',
+   199→    singular: 'Blog Post',
+   200→    icon: Newspaper,
+   201→    description: 'Long-form articles with markdown content.',
+   202→    listColumns: [
+   203→      { key: 'title', label: 'Title' },
+   204→      { key: 'authorName', label: 'Author' },
+   205→      { key: 'published', label: 'Published' },
+   206→      { key: 'featured', label: 'Featured' },
+   207→    ],
+   208→    formFields: [
+   209→      { key: 'title', label: 'Title', type: 'text', required: true },
+   210→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   211→      { key: 'excerpt', label: 'Excerpt', type: 'textarea' },
+   212→      { key: 'content', label: 'Content (Markdown)', type: 'textarea' },
+   213→      { key: 'coverImage', label: 'Cover Image', type: 'image' },
+   214→      { key: 'readingTime', label: 'Reading Time (min)', type: 'number', default: 5 },
+   215→      { key: 'authorName', label: 'Author Name', type: 'text', default: 'Editorial Team' },
+   216→      { key: 'authorAvatar', label: 'Author Avatar', type: 'image' },
+   217→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   218→      { key: 'featured', label: 'Featured', type: 'switch', default: false },
+   219→    ],
+   220→  },
+   221→  blogCategory: {
+   222→    label: 'Blog Categories',
+   223→    singular: 'Blog Category',
+   224→    icon: Bookmark,
+   225→    description: 'Categories for blog posts.',
+   226→    listColumns: [
+   227→      { key: 'name', label: 'Name' },
+   228→      { key: 'slug', label: 'Slug' },
+   229→    ],
+   230→    formFields: [
+   231→      { key: 'name', label: 'Name', type: 'text', required: true },
+   232→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   233→      { key: 'icon', label: 'Icon (lucide name)', type: 'text' },
+   234→    ],
+   235→  },
+   236→  tag: {
+   237→    label: 'Tags',
+   238→    singular: 'Tag',
+   239→    icon: Tags,
+   240→    description: 'Tags for blog posts.',
+   241→    listColumns: [
+   242→      { key: 'name', label: 'Name' },
+   243→      { key: 'slug', label: 'Slug' },
+   244→    ],
+   245→    formFields: [
+   246→      { key: 'name', label: 'Name', type: 'text', required: true },
+   247→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   248→    ],
+   249→  },
+   250→  caseStudy: {
+   251→    label: 'Case Studies',
+   252→    singular: 'Case Study',
+   253→    icon: FlaskConical,
+   254→    description: 'In-depth project case studies.',
+   255→    listColumns: [
+   256→      { key: 'title', label: 'Title' },
+   257→      { key: 'clientName', label: 'Client' },
+   258→      { key: 'industry', label: 'Industry' },
+   259→      { key: 'featured', label: 'Featured' },
+   260→    ],
+   261→    formFields: [
+   262→      { key: 'title', label: 'Title', type: 'text', required: true },
+   263→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   264→      { key: 'clientName', label: 'Client Name', type: 'text', required: true },
+   265→      { key: 'industry', label: 'Industry', type: 'text' },
+   266→      { key: 'coverImage', label: 'Cover Image', type: 'image' },
+   267→      { key: 'summary', label: 'Summary', type: 'textarea' },
+   268→      { key: 'problem', label: 'Problem', type: 'textarea' },
+   269→      { key: 'analysis', label: 'Analysis', type: 'textarea' },
+   270→      { key: 'architecture', label: 'Architecture', type: 'textarea' },
+   271→      { key: 'process', label: 'Process', type: 'textarea' },
+   272→      { key: 'challenges', label: 'Challenges', type: 'textarea' },
+   273→      { key: 'results', label: 'Results', type: 'textarea' },
+   274→      { key: 'lessons', label: 'Lessons', type: 'textarea' },
+   275→      { key: 'metrics', label: 'Metrics (JSON array)', type: 'json', placeholder: '[{"label":"Uptime","value":"99.9%"}]' },
+   276→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   277→      { key: 'featured', label: 'Featured', type: 'switch', default: false },
+   278→    ],
+   279→  },
+   280→  testimonial: {
+   281→    label: 'Testimonials',
+   282→    singular: 'Testimonial',
+   283→    icon: Quote,
+   284→    description: 'Client testimonials and reviews.',
+   285→    listColumns: [
+   286→      { key: 'clientName', label: 'Client' },
+   287→      { key: 'company', label: 'Company' },
+   288→      { key: 'rating', label: 'Rating' },
+   289→      { key: 'published', label: 'Published' },
+   290→    ],
+   291→    formFields: [
+   292→      { key: 'clientName', label: 'Client Name', type: 'text', required: true },
+   293→      { key: 'role', label: 'Role', type: 'text' },
+   294→      { key: 'company', label: 'Company', type: 'text' },
+   295→      { key: 'avatar', label: 'Avatar', type: 'image' },
+   296→      { key: 'rating', label: 'Rating (1-5)', type: 'number', default: 5 },
+   297→      { key: 'quote', label: 'Quote', type: 'textarea' },
+   298→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   299→    ],
+   300→  },
+   301→  teamMember: {
+   302→    label: 'Team Members',
+   303→    singular: 'Team Member',
+   304→    icon: Users,
+   305→    description: 'Team member profiles.',
+   306→    listColumns: [
+   307→      { key: 'name', label: 'Name' },
+   308→      { key: 'role', label: 'Role' },
+   309→      { key: 'order', label: 'Order' },
+   310→      { key: 'published', label: 'Published' },
+   311→    ],
+   312→    formFields: [
+   313→      { key: 'name', label: 'Name', type: 'text', required: true },
+   314→      { key: 'role', label: 'Role', type: 'text' },
+   315→      { key: 'bio', label: 'Bio', type: 'textarea' },
+   316→      { key: 'avatar', label: 'Avatar', type: 'image' },
+   317→      { key: 'linkedin', label: 'LinkedIn URL', type: 'text' },
+   318→      { key: 'github', label: 'GitHub URL', type: 'text' },
+   319→      { key: 'twitter', label: 'Twitter URL', type: 'text' },
+   320→      { key: 'order', label: 'Display Order', type: 'number', default: 0 },
+   321→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   322→    ],
+   323→  },
+   324→  service: {
+   325→    label: 'Services',
+   326→    singular: 'Service',
+   327→    icon: Sparkles,
+   328→    description: 'Service offerings.',
+   329→    listColumns: [
+   330→      { key: 'title', label: 'Title' },
+   331→      { key: 'icon', label: 'Icon' },
+   332→      { key: 'order', label: 'Order' },
+   333→      { key: 'published', label: 'Published' },
+   334→    ],
+   335→    formFields: [
+   336→      { key: 'title', label: 'Title', type: 'text', required: true },
+   337→      { key: 'slug', label: 'Slug', type: 'text', required: true },
+   338→      { key: 'description', label: 'Description', type: 'textarea' },
+   339→      { key: 'icon', label: 'Icon (lucide name)', type: 'text' },
+   340→      { key: 'features', label: 'Features (JSON array)', type: 'json', placeholder: '["Fast","Secure"]' },
+   341→      { key: 'order', label: 'Display Order', type: 'number', default: 0 },
+   342→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   343→    ],
+   344→  },
+   345→  faq: {
+   346→    label: 'FAQs',
+   347→    singular: 'FAQ',
+   348→    icon: HelpCircle,
+   349→    description: 'Frequently asked questions.',
+   350→    listColumns: [
+   351→      { key: 'question', label: 'Question', truncate: 60 },
+   352→      { key: 'category', label: 'Category' },
+   353→      { key: 'order', label: 'Order' },
+   354→      { key: 'published', label: 'Published' },
+   355→    ],
+   356→    formFields: [
+   357→      { key: 'question', label: 'Question', type: 'text', required: true },
+   358→      { key: 'answer', label: 'Answer', type: 'textarea' },
+   359→      { key: 'category', label: 'Category', type: 'text', default: 'General' },
+   360→      { key: 'order', label: 'Display Order', type: 'number', default: 0 },
+   361→      { key: 'published', label: 'Published', type: 'switch', default: true },
+   362→    ],
+   363→  },
+   364→  lead: {
+   365→    label: 'Leads',
+   366→    singular: 'Lead',
+   367→    icon: Inbox,
+   368→    description: 'Inbound estimate requests (read-only).',
+   369→    readOnly: true,
+   370→    listColumns: [
+   371→      { key: 'name', label: 'Name' },
+   372→      { key: 'email', label: 'Email' },
+   373→      { key: 'projectType', label: 'Project Type' },
+   374→      { key: 'budget', label: 'Budget' },
+   375→      { key: 'status', label: 'Status' },
+   376→    ],
+   377→    formFields: [
+   378→      { key: 'status', label: 'Status', type: 'select', options: [
+   379→        { label: 'New', value: 'new' },
+   380→        { label: 'Contacted', value: 'contacted' },
+   381→        { label: 'Qualified', value: 'qualified' },
+   382→        { label: 'Lost', value: 'lost' },
+   383→        { label: 'Won', value: 'won' },
+   384→      ], default: 'new' },
+   385→    ],
+   386→  },
+   387→  contactRequest: {
+   388→    label: 'Contact Requests',
+   389→    singular: 'Contact Request',
+   390→    icon: Mail,
+   391→    description: 'Inbound contact form submissions (read-only).',
+   392→    readOnly: true,
+   393→    listColumns: [
+   394→      { key: 'fullName', label: 'Name' },
+   395→      { key: 'email', label: 'Email' },
+   396→      { key: 'budget', label: 'Budget' },
+   397→      { key: 'status', label: 'Status' },
+   398→    ],
+   399→    formFields: [
+   400→      { key: 'status', label: 'Status', type: 'select', options: [
+   401→        { label: 'New', value: 'new' },
+   402→        { label: 'Read', value: 'read' },
+   403→        { label: 'Replied', value: 'replied' },
+   404→        { label: 'Archived', value: 'archived' },
+   405→      ], default: 'new' },
+   406→    ],
+   407→  },
+   408→  setting: {
+   409→    label: 'Settings',
+   410→    singular: 'Setting',
+   411→    icon: SettingsIcon,
+   412→    description: 'Global key/value site settings.',
+   413→    listColumns: [
+   414→      { key: 'key', label: 'Key' },
+   415→      { key: 'value', label: 'Value', truncate: 80 },
+   416→    ],
+   417→    formFields: [
+   418→      { key: 'key', label: 'Key', type: 'text', required: true },
+   419→      { key: 'value', label: 'Value', type: 'textarea' },
+   420→    ],
+   421→  },
+   422→  newsletter: {
+   423→    label: 'Newsletter',
+   424→    singular: 'Subscriber',
+   425→    icon: Mail,
+   426→    description: 'Newsletter email subscribers.',
+   427→    listColumns: [
+   428→      { key: 'email', label: 'Email' },
+   429→      { key: 'source', label: 'Source' },
+   430→      { key: 'active', label: 'Active', boolean: true },
+   431→    ],
+   432→    formFields: [
+   433→      { key: 'email', label: 'Email', type: 'text', required: true },
+   434→      { key: 'source', label: 'Source', type: 'text' },
+   435→      { key: 'active', label: 'Active', type: 'switch' },
+   436→    ],
+   437→  },
+   438→}
+   439→
+   440→const MODEL_ORDER: ModelKey[] = [
+   441→  'portfolio',
+   442→  'portfolioCategory',
+   443→  'technology',
+   444→  'blogPost',
+   445→  'blogCategory',
+   446→  'tag',
+   447→  'caseStudy',
+   448→  'testimonial',
+   449→  'teamMember',
+   450→  'service',
+   451→  'faq',
+   452→  'lead',
+   453→  'contactRequest',
+   454→  'setting',
+   455→  'newsletter',
+   456→]
+   457→
+   458→// ---------------------------------------------------------------------------
+   459→// Helpers
+   460→// ---------------------------------------------------------------------------
+   461→
+   462→function truncateId(id?: string) {
+   463→  if (!id) return '—'
+   464→  return id.length > 10 ? `${id.slice(0, 8)}…` : id
+   465→}
+   466→
+   467→function formatDate(value?: string) {
+   468→  if (!value) return '—'
+   469→  const d = new Date(value)
+   470→  if (Number.isNaN(d.getTime())) return '—'
+   471→  return d.toLocaleString(undefined, {
+   472→    year: 'numeric',
+   473→    month: 'short',
+   474→    day: '2-digit',
+   475→    hour: '2-digit',
+   476→    minute: '2-digit',
+   477→  })
+   478→}
+   479→
+   480→function buildInitialForm(model: ModelKey): Record<string, unknown> {
+   481→  const config = MODEL_CONFIGS[model]
+   482→  const form: Record<string, unknown> = {}
+   483→  for (const f of config.formFields) {
+   484→    if (f.type === 'switch') form[f.key] = f.default ?? false
+   485→    else if (f.type === 'number') form[f.key] = f.default ?? 0
+   486→    else if (f.type === 'json') form[f.key] = ''
+   487→    else if (f.type === 'select') form[f.key] = f.default ?? f.options?.[0]?.value ?? ''
+   488→    else form[f.key] = f.default ?? ''
+   489→  }
+   490→  return form
+   491→}
+   492→
+   493→function hydrateFormFromRecord(model: ModelKey, record: RecordData): Record<string, unknown> {
+   494→  const config = MODEL_CONFIGS[model]
+   495→  const form: Record<string, unknown> = {}
+   496→  for (const f of config.formFields) {
+   497→    const raw = record[f.key]
+   498→    if (f.type === 'switch') form[f.key] = Boolean(raw)
+   499→    else if (f.type === 'number') form[f.key] = raw === undefined || raw === null ? (f.default ?? 0) : Number(raw)
+   500→    else if (f.type === 'json') {
+   501→      if (typeof raw === 'string' && raw.length > 0) {
+   502→        form[f.key] = raw
+   503→      } else if (Array.isArray(raw) || (typeof raw === 'object' && raw !== null)) {
+   504→        form[f.key] = JSON.stringify(raw, null, 2)
+   505→      } else {
+   506→        form[f.key] = ''
+   507→      }
+   508→    } else if (f.type === 'select') {
+   509→      form[f.key] = typeof raw === 'string' ? raw : (f.default ?? '')
+   510→    } else {
+   511→      form[f.key] = typeof raw === 'string' ? raw : raw === null || raw === undefined ? '' : String(raw)
+   512→    }
+   513→  }
+   514→  return form
+   515→}
+   516→
+   517→function serializeForm(model: ModelKey, form: Record<string, unknown>): Record<string, unknown> {
+   518→  const config = MODEL_CONFIGS[model]
+   519→  const out: Record<string, unknown> = {}
+   520→  for (const f of config.formFields) {
+   521→    const val = form[f.key]
+   522→    if (f.type === 'switch') out[f.key] = Boolean(val)
+   523→    else if (f.type === 'number') {
+   524→      const n = Number(val)
+   525→      out[f.key] = Number.isNaN(n) ? 0 : n
+   526→    } else if (f.type === 'json') {
+   527→      const s = (val as string) ?? ''
+   528→      const trimmed = s.trim()
+   529→      if (trimmed === '') {
+   530→        out[f.key] = '[]'
+   531→      } else {
+   532→        try {
+   533→          out[f.key] = JSON.stringify(JSON.parse(trimmed))
+   534→        } catch {
+   535→          throw new Error(`Field "${f.label}" must be valid JSON.`)
+   536→        }
+   537→      }
+   538→    } else if (f.type === 'textarea' || f.type === 'text' || f.type === 'select') {
+   539→      out[f.key] = (val as string) ?? ''
+   540→    } else {
+   541→      out[f.key] = val
+   542→    }
+   543→  }
+   544→  return out
+   545→}
+   546→
+   547→// ---------------------------------------------------------------------------
+   548→// API helpers
+   549→// ---------------------------------------------------------------------------
+   550→
+   551→function useAdminFetch(model: ModelKey, token: string | null) {
+   552→  return useQuery({
+   553→    queryKey: ['admin', model],
+   554→    queryFn: async () => {
+   555→      if (!token) throw new Error('Not authenticated')
+   556→      const res = await fetch(`/api/admin?model=${encodeURIComponent(model)}`, {
+   557→        headers: { 'X-Admin-Token': token },
+   558→      })
+   559→      if (res.status === 401) throw new Error('Unauthorized — check your admin token.')
+   560→      if (!res.ok) throw new Error(`Failed to load ${model} (${res.status})`)
+   561→      const json = await res.json()
+   562→      return (json.items ?? []) as RecordData[]
+   563→    },
+   564→    enabled: !!token,
+   565→    staleTime: 30_000,
+   566→  })
+   567→}
+   568→
+   569→function useAdminMutations(model: ModelKey, token: string | null) {
+   570→  const qc = useQueryClient()
+   571→  const invalidate = () => {
+   572→    qc.invalidateQueries({ queryKey: ['admin', model] })
+   573→  }
+   574→
+   575→  const create = useMutation({
+   576→    mutationFn: async (data: Record<string, unknown>) => {
+   577→      const res = await fetch('/api/admin', {
+   578→        method: 'POST',
+   579→        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token! },
+   580→        body: JSON.stringify({ model, data }),
+   581→      })
+   582→      if (!res.ok) {
+   583→        const j = await res.json().catch(() => ({}))
+   584→        throw new Error(j.error || `Create failed (${res.status})`)
+   585→      }
+   586→      return res.json()
+   587→    },
+   588→    onSuccess: () => {
+   589→      invalidate()
+   590→      toast.success(`${MODEL_CONFIGS[model].singular} created`)
+   591→    },
+   592→    onError: (e: Error) => toast.error(e.message),
+   593→  })
+   594→
+   595→  const update = useMutation({
+   596→    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
+   597→      const res = await fetch('/api/admin', {
+   598→        method: 'PATCH',
+   599→        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token! },
+   600→        body: JSON.stringify({ model, id, data }),
+   601→      })
+   602→      if (!res.ok) {
+   603→        const j = await res.json().catch(() => ({}))
+   604→        throw new Error(j.error || `Update failed (${res.status})`)
+   605→      }
+   606→      return res.json()
+   607→    },
+   608→    onSuccess: () => {
+   609→      invalidate()
+   610→      toast.success(`${MODEL_CONFIGS[model].singular} updated`)
+   611→    },
+   612→    onError: (e: Error) => toast.error(e.message),
+   613→  })
+   614→
+   615→  const remove = useMutation({
+   616→    mutationFn: async (id: string) => {
+   617→      const res = await fetch(`/api/admin?model=${encodeURIComponent(model)}&id=${encodeURIComponent(id)}`, {
+   618→        method: 'DELETE',
+   619→        headers: { 'X-Admin-Token': token! },
+   620→      })
+   621→      if (!res.ok) {
+   622→        const j = await res.json().catch(() => ({}))
+   623→        throw new Error(j.error || `Delete failed (${res.status})`)
+   624→      }
+   625→      return res.json()
+   626→    },
+   627→    onSuccess: () => {
+   628→      invalidate()
+   629→      toast.success(`${MODEL_CONFIGS[model].singular} deleted`)
+   630→    },
+   631→    onError: (e: Error) => toast.error(e.message),
+   632→  })
+   633→
+   634→  return { create, update, remove, invalidate }
+   635→}
+   636→
+   637→// ---------------------------------------------------------------------------
+   638→// Login gate
+   639→// ---------------------------------------------------------------------------
+   640→
+   641→function LoginCard({ onLogin }: { onLogin: (token: string) => void }) {
+   642→  const [token, setToken] = React.useState('devstudio-admin')
+   643→  const [loading, setLoading] = React.useState(false)
+   644→
+   645→  const submit = async () => {
+   646→    if (!token.trim()) {
+   647→      toast.error('Please enter an admin token.')
+   648→      return
+   649→    }
+   650→    setLoading(true)
+   651→    try {
+   652→      const res = await fetch(`/api/admin?model=setting`, {
+   653→        headers: { 'X-Admin-Token': token.trim() },
+   654→      })
+   655→      if (res.status === 401) {
+   656→        toast.error('Invalid admin token.')
+   657→        return
+   658→      }
+   659→      if (!res.ok) {
+   660→        toast.error(`Login failed (${res.status})`)
+   661→        return
+   662→      }
+   663→      toast.success('Authenticated — welcome back.')
+   664→      onLogin(token.trim())
+   665→    } catch (e) {
+   666→      toast.error((e as Error).message)
+   667→    } finally {
+   668→      setLoading(false)
+   669→    }
+   670→  }
+   671→
+   672→  return (
+   673→    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+   674→      <Card className="w-full max-w-md border-border/60 shadow-lg">
+   675→        <CardHeader className="space-y-2 text-center">
+   676→          <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+   677→            <ShieldCheck className="size-6" />
+   678→          </div>
+   679→          <CardTitle className="text-2xl">Admin Panel</CardTitle>
+   680→          <CardDescription>Enter your admin token to access the CMS dashboard.</CardDescription>
+   681→        </CardHeader>
+   682→        <CardContent className="space-y-4">
+   683→          <div className="space-y-2">
+   684→            <Label htmlFor="admin-token" className="flex items-center gap-1.5">
+   685→              <KeyRound className="size-3.5 text-muted-foreground" />
+   686→              Admin Token
+   687→            </Label>
+   688→            <Input
+   689→              id="admin-token"
+   690→              type="password"
+   691→              autoComplete="off"
+   692→              value={token}
+   693→              onChange={(e) => setToken(e.target.value)}
+   694→              onKeyDown={(e) => {
+   695→                if (e.key === 'Enter') submit()
+   696→              }}
+   697→              placeholder="Enter admin token"
+   698→            />
+   699→            <p className="text-xs text-muted-foreground">
+   700→              Default token: <code className="rounded bg-muted px-1 py-0.5 font-mono">devstudio-admin</code>
+   701→            </p>
+   702→          </div>
+   703→        </CardContent>
+   704→        <CardFooter className="flex flex-col gap-2">
+   705→          <Button onClick={submit} disabled={loading} className="w-full">
+   706→            {loading ? <Loader2 className="size-4 animate-spin" /> : <Lock className="size-4" />}
+   707→            {loading ? 'Verifying…' : 'Login'}
+   708→          </Button>
+   709→          <Button
+   710→            variant="ghost"
+   711→            className="w-full"
+   712→            onClick={() => useNav.getState().setView('home')}
+   713→          >
+   714→            <ArrowLeft className="size-4" />
+   715→            Back to site
+   716→          </Button>
+   717→        </CardFooter>
+   718→      </Card>
+   719→    </div>
+   720→  )
+   721→}
+   722→
+   723→// ---------------------------------------------------------------------------
+   724→// Dynamic form
+   725→// ---------------------------------------------------------------------------
+   726→
+   727→function DynamicForm({
+   728→  model,
+   729→  values,
+   730→  onChange,
+   731→  token,
+   732→}: {
+   733→  model: ModelKey
+   734→  values: Record<string, unknown>
+   735→  onChange: (k: string, v: unknown) => void
+   736→  token: string
+   737→}) {
+   738→  const config = MODEL_CONFIGS[model]
+   739→  return (
+   740→    <div className="grid max-h-[60vh] gap-4 overflow-y-auto pr-1">
+   741→      {config.formFields.map((f) => {
+   742→        const val = values[f.key]
+   743→        if (f.type === 'image') {
+   744→          return (
+   745→            <div key={f.key} className="space-y-1.5">
+   746→              <Label className="text-sm font-medium">
+   747→                {f.label}
+   748→                {f.required && <span className="ml-1 text-destructive">*</span>}
+   749→              </Label>
+   750→              <ImageUpload
+   751→                value={typeof val === 'string' ? val : ''}
+   752→                onChange={(url) => onChange(f.key, url)}
+   753→                token={token}
+   754→                placeholder={f.placeholder}
+   755→              />
+   756→            </div>
+   757→          )
+   758→        }
+   759→        if (f.type === 'switch') {
+   760→          return (
+   761→            <div key={f.key} className="flex items-center justify-between rounded-lg border border-border/60 p-3">
+   762→              <div className="space-y-0.5">
+   763→                <Label htmlFor={f.key} className="text-sm font-medium">{f.label}</Label>
+   764→                <p className="text-xs text-muted-foreground">Toggle on/off</p>
+   765→              </div>
+   766→              <Switch id={f.key} checked={Boolean(val)} onCheckedChange={(c) => onChange(f.key, c)} />
+   767→            </div>
+   768→          )
+   769→        }
+   770→        if (f.type === 'textarea' || f.type === 'json') {
+   771→          return (
+   772→            <div key={f.key} className="space-y-1.5">
+   773→              <Label htmlFor={f.key} className="text-sm font-medium">
+   774→                {f.label}
+   775→                {f.required && <span className="ml-1 text-destructive">*</span>}
+   776→                {f.type === 'json' && <span className="ml-2 text-xs text-muted-foreground">(JSON)</span>}
+   777→              </Label>
+   778→              <Textarea
+   779→                id={f.key}
+   780→                value={typeof val === 'string' ? val : ''}
+   781→                onChange={(e) => onChange(f.key, e.target.value)}
+   782→                placeholder={f.placeholder}
+   783→                rows={f.type === 'json' ? 5 : 3}
+   784→                className="resize-y font-mono text-xs"
+   785→              />
+   786→            </div>
+   787→          )
+   788→        }
+   789→        if (f.type === 'number') {
+   790→          return (
+   791→            <div key={f.key} className="space-y-1.5">
+   792→              <Label htmlFor={f.key} className="text-sm font-medium">
+   793→                {f.label}
+   794→                {f.required && <span className="ml-1 text-destructive">*</span>}
+   795→              </Label>
+   796→              <Input
+   797→                id={f.key}
+   798→                type="number"
+   799→                value={val === undefined || val === null ? '' : String(val)}
+   800→                onChange={(e) => onChange(f.key, e.target.value === '' ? '' : Number(e.target.value))}
+   801→                placeholder={f.placeholder}
+   802→              />
+   803→            </div>
+   804→          )
+   805→        }
+   806→        if (f.type === 'select') {
+   807→          return (
+   808→            <div key={f.key} className="space-y-1.5">
+   809→              <Label htmlFor={f.key} className="text-sm font-medium">{f.label}</Label>
+   810→              <select
+   811→                id={f.key}
+   812→                value={typeof val === 'string' ? val : ''}
+   813→                onChange={(e) => onChange(f.key, e.target.value)}
+   814→                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+   815→              >
+   816→                {f.options?.map((o) => (
+   817→                  <option key={o.value} value={o.value}>{o.label}</option>
+   818→                ))}
+   819→              </select>
+   820→            </div>
+   821→          )
+   822→        }
+   823→        return (
+   824→          <div key={f.key} className="space-y-1.5">
+   825→            <Label htmlFor={f.key} className="text-sm font-medium">
+   826→              {f.label}
+   827→              {f.required && <span className="ml-1 text-destructive">*</span>}
+   828→            </Label>
+   829→            <Input
+   830→              id={f.key}
+   831→              value={typeof val === 'string' ? val : ''}
+   832→              onChange={(e) => onChange(f.key, e.target.value)}
+   833→              placeholder={f.placeholder}
+   834→            />
+   835→          </div>
+   836→        )
+   837→      })}
+   838→    </div>
+   839→  )
+   840→}
+   841→
+   842→// ---------------------------------------------------------------------------
+   843→// Record table
+   844→// ---------------------------------------------------------------------------
+   845→
+   846→function renderCell(value: unknown, truncate?: number) {
+   847→  if (value === undefined || value === null || value === '') return <span className="text-muted-foreground">—</span>
+   848→  if (typeof value === 'boolean') {
+   849→    return value ? (
+   850→      <Badge variant="default" className="bg-primary/15 text-primary">Yes</Badge>
+   851→    ) : (
+   852→      <Badge variant="outline" className="text-muted-foreground">No</Badge>
+   853→    )
+   854→  }
+   855→  let str: string
+   856→  if (typeof value === 'object') {
+   857→    str = JSON.stringify(value)
+   858→  } else {
+   859→    str = String(value)
+   860→  }
+   861→  if (truncate && str.length > truncate) {
+   862→    return <span title={str} className="text-muted-foreground">{str.slice(0, truncate)}…</span>
+   863→  }
+   864→  return <span className="text-foreground">{str}</span>
+   865→}
+   866→
+   867→function RecordTable({
+   868→  model,
+   869→  token,
+   870→  onEdit,
+   871→  onView,
+   872→  onDeleteRequest,
+   873→}: {
+   874→  model: ModelKey
+   875→  token: string
+   876→  onEdit: (record: RecordData) => void
+   877→  onView: (record: RecordData) => void
+   878→  onDeleteRequest: (record: RecordData) => void
+   879→}) {
+   880→  const { data, isLoading, isError, error, refetch, isFetching } = useAdminFetch(model, token)
+   881→  const config = MODEL_CONFIGS[model]
+   882→  const [query, setQuery] = React.useState('')
+   883→
+   884→  const filtered = React.useMemo(() => {
+   885→    if (!data) return []
+   886→    if (!query.trim()) return data
+   887→    const q = query.toLowerCase()
+   888→    return data.filter((row) =>
+   889→      config.listColumns.some((c) => {
+   890→        const v = row[c.key]
+   891→        return v !== undefined && v !== null && String(v).toLowerCase().includes(q)
+   892→      }),
+   893→    )
+   894→  }, [data, query, config.listColumns])
+   895→
+   896→  return (
+   897→    <div className="space-y-4">
+   898→      <div className="flex flex-wrap items-center justify-between gap-3">
+   899→        <div className="flex items-center gap-2">
+   900→          <config.icon className="size-5 text-primary" />
+   901→          <div>
+   902→            <h2 className="text-lg font-semibold text-foreground">{config.label}</h2>
+   903→            <p className="text-xs text-muted-foreground">{config.description}</p>
+   904→          </div>
+   905→        </div>
+   906→        <div className="flex items-center gap-2">
+   907→          <div className="relative">
+   908→            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+   909→            <Input
+   910→              value={query}
+   911→              onChange={(e) => setQuery(e.target.value)}
+   912→              placeholder="Search…"
+   913→              className="h-9 w-44 pl-8 text-sm"
+   914→            />
+   915→          </div>
+   916→          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+   917→            <RefreshCw className={isFetching ? 'size-4 animate-spin' : 'size-4'} />
+   918→            Refresh
+   919→          </Button>
+   920→          {!config.readOnly && (
+   921→            <Button size="sm" onClick={() => onEdit({})}>
+   922→              <Plus className="size-4" />
+   923→              New {config.singular}
+   924→            </Button>
+   925→          )}
+   926→        </div>
+   927→      </div>
+   928→
+   929→      <Card className="border-border/60">
+   930→        <div className="max-h-[60vh] overflow-y-auto">
+   931→          <Table>
+   932→            <TableHeader className="sticky top-0 z-10 bg-background">
+   933→              <TableRow>
+   934→                <TableHead className="w-[110px]">ID</TableHead>
+   935→                {config.listColumns.map((c) => (
+   936→                  <TableHead key={c.key}>{c.label}</TableHead>
+   937→                ))}
+   938→                <TableHead className="w-[160px]">Created</TableHead>
+   939→                <TableHead className="w-[140px] text-right">Actions</TableHead>
+   940→              </TableRow>
+   941→            </TableHeader>
+   942→            <TableBody>
+   943→              {isLoading && (
+   944→                Array.from({ length: 5 }).map((_, i) => (
+   945→                  <TableRow key={`s-${i}`}>
+   946→                    <TableCell colSpan={config.listColumns.length + 3}>
+   947→                      <Skeleton className="h-7 w-full" />
+   948→                    </TableCell>
+   949→                  </TableRow>
+   950→                ))
+   951→              )}
+   952→              {!isLoading && !isError && filtered.length === 0 && (
+   953→                <TableRow>
+   954→                  <TableCell colSpan={config.listColumns.length + 3} className="py-10 text-center text-muted-foreground">
+   955→                    No records found.
+   956→                  </TableCell>
+   957→                </TableRow>
+   958→              )}
+   959→              {!isError && filtered.map((row) => (
+   960→                <TableRow key={row.id}>
+   961→                  <TableCell>
+   962→                    <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+   963→                      {truncateId(row.id)}
+   964→                    </code>
+   965→                  </TableCell>
+   966→                  {config.listColumns.map((c) => (
+   967→                    <TableCell key={c.key}>{renderCell(row[c.key], c.truncate)}</TableCell>
+   968→                  ))}
+   969→                  <TableCell className="text-xs text-muted-foreground">{formatDate(row.createdAt as string)}</TableCell>
+   970→                  <TableCell className="text-right">
+   971→                    <div className="flex items-center justify-end gap-1">
+   972→                      {config.readOnly ? (
+   973→                        <Button size="icon" variant="ghost" onClick={() => onView(row)} title="View details">
+   974→                          <Eye className="size-4" />
+   975→                        </Button>
+   976→                      ) : (
+   977→                        <>
+   978→                          <Button size="icon" variant="ghost" onClick={() => onEdit(row)} title="Edit">
+   979→                            <Pencil className="size-4" />
+   980→                          </Button>
+   981→                          <Button
+   982→                            size="icon"
+   983→                            variant="ghost"
+   984→                            className="text-destructive hover:text-destructive"
+   985→                            onClick={() => onDeleteRequest(row)}
+   986→                            title="Delete"
+   987→                          >
+   988→                            <Trash2 className="size-4" />
+   989→                          </Button>
+   990→                        </>
+   991→                      )}
+   992→                    </div>
+   993→                  </TableCell>
+   994→                </TableRow>
+   995→              ))}
+   996→            </TableBody>
+   997→          </Table>
+   998→        </div>
+   999→        {isError && (
+  1000→          <div className="flex flex-col items-center gap-2 p-8 text-center">
+  1001→            <p className="text-sm text-destructive">{(error as Error).message}</p>
+  1002→            <Button size="sm" variant="outline" onClick={() => refetch()}>
+  1003→              <RefreshCw className="size-4" />
+  1004→              Retry
+  1005→            </Button>
+  1006→          </div>
+  1007→        )}
+  1008→        {!isError && filtered.length > 0 && (
+  1009→          <div className="border-t border-border/60 px-4 py-2 text-xs text-muted-foreground">
+  1010→            Showing {filtered.length} {filtered.length === 1 ? 'record' : 'records'}
+  1011→            {data && filtered.length !== data.length && ` of ${data.length}`}
+  1012→          </div>
+  1013→        )}
+  1014→      </Card>
+  1015→    </div>
+  1016→  )
+  1017→}
+  1018→
+  1019→// ---------------------------------------------------------------------------
+  1020→// Edit / create dialog
+  1021→// ---------------------------------------------------------------------------
+  1022→
+  1023→function EditDialog({
+  1024→  model,
+  1025→  token,
+  1026→  open,
+  1027→  onOpenChange,
+  1028→  record,
+  1029→}: {
+  1030→  model: ModelKey
+  1031→  token: string
+  1032→  open: boolean
+  1033→  onOpenChange: (o: boolean) => void
+  1034→  record: RecordData | null
+  1035→}) {
+  1036→  const config = MODEL_CONFIGS[model]
+  1037→  const isEdit = !!record?.id
+  1038→  const [values, setValues] = React.useState<Record<string, unknown>>(() => buildInitialForm(model))
+  1039→  const [submitting, setSubmitting] = React.useState(false)
+  1040→  const { create, update } = useAdminMutations(model, token)
+  1041→
+  1042→  React.useEffect(() => {
+  1043→    if (open) {
+  1044→      if (record && record.id) {
+  1045→        setValues(hydrateFormFromRecord(model, record))
+  1046→      } else {
+  1047→        setValues(buildInitialForm(model))
+  1048→      }
+  1049→    }
+  1050→  }, [open, record, model])
+  1051→
+  1052→  const handleChange = (k: string, v: unknown) => {
+  1053→    setValues((prev) => ({ ...prev, [k]: v }))
+  1054→  }
+  1055→
+  1056→  const handleSubmit = async () => {
+  1057→    setSubmitting(true)
+  1058→    try {
+  1059→      const data = serializeForm(model, values)
+  1060→      if (isEdit && record?.id) {
+  1061→        await update.mutateAsync({ id: record.id, data })
+  1062→      } else {
+  1063→        await create.mutateAsync(data)
+  1064→      }
+  1065→      onOpenChange(false)
+  1066→    } catch (e) {
+  1067→      toast.error((e as Error).message)
+  1068→    } finally {
+  1069→      setSubmitting(false)
+  1070→    }
+  1071→  }
+  1072→
+  1073→  return (
+  1074→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1075→      <DialogContent className="sm:max-w-2xl">
+  1076→        <DialogHeader>
+  1077→          <DialogTitle className="flex items-center gap-2">
+  1078→            {isEdit ? <Pencil className="size-4 text-primary" /> : <Plus className="size-4 text-primary" />}
+  1079→            {isEdit ? `Edit ${config.singular}` : `New ${config.singular}`}
+  1080→          </DialogTitle>
+  1081→          <DialogDescription>
+  1082→            {isEdit ? 'Update the fields below and save your changes.' : 'Fill in the fields below to create a new record.'}
+  1083→          </DialogDescription>
+  1084→        </DialogHeader>
+  1085→        <Separator />
+  1086→        <DynamicForm model={model} values={values} onChange={handleChange} token={token} />
+  1087→        <DialogFooter className="gap-2">
+  1088→          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+  1089→            Cancel
+  1090→          </Button>
+  1091→          <Button onClick={handleSubmit} disabled={submitting}>
+  1092→            {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
+  1093→            {isEdit ? 'Save Changes' : 'Create'}
+  1094→          </Button>
+  1095→        </DialogFooter>
+  1096→      </DialogContent>
+  1097→    </Dialog>
+  1098→  )
+  1099→}
+  1100→
+  1101→// ---------------------------------------------------------------------------
+  1102→// Read-only view dialog (leads + contact requests)
+  1103→// ---------------------------------------------------------------------------
+  1104→
+  1105→function ViewDialog({
+  1106→  model,
+  1107→  open,
+  1108→  onOpenChange,
+  1109→  record,
+  1110→}: {
+  1111→  model: ModelKey
+  1112→  open: boolean
+  1113→  onOpenChange: (o: boolean) => void
+  1114→  record: RecordData | null
+  1115→}) {
+  1116→  const config = MODEL_CONFIGS[model]
+  1117→  if (!record) return null
+  1118→  const entries = Object.entries(record).filter(([k]) => k !== 'id')
+  1119→
+  1120→  return (
+  1121→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1122→      <DialogContent className="sm:max-w-2xl">
+  1123→        <DialogHeader>
+  1124→          <DialogTitle className="flex items-center gap-2">
+  1125→            <Eye className="size-4 text-primary" />
+  1126→            {config.singular} Details
+  1127→          </DialogTitle>
+  1128→          <DialogDescription>
+  1129→            Submitted on {formatDate(record.createdAt as string)}
+  1130→          </DialogDescription>
+  1131→        </DialogHeader>
+  1132→        <Separator />
+  1133→        <ScrollArea className="max-h-[60vh]">
+  1134→          <div className="space-y-3 pr-2">
+  1135→            {entries.map(([k, v]) => (
+  1136→              <div key={k} className="grid grid-cols-3 gap-3 rounded-md border border-border/50 p-3">
+  1137→                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{k}</div>
+  1138→                <div className="col-span-2 break-words text-sm text-foreground">
+  1139→                  {renderCell(v, 400)}
+  1140→                </div>
+  1141→              </div>
+  1142→            ))}
+  1143→          </div>
+  1144→        </ScrollArea>
+  1145→        <DialogFooter>
+  1146→          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+  1147→        </DialogFooter>
+  1148→      </DialogContent>
+  1149→    </Dialog>
+  1150→  )
+  1151→}
+  1152→
+  1153→// ---------------------------------------------------------------------------
+  1154→// Delete confirmation
+  1155→// ---------------------------------------------------------------------------
+  1156→
+  1157→function DeleteDialog({
+  1158→  model,
+  1159→  token,
+  1160→  open,
+  1161→  onOpenChange,
+  1162→  record,
+  1163→}: {
+  1164→  model: ModelKey
+  1165→  token: string
+  1166→  open: boolean
+  1167→  onOpenChange: (o: boolean) => void
+  1168→  record: RecordData | null
+  1169→}) {
+  1170→  const config = MODEL_CONFIGS[model]
+  1171→  const { remove } = useAdminMutations(model, token)
+  1172→  const [deleting, setDeleting] = React.useState(false)
+  1173→
+  1174→  React.useEffect(() => {
+  1175→    if (!open) setDeleting(false)
+  1176→  }, [open])
+  1177→
+  1178→  const handleConfirm = async () => {
+  1179→    if (!record?.id) return
+  1180→    setDeleting(true)
+  1181→    try {
+  1182→      await remove.mutateAsync(record.id)
+  1183→      onOpenChange(false)
+  1184→    } catch {
+  1185→      // toast handled in mutation
+  1186→    } finally {
+  1187→      setDeleting(false)
+  1188→    }
+  1189→  }
+  1190→
+  1191→  const label = React.useMemo(() => {
+  1192→    if (!record) return ''
+  1193→    return String(
+  1194→      record.title || record.name || record.clientName || record.fullName || record.key || record.email || record.id,
+  1195→    )
+  1196→  }, [record])
+  1197→
+  1198→  return (
+  1199→    <AlertDialog open={open} onOpenChange={onOpenChange}>
+  1200→      <AlertDialogContent>
+  1201→        <AlertDialogHeader>
+  1202→          <AlertDialogTitle className="flex items-center gap-2">
+  1203→            <Trash2 className="size-5 text-destructive" />
+  1204→            Delete {config.singular}
+  1205→          </AlertDialogTitle>
+  1206→          <AlertDialogDescription>
+  1207→            Are you sure you want to delete <span className="font-medium text-foreground">{label}</span>? This action
+  1208→            cannot be undone.
+  1209→          </AlertDialogDescription>
+  1210→        </AlertDialogHeader>
+  1211→        <AlertDialogFooter>
+  1212→          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+  1213→          <AlertDialogAction
+  1214→            onClick={(e) => {
+  1215→              e.preventDefault()
+  1216→              handleConfirm()
+  1217→            }}
+  1218→            disabled={deleting}
+  1219→            className="bg-destructive text-white hover:bg-destructive/90"
+  1220→          >
+  1221→            {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+  1222→            Delete
+  1223→          </AlertDialogAction>
+  1224→        </AlertDialogFooter>
+  1225→      </AlertDialogContent>
+  1226→    </AlertDialog>
+  1227→  )
+  1228→}
+  1229→
+  1230→// ---------------------------------------------------------------------------
+  1231→// Dashboard overview (post-login landing)
+  1232→// ---------------------------------------------------------------------------
+  1233→
+  1234→interface DashboardStats {
+  1235→  portfolios: number
+  1236→  blogPosts: number
+  1237→  contactRequests: RecordData[]
+  1238→  leads: RecordData[]
+  1239→  newsletter: number
+  1240→  caseStudies: number
+  1241→}
+  1242→
+  1243→interface StatCardConfig {
+  1244→  key: string
+  1245→  label: string
+  1246→  icon: React.ComponentType<{ className?: string }>
+  1247→  value: number
+  1248→  /** Tailwind text color class for the icon circle */
+  1249→  iconColor: string
+  1250→  /** Tailwind background tint class for the icon circle */
+  1251→  iconBg: string
+  1252→  /** Tailwind `from-*` token rendered behind the card on hover */
+  1253→  hoverFrom: string
+  1254→  /** Tailwind `to-*` token rendered behind the card on hover */
+  1255→  hoverTo: string
+  1256→  /** Optional click target (jump to that resource) */
+  1257→  onClick?: () => void
+  1258→}
+  1259→
+  1260→function StatCard({ config, loading }: { config: StatCardConfig; loading: boolean }) {
+  1261→  const Icon = config.icon
+  1262→  return (
+  1263→    <button
+  1264→      type="button"
+  1265→      onClick={config.onClick}
+  1266→      className={cn(
+  1267→        'group relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-5 text-left shadow-soft transition-all duration-300',
+  1268→        'hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow',
+  1269→      )}
+  1270→    >
+  1271→      {/* Subtle gradient wash on hover */}
+  1272→      <div
+  1273→        className={cn(
+  1274→          'pointer-events-none absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-300 group-hover:opacity-100',
+  1275→          config.hoverFrom,
+  1276→          config.hoverTo,
+  1277→        )}
+  1278→      />
+  1279→      <div className="relative flex items-center justify-between">
+  1280→        <div
+  1281→          className={cn(
+  1282→            'flex size-11 items-center justify-center rounded-xl transition-colors duration-300',
+  1283→            config.iconBg,
+  1284→            config.iconColor,
+  1285→            'group-hover:scale-110',
+  1286→          )}
+  1287→        >
+  1288→          <Icon className="size-5" />
+  1289→        </div>
+  1290→        <TrendingUp className="size-4 text-muted-foreground/40 transition-colors group-hover:text-accent" />
+  1291→      </div>
+  1292→      <div className="relative space-y-1">
+  1293→        {loading ? (
+  1294→          <Skeleton className="h-8 w-20" />
+  1295→        ) : (
+  1296→          <p className="text-3xl font-bold tracking-tight text-foreground">
+  1297→            {config.value.toLocaleString()}
+  1298→          </p>
+  1299→        )}
+  1300→        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+  1301→          {config.label}
+  1302→        </p>
+  1303→      </div>
+  1304→    </button>
+  1305→  )
+  1306→}
+  1307→
+  1308→function contactStatusBadge(status?: string) {
+  1309→  switch (status) {
+  1310→    case 'new':
+  1311→      return <Badge className="bg-primary/15 text-primary hover:bg-primary/20">New</Badge>
+  1312→    case 'read':
+  1313→      return <Badge className="bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400">Read</Badge>
+  1314→    case 'replied':
+  1315→      return <Badge className="bg-accent/15 text-accent hover:bg-accent/20">Replied</Badge>
+  1316→    case 'archived':
+  1317→      return <Badge variant="outline" className="text-muted-foreground">Archived</Badge>
+  1318→    default:
+  1319→      return <Badge variant="outline" className="text-muted-foreground">{status || '—'}</Badge>
+  1320→  }
+  1321→}
+  1322→
+  1323→function leadStatusBadge(status?: string) {
+  1324→  switch (status) {
+  1325→    case 'new':
+  1326→      return <Badge className="bg-primary/15 text-primary hover:bg-primary/20">New</Badge>
+  1327→    case 'contacted':
+  1328→      return <Badge className="bg-amber-500/15 text-amber-600 hover:bg-amber-500/20 dark:text-amber-400">Contacted</Badge>
+  1329→    case 'qualified':
+  1330→      return <Badge className="bg-accent/15 text-accent hover:bg-accent/20">Qualified</Badge>
+  1331→    case 'won':
+  1332→      return <Badge className="bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400">Won</Badge>
+  1333→    case 'lost':
+  1334→      return <Badge className="bg-rose-500/15 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400">Lost</Badge>
+  1335→    default:
+  1336→      return <Badge variant="outline" className="text-muted-foreground">{status || '—'}</Badge>
+  1337→  }
+  1338→}
+  1339→
+  1340→function getInitials(name?: string) {
+  1341→  if (!name) return '?'
+  1342→  const parts = String(name).trim().split(/\s+/).filter(Boolean)
+  1343→  if (parts.length === 0) return '?'
+  1344→  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  1345→  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  1346→}
+  1347→
+  1348→function ActivityRow({
+  1349→  name,
+  1350→  email,
+  1351→  date,
+  1352→  badge,
+  1353→}: {
+  1354→  name: string
+  1355→  email: string
+  1356→  date?: string
+  1357→  badge: React.ReactNode
+  1358→}) {
+  1359→  return (
+  1360→    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/50 p-3 transition-all duration-200 hover:border-primary/30 hover:bg-muted/40">
+  1361→      <div className="flex min-w-0 items-center gap-3">
+  1362→        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-accent/15 text-xs font-semibold text-primary">
+  1363→          {getInitials(name)}
+  1364→        </div>
+  1365→        <div className="min-w-0">
+  1366→          <p className="truncate text-sm font-medium text-foreground">{name}</p>
+  1367→          <p className="truncate text-xs text-muted-foreground">{email}</p>
+  1368→        </div>
+  1369→      </div>
+  1370→      <div className="flex shrink-0 flex-col items-end gap-1">
+  1371→        {badge}
+  1372→        <p className="text-[10px] text-muted-foreground">{formatDate(date)}</p>
+  1373→      </div>
+  1374→    </div>
+  1375→  )
+  1376→}
+  1377→
+  1378→function ActivityColumn({
+  1379→  title,
+  1380→  icon: Icon,
+  1381→  iconColor,
+  1382→  iconBg,
+  1383→  items,
+  1384→  loading,
+  1385→  emptyLabel,
+  1386→  onSeeAll,
+  1387→  seeAllLabel,
+  1388→}: {
+  1389→  title: string
+  1390→  icon: React.ComponentType<{ className?: string }>
+  1391→  iconColor: string
+  1392→  iconBg: string
+  1393→  items: { name: string; email: string; date?: string; badge: React.ReactNode }[]
+  1394→  loading: boolean
+  1395→  emptyLabel: string
+  1396→  onSeeAll: () => void
+  1397→  seeAllLabel: string
+  1398→}) {
+  1399→  return (
+  1400→    <Card className="flex flex-col border-border/60 shadow-soft">
+  1401→      <CardHeader className="flex-row items-center justify-between gap-2 space-y-0 pb-3">
+  1402→        <div className="flex items-center gap-2.5">
+  1403→          <div className={cn('flex size-9 items-center justify-center rounded-lg', iconBg, iconColor)}>
+  1404→            <Icon className="size-4" />
+  1405→          </div>
+  1406→          <div>
+  1407→            <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+  1408→            <CardDescription className="text-[11px]">Most recent 5 entries</CardDescription>
+  1409→          </div>
+  1410→        </div>
+  1411→        <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs text-muted-foreground" onClick={onSeeAll}>
+  1412→          {seeAllLabel}
+  1413→          <ArrowRight className="size-3.5" />
+  1414→        </Button>
+  1415→      </CardHeader>
+  1416→      <CardContent className="flex-1 space-y-2">
+  1417→        {loading ? (
+  1418→          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
+  1419→        ) : items.length === 0 ? (
+  1420→          <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-border/60 text-xs text-muted-foreground">
+  1421→            {emptyLabel}
+  1422→          </div>
+  1423→        ) : (
+  1424→          items.map((item, i) => (
+  1425→            <ActivityRow
+  1426→              key={`${item.email}-${i}`}
+  1427→              name={item.name}
+  1428→              email={item.email}
+  1429→              date={item.date}
+  1430→              badge={item.badge}
+  1431→            />
+  1432→          ))
+  1433→        )}
+  1434→      </CardContent>
+  1435→    </Card>
+  1436→  )
+  1437→}
+  1438→
+  1439→function DashboardOverview({
+  1440→  token,
+  1441→  onNavigate,
+  1442→  onNewRecord,
+  1443→}: {
+  1444→  token: string
+  1445→  onNavigate: (model: ModelKey) => void
+  1446→  onNewRecord: (model: ModelKey) => void
+  1447→}) {
+  1448→  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+  1449→    queryKey: ['admin', 'dashboard-stats'],
+  1450→    queryFn: async (): Promise<DashboardStats> => {
+  1451→      if (!token) throw new Error('Not authenticated')
+  1452→      const headers = { 'X-Admin-Token': token }
+  1453→      const models: ModelKey[] = [
+  1454→        'portfolio',
+  1455→        'blogPost',
+  1456→        'contactRequest',
+  1457→        'lead',
+  1458→        'newsletter',
+  1459→        'caseStudy',
+  1460→      ]
+  1461→      const responses = await Promise.all(
+  1462→        models.map((m) =>
+  1463→          fetch(`/api/admin?model=${encodeURIComponent(m)}`, { headers }).then(async (r) => {
+  1464→            if (r.status === 401) throw new Error('Unauthorized — check your admin token.')
+  1465→            if (!r.ok) throw new Error(`Failed to load ${m} (${r.status})`)
+  1466→            const json = await r.json()
+  1467→            return { model: m, items: (json.items ?? []) as RecordData[] }
+  1468→          }),
+  1469→        ),
+  1470→      )
+  1471→      const byModel = Object.fromEntries(responses.map((r) => [r.model, r.items])) as Record<ModelKey, RecordData[]>
+  1472→      return {
+  1473→        portfolios: byModel.portfolio.length,
+  1474→        blogPosts: byModel.blogPost.length,
+  1475→        contactRequests: byModel.contactRequest,
+  1476→        leads: byModel.lead,
+  1477→        newsletter: byModel.newsletter.length,
+  1478→        caseStudies: byModel.caseStudy.length,
+  1479→      }
+  1480→    },
+  1481→    enabled: !!token,
+  1482→    staleTime: 30_000,
+  1483→  })
+  1484→
+  1485→  const recentContacts = React.useMemo(() => {
+  1486→    const list = data?.contactRequests ?? []
+  1487→    return [...list]
+  1488→      .sort((a, b) => {
+  1489→        const ta = a.createdAt ? new Date(a.createdAt as string).getTime() : 0
+  1490→        const tb = b.createdAt ? new Date(b.createdAt as string).getTime() : 0
+  1491→        return tb - ta
+  1492→      })
+  1493→      .slice(0, 5)
+  1494→      .map((r) => ({
+  1495→        name: String(r.fullName || r.name || 'Anonymous'),
+  1496→        email: String(r.email || '—'),
+  1497→        date: r.createdAt as string | undefined,
+  1498→        badge: contactStatusBadge(r.status as string | undefined),
+  1499→      }))
+  1500→  }, [data?.contactRequests])
+  1501→
+  1502→  const recentLeads = React.useMemo(() => {
+  1503→    const list = data?.leads ?? []
+  1504→    return [...list]
+  1505→      .sort((a, b) => {
+  1506→        const ta = a.createdAt ? new Date(a.createdAt as string).getTime() : 0
+  1507→        const tb = b.createdAt ? new Date(b.createdAt as string).getTime() : 0
+  1508→        return tb - ta
+  1509→      })
+  1510→      .slice(0, 5)
+  1511→      .map((r) => ({
+  1512→        name: String(r.name || 'Anonymous'),
+  1513→        email: String(r.email || '—'),
+  1514→        date: r.createdAt as string | undefined,
+  1515→        badge: leadStatusBadge(r.status as string | undefined),
+  1516→      }))
+  1517→  }, [data?.leads])
+  1518→
+  1519→  const statCards: StatCardConfig[] = [
+  1520→    {
+  1521→      key: 'portfolio',
+  1522→      label: 'Portfolios',
+  1523→      icon: FolderKanban,
+  1524→      value: data?.portfolios ?? 0,
+  1525→      iconColor: 'text-primary',
+  1526→      iconBg: 'bg-primary/10',
+  1527→      hoverFrom: 'from-primary/[0.06]',
+  1528→      hoverTo: 'to-primary/[0.01]',
+  1529→      onClick: () => onNavigate('portfolio'),
+  1530→    },
+  1531→    {
+  1532→      key: 'blogPost',
+  1533→      label: 'Blog Posts',
+  1534→      icon: BookOpen,
+  1535→      value: data?.blogPosts ?? 0,
+  1536→      iconColor: 'text-accent',
+  1537→      iconBg: 'bg-accent/10',
+  1538→      hoverFrom: 'from-accent/[0.06]',
+  1539→      hoverTo: 'to-accent/[0.01]',
+  1540→      onClick: () => onNavigate('blogPost'),
+  1541→    },
+  1542→    {
+  1543→      key: 'contactRequest',
+  1544→      label: 'Contact Requests',
+  1545→      icon: Mail,
+  1546→      value: data?.contactRequests?.length ?? 0,
+  1547→      iconColor: 'text-rose-600 dark:text-rose-400',
+  1548→      iconBg: 'bg-rose-500/10',
+  1549→      hoverFrom: 'from-rose-500/[0.06]',
+  1550→      hoverTo: 'to-rose-500/[0.01]',
+  1551→      onClick: () => onNavigate('contactRequest'),
+  1552→    },
+  1553→    {
+  1554→      key: 'lead',
+  1555→      label: 'Leads',
+  1556→      icon: Inbox,
+  1557→      value: data?.leads?.length ?? 0,
+  1558→      iconColor: 'text-amber-600 dark:text-amber-400',
+  1559→      iconBg: 'bg-amber-500/10',
+  1560→      hoverFrom: 'from-amber-500/[0.06]',
+  1561→      hoverTo: 'to-amber-500/[0.01]',
+  1562→      onClick: () => onNavigate('lead'),
+  1563→    },
+  1564→    {
+  1565→      key: 'newsletter',
+  1566→      label: 'Newsletter',
+  1567→      icon: Megaphone,
+  1568→      value: data?.newsletter ?? 0,
+  1569→      iconColor: 'text-violet-600 dark:text-violet-400',
+  1570→      iconBg: 'bg-violet-500/10',
+  1571→      hoverFrom: 'from-violet-500/[0.06]',
+  1572→      hoverTo: 'to-violet-500/[0.01]',
+  1573→      onClick: () => onNavigate('newsletter'),
+  1574→    },
+  1575→    {
+  1576→      key: 'caseStudy',
+  1577→      label: 'Case Studies',
+  1578→      icon: FlaskConical,
+  1579→      value: data?.caseStudies ?? 0,
+  1580→      iconColor: 'text-emerald-600 dark:text-emerald-400',
+  1581→      iconBg: 'bg-emerald-500/10',
+  1582→      hoverFrom: 'from-emerald-500/[0.06]',
+  1583→      hoverTo: 'to-emerald-500/[0.01]',
+  1584→      onClick: () => onNavigate('caseStudy'),
+  1585→    },
+  1586→  ]
+  1587→
+  1588→  const quickActions: {
+  1589→    label: string
+  1590→    icon: React.ComponentType<{ className?: string }>
+  1591→    onClick: () => void
+  1592→    variant: 'default' | 'outline'
+  1593→  }[] = [
+  1594→    { label: 'New Portfolio', icon: Plus, onClick: () => onNewRecord('portfolio'), variant: 'default' },
+  1595→    { label: 'New Blog Post', icon: Plus, onClick: () => onNewRecord('blogPost'), variant: 'outline' },
+  1596→    { label: 'View Contact Requests', icon: Mail, onClick: () => onNavigate('contactRequest'), variant: 'outline' },
+  1597→    { label: 'View Leads', icon: Inbox, onClick: () => onNavigate('lead'), variant: 'outline' },
+  1598→  ]
+  1599→
+  1600→  return (
+  1601→    <div className="space-y-6">
+  1602→      {/* Welcome header */}
+  1603→      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.04] via-background to-accent/[0.04] p-6 shadow-soft sm:p-8">
+  1604→        <div className="absolute -right-10 -top-10 size-40 rounded-full bg-primary/10 blur-3xl" aria-hidden />
+  1605→        <div className="absolute -bottom-12 right-24 size-32 rounded-full bg-accent/10 blur-3xl" aria-hidden />
+  1606→        <div className="relative flex flex-wrap items-end justify-between gap-4">
+  1607→          <div className="space-y-1.5">
+  1608→            <div className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur">
+  1609→              <LayoutDashboard className="size-3 text-primary" />
+  1610→              Admin Dashboard
+  1611→            </div>
+  1612→            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+  1613→              Welcome back, <span className="text-gradient">Studio</span>
+  1614→            </h1>
+  1615→            <p className="max-w-xl text-sm text-muted-foreground">
+  1616→              Here&apos;s a quick snapshot of your platform. Jump into a resource from the sidebar or use the
+  1617→              quick actions below.
+  1618→            </p>
+  1619→          </div>
+  1620→          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
+  1621→            <RefreshCw className={cn('size-4', isFetching && 'animate-spin')} />
+  1622→            Refresh stats
+  1623→          </Button>
+  1624→        </div>
+  1625→      </div>
+  1626→
+  1627→      {/* Stat cards */}
+  1628→      <section>
+  1629→        <div className="mb-3 flex items-center justify-between">
+  1630→          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+  1631→            <TrendingUp className="size-4 text-accent" />
+  1632→            Platform Snapshot
+  1633→          </h2>
+  1634→          {isError && (
+  1635→            <span className="text-xs text-destructive">{(error as Error).message}</span>
+  1636→          )}
+  1637→        </div>
+  1638→        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+  1639→          {statCards.map((c) => (
+  1640→            <StatCard key={c.key} config={c} loading={isLoading} />
+  1641→          ))}
+  1642→        </div>
+  1643→        {isError && (
+  1644→          <div className="mt-3 flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-sm">
+  1645→            <span className="text-destructive">{(error as Error).message}</span>
+  1646→            <Button size="sm" variant="outline" onClick={() => refetch()} className="h-7 gap-1.5 text-xs">
+  1647→              <RefreshCw className="size-3.5" />
+  1648→              Retry
+  1649→            </Button>
+  1650→          </div>
+  1651→        )}
+  1652→      </section>
+  1653→
+  1654→      {/* Quick actions */}
+  1655→      <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft sm:p-6">
+  1656→        <div className="mb-4 flex items-center gap-2">
+  1657→          <Sparkles className="size-4 text-primary" />
+  1658→          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Quick Actions</h2>
+  1659→        </div>
+  1660→        <div className="flex flex-wrap gap-2.5">
+  1661→          {quickActions.map((a) => {
+  1662→            const Icon = a.icon
+  1663→            return (
+  1664→              <Button
+  1665→                key={a.label}
+  1666→                variant={a.variant}
+  1667→                size="sm"
+  1668→                onClick={a.onClick}
+  1669→                className={cn(
+  1670→                  'h-9 gap-1.5 rounded-full',
+  1671→                  a.variant === 'default' && 'shadow-soft',
+  1672→                )}
+  1673→              >
+  1674→                <Icon className="size-4" />
+  1675→                {a.label}
+  1676→                {a.variant === 'outline' && <ArrowRight className="size-3.5 text-muted-foreground" />}
+  1677→              </Button>
+  1678→            )
+  1679→          })}
+  1680→        </div>
+  1681→      </section>
+  1682→
+  1683→      {/* Recent activity */}
+  1684→      <section>
+  1685→        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+  1686→          <Inbox className="size-4 text-accent" />
+  1687→          Recent Activity
+  1688→        </h2>
+  1689→        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+  1690→          <ActivityColumn
+  1691→            title="Contact Requests"
+  1692→            icon={Mail}
+  1693→            iconColor="text-rose-600 dark:text-rose-400"
+  1694→            iconBg="bg-rose-500/10"
+  1695→            items={recentContacts}
+  1696→            loading={isLoading}
+  1697→            emptyLabel="No contact requests yet."
+  1698→            onSeeAll={() => onNavigate('contactRequest')}
+  1699→            seeAllLabel="See all"
+  1700→          />
+  1701→          <ActivityColumn
+  1702→            title="Leads"
+  1703→            icon={Inbox}
+  1704→            iconColor="text-amber-600 dark:text-amber-400"
+  1705→            iconBg="bg-amber-500/10"
+  1706→            items={recentLeads}
+  1707→            loading={isLoading}
+  1708→            emptyLabel="No leads yet."
+  1709→            onSeeAll={() => onNavigate('lead')}
+  1710→            seeAllLabel="See all"
+  1711→          />
+  1712→        </div>
+  1713→      </section>
+  1714→    </div>
+  1715→  )
+  1716→}
+  1717→
+  1718→// ---------------------------------------------------------------------------
+  1719→// Dashboard (post-login)
+  1720→// ---------------------------------------------------------------------------
+  1721→
+  1722→function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
+  1723→  const setView = useNav((s) => s.setView)
+  1724→  const [active, setActive] = React.useState<ActiveView>('dashboard')
+  1725→  const [editOpen, setEditOpen] = React.useState(false)
+  1726→  const [viewOpen, setViewOpen] = React.useState(false)
+  1727→  const [deleteOpen, setDeleteOpen] = React.useState(false)
+  1728→  const [editRecord, setEditRecord] = React.useState<RecordData | null>(null)
+  1729→  const [viewRecord, setViewRecord] = React.useState<RecordData | null>(null)
+  1730→  const [deleteRecord, setDeleteRecord] = React.useState<RecordData | null>(null)
+  1731→  const [sidebarOpen, setSidebarOpen] = React.useState(false)
+  1732→
+  1733→  // Defensive: when the dashboard is active the edit/view/delete dialogs cannot
+  1734→  // be meaningfully rendered for a specific model. We fall back to `portfolio`
+  1735→  // so the dialog has a valid configuration object even though it stays closed.
+  1736→  const activeModel: ModelKey = active === 'dashboard' ? 'portfolio' : active
+  1737→
+  1738→  const openEdit = (rec: RecordData) => {
+  1739→    setEditRecord(rec)
+  1740→    setEditOpen(true)
+  1741→  }
+  1742→  const openView = (rec: RecordData) => {
+  1743→    setViewRecord(rec)
+  1744→    setViewOpen(true)
+  1745→  }
+  1746→  const openDelete = (rec: RecordData) => {
+  1747→    setDeleteRecord(rec)
+  1748→    setDeleteOpen(true)
+  1749→  }
+  1750→
+  1751→  // Quick-action helpers used by the dashboard overview.
+  1752→  const handleQuickNew = (m: ModelKey) => {
+  1753→    setActive(m)
+  1754→    setSidebarOpen(false)
+  1755→    setEditRecord({})
+  1756→    setEditOpen(true)
+  1757→  }
+  1758→  const handleQuickNavigate = (m: ModelKey) => {
+  1759→    setActive(m)
+  1760→    setSidebarOpen(false)
+  1761→  }
+  1762→
+  1763→  return (
+  1764→    <div className="flex min-h-screen flex-col bg-muted/30">
+  1765→      {/* Top bar */}
+  1766→      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+  1767→        <div className="flex h-14 items-center justify-between gap-4 px-4 sm:px-6">
+  1768→          <div className="flex items-center gap-3">
+  1769→            <button
+  1770→              type="button"
+  1771→              className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground lg:hidden"
+  1772→              onClick={() => setSidebarOpen((v) => !v)}
+  1773→              aria-label="Toggle sidebar"
+  1774→            >
+  1775→              <LayoutDashboard className="size-4" />
+  1776→            </button>
+  1777→            <div className="flex items-center gap-2">
+  1778→              <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+  1779→                <LayoutDashboard className="size-4" />
+  1780→              </div>
+  1781→              <div className="hidden sm:block">
+  1782→                <p className="text-sm font-semibold leading-none text-foreground">Admin Panel</p>
+  1783→                <p className="text-[11px] text-muted-foreground">DevStudio CMS</p>
+  1784→              </div>
+  1785→            </div>
+  1786→          </div>
+  1787→          <div className="flex items-center gap-2">
+  1788→            <Badge variant="outline" className="hidden gap-1.5 sm:flex">
+  1789→              <span className="size-1.5 rounded-full bg-emerald-500" />
+  1790→              Authenticated
+  1791→            </Badge>
+  1792→            <Button variant="outline" size="sm" onClick={() => setView('home')}>
+  1793→              <ArrowLeft className="size-4" />
+  1794→              <span className="hidden sm:inline">Back to site</span>
+  1795→            </Button>
+  1796→            <Button variant="ghost" size="sm" onClick={onLogout} className="text-muted-foreground hover:text-foreground">
+  1797→              <LogOut className="size-4" />
+  1798→              <span className="hidden sm:inline">Logout</span>
+  1799→            </Button>
+  1800→          </div>
+  1801→        </div>
+  1802→      </header>
+  1803→
+  1804→      <div className="flex flex-1">
+  1805→        {/* Sidebar */}
+  1806→        <aside
+  1807→          className={`fixed inset-y-0 left-0 top-14 z-20 w-64 transform border-r border-border/60 bg-background transition-transform lg:static lg:top-0 lg:translate-x-0 ${
+  1808→            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+  1809→          }`}
+  1810→        >
+  1811→          <div className="flex h-full flex-col">
+  1812→            <div className="px-3 py-4">
+  1813→              <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+  1814→                Overview
+  1815→              </p>
+  1816→              <nav className="space-y-0.5">
+  1817→                <button
+  1818→                  type="button"
+  1819→                  onClick={() => {
+  1820→                    setActive('dashboard')
+  1821→                    setSidebarOpen(false)
+  1822→                  }}
+  1823→                  className={cn(
+  1824→                    'flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
+  1825→                    active === 'dashboard'
+  1826→                      ? 'bg-primary text-primary-foreground shadow-xs'
+  1827→                      : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+  1828→                  )}
+  1829→                >
+  1830→                  <LayoutDashboard className="size-4 shrink-0" />
+  1831→                  <span className="truncate text-left">Dashboard</span>
+  1832→                </button>
+  1833→              </nav>
+  1834→              <p className="px-2 pb-2 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+  1835→                Resources
+  1836→              </p>
+  1837→              <nav className="space-y-0.5">
+  1838→                {MODEL_ORDER.map((m) => {
+  1839→                  const cfg = MODEL_CONFIGS[m]
+  1840→                  const Icon = cfg.icon
+  1841→                  const isActive = active === m
+  1842→                  return (
+  1843→                    <button
+  1844→                      key={m}
+  1845→                      type="button"
+  1846→                      onClick={() => {
+  1847→                        setActive(m)
+  1848→                        setSidebarOpen(false)
+  1849→                      }}
+  1850→                      className={cn(
+  1851→                        'flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
+  1852→                        isActive
+  1853→                          ? 'bg-primary text-primary-foreground shadow-xs'
+  1854→                          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+  1855→                      )}
+  1856→                    >
+  1857→                      <Icon className="size-4 shrink-0" />
+  1858→                      <span className="truncate text-left">{cfg.label}</span>
+  1859→                      {cfg.readOnly && (
+  1860→                        <span className={cn(
+  1861→                          'ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium',
+  1862→                          isActive
+  1863→                            ? 'bg-primary-foreground/20 text-primary-foreground'
+  1864→                            : 'bg-muted text-muted-foreground',
+  1865→                        )}>
+  1866→                          RO
+  1867→                        </span>
+  1868→                      )}
+  1869→                    </button>
+  1870→                  )
+  1871→                })}
+  1872→              </nav>
+  1873→            </div>
+  1874→            <div className="mt-auto border-t border-border/60 p-3">
+  1875→              <div className="rounded-lg bg-muted/60 p-3">
+  1876→                <p className="text-[11px] font-medium text-foreground">DevStudio CMS</p>
+  1877→                <p className="mt-0.5 text-[10px] text-muted-foreground">
+  1878→                  Manage all site content from one place.
+  1879→                </p>
+  1880→              </div>
+  1881→            </div>
+  1882→          </div>
+  1883→        </aside>
+  1884→
+  1885→        {/* Click-away for mobile sidebar */}
+  1886→        {sidebarOpen && (
+  1887→          <div
+  1888→            className="fixed inset-0 top-14 z-10 bg-black/40 lg:hidden"
+  1889→            onClick={() => setSidebarOpen(false)}
+  1890→            aria-hidden
+  1891→          />
+  1892→        )}
+  1893→
+  1894→        {/* Main */}
+  1895→        <main className="flex-1 overflow-x-hidden p-4 sm:p-6">
+  1896→          {active === 'dashboard' ? (
+  1897→            <DashboardOverview
+  1898→              token={token}
+  1899→              onNavigate={handleQuickNavigate}
+  1900→              onNewRecord={handleQuickNew}
+  1901→            />
+  1902→          ) : (
+  1903→            <RecordTable
+  1904→              model={active}
+  1905→              token={token}
+  1906→              onEdit={openEdit}
+  1907→              onView={openView}
+  1908→              onDeleteRequest={openDelete}
+  1909→            />
+  1910→          )}
+  1911→        </main>
+  1912→      </div>
+  1913→
+  1914→      {/* Dialogs */}
+  1915→      <EditDialog
+  1916→        model={activeModel}
+  1917→        token={token}
+  1918→        open={editOpen}
+  1919→        onOpenChange={setEditOpen}
+  1920→        record={editRecord}
+  1921→      />
+  1922→      <ViewDialog
+  1923→        model={activeModel}
+  1924→        open={viewOpen}
+  1925→        onOpenChange={setViewOpen}
+  1926→        record={viewRecord}
+  1927→      />
+  1928→      <DeleteDialog
+  1929→        model={activeModel}
+  1930→        token={token}
+  1931→        open={deleteOpen}
+  1932→        onOpenChange={setDeleteOpen}
+  1933→        record={deleteRecord}
+  1934→      />
+  1935→    </div>
+  1936→  )
+  1937→}
+  1938→
+  1939→// ---------------------------------------------------------------------------
+  1940→// Public component
+  1941→// ---------------------------------------------------------------------------
+  1942→
+  1943→export function AdminView() {
+  1944→  const [token, setToken] = React.useState<string | null>(null)
+  1945→
+  1946→  if (!token) {
+  1947→    return <LoginCard onLogin={setToken} />
+  1948→  }
+  1949→
+  1950→  return <Dashboard token={token} onLogout={() => setToken(null)} />
+  1951→}
+  1952→
+  1953→export default AdminView
+  1954→
