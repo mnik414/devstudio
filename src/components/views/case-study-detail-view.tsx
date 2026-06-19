@@ -1,17 +1,24 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 import {
+  Activity,
   AlertCircle,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Building2,
+  Clock,
+  DollarSign,
   GitBranch,
   Lightbulb,
   Network,
+  Rocket,
   Search,
+  ShieldCheck,
+  Star,
   TrendingUp,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -111,20 +118,147 @@ function Paragraphs({ text }: { text: string }) {
   )
 }
 
-function MetricStat({ metric }: { metric: CaseStudyMetric }) {
+/**
+ * Parse a metric value into its numeric + suffix components.
+ * Examples:
+ *   "1M+"     → { numeric: true,  num: 1,     suffix: "M+",  display: "1M+" }
+ *   "99.98%"  → { numeric: true,  num: 99.98, suffix: "%",   display: "99.98%" }
+ *   "4x"      → { numeric: true,  num: 4,     suffix: "x",   display: "4x" }
+ *   "200k"    → { numeric: true,  num: 200,   suffix: "k",   display: "200k" }
+ *   "90 days" → { numeric: false,                             display: "90 days" }
+ */
+function parseMetricValue(value: string): {
+  numeric: boolean
+  num?: number
+  suffix?: string
+  display: string
+} {
+  const trimmed = value.trim()
+  // Number at the start followed by a compact (no-whitespace) suffix of letters/+/%.
+  // Any whitespace (e.g. "90 days") means it isn't a pure numeric metric.
+  const match = trimmed.match(/^(\d+(?:\.\d+)?)([A-Za-z+%]*)$/)
+  if (match) {
+    const [, numStr, suffix] = match
+    return {
+      numeric: true,
+      num: parseFloat(numStr),
+      suffix: suffix || undefined,
+      display: trimmed,
+    }
+  }
+  return { numeric: false, display: trimmed }
+}
+
+/** Pick a relevant icon for a metric based on keyword matching in its label. */
+const METRIC_ICON_RULES: Array<{ keywords: string[]; icon: LucideIcon }> = [
+  { keywords: ['user'], icon: Users },
+  { keywords: ['uptime', 'reliability'], icon: ShieldCheck },
+  { keywords: ['revenue', 'cost'], icon: DollarSign },
+  { keywords: ['conversion'], icon: TrendingUp },
+  { keywords: ['time', 'delivery', 'launch'], icon: Clock },
+  { keywords: ['satisfaction'], icon: Star },
+  { keywords: ['adoption'], icon: Rocket },
+]
+const DEFAULT_METRIC_ICON: LucideIcon = Activity
+
+/** Decimal-aware animated counter — animates from 0 → `to` when scrolled into view. */
+function MetricCounter({
+  to,
+  suffix = '',
+  duration = 1.8,
+  className,
+}: {
+  to: number
+  suffix?: string
+  duration?: number
+  className?: string
+}) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-40px' })
+  const [value, setValue] = useState(0)
+
+  // Preserve original decimal precision (e.g. 99.98 stays 2 decimals).
+  const decimals = useMemo(() => {
+    const str = String(to)
+    const dot = str.indexOf('.')
+    return dot === -1 ? 0 : str.length - dot - 1
+  }, [to])
+
+  useEffect(() => {
+    if (!inView) return
+    let raf = 0
+    const start = performance.now()
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / (duration * 1000), 1)
+      // easeOutExpo for a premium, snappy settle
+      const eased = p === 1 ? 1 : 1 - Math.pow(2, -10 * p)
+      const current = eased * to
+      setValue(decimals > 0 ? parseFloat(current.toFixed(decimals)) : Math.round(current))
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [inView, to, duration, decimals])
+
+  const formatted =
+    decimals > 0 ? value.toFixed(decimals) : value.toLocaleString('en-US')
+
   return (
-    <div className="group relative flex flex-col items-center gap-1 overflow-hidden rounded-2xl border border-border/60 bg-card p-5 text-center shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow">
-      <span className="pointer-events-none absolute -top-12 right-0 size-24 rounded-full bg-accent/10 opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100" aria-hidden />
-      <span className="mb-1 flex size-8 items-center justify-center rounded-full bg-accent/10 text-accent ring-1 ring-accent/20">
-        <TrendingUp className="h-4 w-4" />
-      </span>
-      <span className="text-gradient text-3xl font-extrabold tracking-tight sm:text-4xl">
-        {metric.value}
-      </span>
-      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {metric.label}
-      </span>
-    </div>
+    <span ref={ref} className={className}>
+      {formatted}
+      {suffix}
+    </span>
+  )
+}
+
+function MetricStat({
+  metric,
+  index = 0,
+}: {
+  metric: CaseStudyMetric
+  index?: number
+}) {
+  const parsed = parseMetricValue(metric.value)
+  const lowerLabel = metric.label.toLowerCase()
+  const matchedRule = METRIC_ICON_RULES.find((r) =>
+    r.keywords.some((k) => lowerLabel.includes(k)),
+  )
+  const Icon: LucideIcon = matchedRule?.icon ?? DEFAULT_METRIC_ICON
+  const delay = 0.08 + index * 0.08
+
+  return (
+    <Reveal delay={delay} y={20}>
+      <div className="group relative flex flex-col items-center gap-2 overflow-hidden rounded-2xl border border-border/60 bg-card p-5 text-center shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow sm:p-6">
+        {/* Subtle gradient background tint */}
+        <span
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-70"
+          aria-hidden
+        />
+        {/* Floating accent blob behind on hover */}
+        <span
+          className="pointer-events-none absolute -top-12 right-0 size-28 rounded-full bg-accent/20 opacity-0 blur-2xl transition-all duration-500 group-hover:translate-y-2 group-hover:opacity-100"
+          aria-hidden
+        />
+        {/* Gradient icon circle */}
+        <span className="relative mb-1 flex size-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-soft ring-1 ring-inset ring-white/20">
+          <Icon className="h-5 w-5" />
+        </span>
+        {/* Large gradient number with animation */}
+        <span className="relative text-gradient text-3xl font-extrabold tracking-tight sm:text-4xl">
+          {parsed.numeric && parsed.num !== undefined ? (
+            <span className="ltr-num">
+              <MetricCounter to={parsed.num} suffix={parsed.suffix} />
+            </span>
+          ) : (
+            <span className="ltr-num">{parsed.display}</span>
+          )}
+        </span>
+        {/* Label below in muted color */}
+        <span className="relative text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {metric.label}
+        </span>
+      </div>
+    </Reveal>
   )
 }
 
@@ -394,13 +528,11 @@ export function CaseStudyDetailView() {
       {/* Metrics banner */}
       {metrics.length > 0 && (
         <section className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-          <Reveal>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-              {metrics.map((m) => (
-                <MetricStat key={m.label} metric={m} />
-              ))}
-            </div>
-          </Reveal>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            {metrics.map((m, i) => (
+              <MetricStat key={`${m.label}-${i}`} metric={m} index={i} />
+            ))}
+          </div>
         </section>
       )}
 

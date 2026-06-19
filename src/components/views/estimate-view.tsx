@@ -1,6 +1,13 @@
 'use client'
 
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -23,6 +30,7 @@ import {
   RotateCcw,
   Info,
   PartyPopper,
+  Play,
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -81,6 +89,51 @@ const STEPS: StepDef[] = [
 
 const TOTAL_STEPS = STEPS.length
 
+/* --------------------------- progress persistence --------------------------- */
+
+const PROGRESS_KEY = 'devstudio-estimate-progress'
+const emptySubscribe = () => () => {}
+
+type SavedProgress = { step: number; answers: Answers }
+
+function readProgress(): SavedProgress | null {
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as SavedProgress
+    if (
+      typeof parsed.step !== 'number' ||
+      typeof parsed.answers !== 'object' ||
+      parsed.answers === null
+    ) {
+      return null
+    }
+    // Ignore "empty" initial-state snapshots so we never offer a no-op resume
+    if (parsed.step === 0 && Object.keys(parsed.answers).length === 0) {
+      return null
+    }
+    return { step: Math.max(0, Math.min(TOTAL_STEPS - 1, parsed.step)), answers: parsed.answers }
+  } catch {
+    return null
+  }
+}
+
+function writeProgress(progress: SavedProgress) {
+  try {
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress))
+  } catch {
+    // ignore
+  }
+}
+
+function clearProgress() {
+  try {
+    localStorage.removeItem(PROGRESS_KEY)
+  } catch {
+    // ignore
+  }
+}
+
 // Confetti dot trajectories for the saved celebration animation
 const CONFETTI = [
   { x: -120, y: -30, rotate: -40, color: 'bg-primary' },
@@ -109,6 +162,30 @@ export function EstimateView() {
   const [direction, setDirection] = useState(1)
   const [answers, setAnswers] = useState<Answers>({})
   const [stage, setStage] = useState<Stage>('wizard')
+
+  // SSR-safe localStorage mount gate (same pattern as cookie-consent)
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  )
+
+  // Dismissed flag flips true after the user clicks Resume or Start over,
+  // so we don't keep re-reading / re-prompting for the same saved progress.
+  const [dismissedResume, setDismissedResume] = useState(false)
+  const savedProgress = useMemo<SavedProgress | null>(() => {
+    if (!mounted || dismissedResume) return null
+    return readProgress()
+  }, [mounted, dismissedResume])
+  const showResumePrompt = !!savedProgress && stage === 'wizard'
+
+  // Persist wizard progress to localStorage whenever step/answers change so the
+  // user can resume after navigating away. (Pure side effect — no setState.)
+  useEffect(() => {
+    if (!mounted) return
+    if (stage !== 'wizard') return
+    writeProgress({ step, answers })
+  }, [mounted, stage, step, answers])
 
   // estimate payload
   const [estimate, setEstimate] = useState<{ min: number; max: number; breakdown: { label: string; cost: number }[] } | null>(null)
@@ -186,6 +263,22 @@ export function EstimateView() {
     setEstimate(null)
     setContact({ name: '', email: '', phone: '', company: '' })
     setContactErrors({})
+    clearProgress()
+    setDismissedResume(true)
+  }
+
+  const handleResume = () => {
+    if (savedProgress) {
+      setAnswers(savedProgress.answers)
+      setStep(savedProgress.step)
+      setDirection(1)
+    }
+    setDismissedResume(true)
+  }
+
+  const handleStartOverPrompt = () => {
+    clearProgress()
+    setDismissedResume(true)
   }
 
   /* ----------------------------- lead capture ---------------------------- */
@@ -212,6 +305,7 @@ export function EstimateView() {
       })
       if (!res.ok) throw new Error('Failed to save your estimate')
       setStage('saved')
+      clearProgress()
       toast.success(t('estimate.savedTitle'), { description: t('estimate.savedDesc') })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong.'
@@ -297,6 +391,57 @@ export function EstimateView() {
             </motion.div>
           </div>
         </Reveal>
+
+        {/* resume prompt — shows when saved progress exists on mount */}
+        <AnimatePresence initial={false}>
+          {showResumePrompt && savedProgress && (
+            <motion.div
+              key="resume-prompt"
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="relative mt-6 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/[0.06] to-accent/[0.06] shadow-soft">
+                <span className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary via-accent to-primary opacity-60" />
+                <div className="relative flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                      <RotateCcw className="size-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">Resume your estimate?</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        You have an incomplete estimate (Step{' '}
+                        <span className="font-semibold text-foreground ltr-num">
+                          {savedProgress.step + 1}
+                        </span>{' '}
+                        of <span className="ltr-num">{TOTAL_STEPS}</span>). Continue where you left
+                        off or start over.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Button size="sm" onClick={handleResume} className="rounded-full">
+                      <Play className={cn('size-4', lang === 'fa' ? 'ml-1.5' : 'mr-1.5')} />
+                      Resume
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleStartOverPrompt}
+                      className="rounded-full"
+                    >
+                      <X className={cn('size-4', lang === 'fa' ? 'ml-1.5' : 'mr-1.5')} />
+                      Start over
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* main panel */}
         <Reveal delay={0.1} className="mt-8">

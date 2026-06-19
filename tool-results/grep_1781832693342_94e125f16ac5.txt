@@ -1,0 +1,219 @@
+/home/z/my-project/src/app/globals.css:155:.text-gradient {
+/home/z/my-project/src/app/globals.css:163:.bg-grid {
+/home/z/my-project/src/app/globals.css:170:.bg-radial-fade {
+/home/z/my-project/src/app/globals.css:180:.shadow-soft {
+/home/z/my-project/src/app/globals.css:185:.shadow-glow {
+/home/z/my-project/src/app/globals.css:221:html.lang-fa .ltr-num {
+/home/z/my-project/src/components/views/contact-view.tsx:187:        className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40"
+/home/z/my-project/src/components/views/contact-view.tsx:195:      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-radial-fade" />
+/home/z/my-project/src/components/views/contact-view.tsx:206:          title={<span className="text-gradient">{t('contact.title')}</span>}
+/home/z/my-project/src/components/views/contact-view.tsx:235:                    className="group flex items-start gap-4 rounded-2xl border border-border/60 bg-card/80 p-5 shadow-soft backdrop-blur transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow"
+/home/z/my-project/src/components/views/contact-view.tsx:237:                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-accent/10 text-primary ring-1 ring-inset ring-primary/10 transition-all group-hover:from-primary group-hover:to-accent group-hover:text-primary-foreground group-hover:ring-transparent group-hover:shadow-glow">
+/home/z/my-project/src/components/views/contact-view.tsx:247:                          item.ltr && 'ltr-num',
+/home/z/my-project/src/components/views/contact-view.tsx:259:            <div className="relative flex items-center gap-3 overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent p-4 shadow-soft">
+/home/z/my-project/src/components/views/contact-view.tsx:286:                    className="group relative flex items-start gap-4 rounded-2xl border border-transparent p-3 transition-all hover:-translate-y-0.5 hover:border-border/60 hover:bg-card/60 hover:shadow-soft"
+/home/z/my-project/src/components/views/contact-view.tsx:288:                    <span className="relative z-10 flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-soft ring-4 ring-background">
+/home/z/my-project/src/components/views/contact-view.tsx:296:                        <span className="ltr-num">{idx + 1}</span>
+/home/z/my-project/src/components/views/contact-view.tsx:319:                    className="flex size-10 items-center justify-center rounded-xl border border-border/60 bg-card/60 text-muted-foreground shadow-soft transition-all hover:-translate-y-1 hover:border-primary/40 hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-primary-foreground hover:shadow-glow"
+/home/z/my-project/src/components/views/contact-view.tsx:330:            <Card className="group relative overflow-hidden border-border/60 shadow-soft transition-all duration-300 focus-within:-translate-y-0.5 focus-within:shadow-glow">
+/home/z/my-project/src/components/views/contact-view.tsx:335:                  <span className="text-gradient">Start your project</span>
+/home/z/my-project/src/components/views/contact-view.tsx:373:                      className="relative flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glow"
+/home/z/my-project/src/components/views/contact-view.tsx:401:                      <span className="text-gradient">{t('contact.successTitle')}</span>
+/home/z/my-project/src/components/views/contact-view.tsx:419:                        className="mt-8 shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow"
+/home/z/my-project/src/components/views/contact-view.tsx:487:                          className="h-12 w-full bg-card text-base font-medium shadow-sm transition-all hover:border-primary/40 hover:shadow-soft"
+/home/z/my-project/src/components/views/contact-view.tsx:525:                        className="group relative overflow-hidden bg-gradient-to-r from-primary to-primary text-primary-foreground shadow-soft transition-all hover:from-primary hover:to-accent hover:shadow-glow sm:min-w-[180px]"
+/home/z/my-project/src/components/views/contact-view.tsx:552:          <div className="relative flex flex-col items-center justify-between gap-4 overflow-hidden rounded-2xl border border-border/60 bg-secondary px-6 py-6 text-center text-secondary-foreground shadow-soft transition-all hover:shadow-glow sm:flex-row sm:text-left">
+/home/z/my-project/src/components/views/contact-view.tsx:553:            <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-10" />
+/home/z/my-project/src/components/views/contact-view.tsx:570:              className="group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-accent to-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-glow"
+/home/z/my-project/src/components/views/blog-view.tsx:176:                  <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
+/home/z/my-project/src/components/views/blog-view.tsx:179:                <span className="ltr-num">{formatDate(post.createdAt)}</span>
+/home/z/my-project/src/components/views/blog-view.tsx:234:                  <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
+/home/z/my-project/src/components/views/blog-view.tsx:237:                <span className="ltr-num">{relativeDate(post.createdAt)}</span>
+/home/z/my-project/src/components/views/blog-view.tsx:366:      <div className="bg-radial-fade pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 opacity-60" />
+/home/z/my-project/src/components/site/trust-badges.tsx:28:              <div className="group flex h-full flex-col items-center gap-3 rounded-2xl border border-border/50 bg-card p-5 text-center transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-soft">
+/home/z/my-project/src/components/views/case-studies-view.tsx:32:      <span className="text-sm font-bold leading-none text-gradient sm:text-base">
+/home/z/my-project/src/components/views/case-studies-view.tsx:64:        className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-soft transition-colors hover:border-primary/40 hover:shadow-glow"
+/home/z/my-project/src/components/views/case-studies-view.tsx:103:              className="border-0 bg-gradient-to-r from-primary to-accent text-white shadow-glow backdrop-blur-md"
+/home/z/my-project/src/components/views/case-studies-view.tsx:110:          <div className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-secondary opacity-0 shadow-soft transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-2">
+/home/z/my-project/src/components/views/case-studies-view.tsx:157:    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-soft">
+/home/z/my-project/src/components/views/case-studies-view.tsx:212:          className="pointer-events-none absolute inset-0 bg-grid opacity-40"
+/home/z/my-project/src/components/views/case-studies-view.tsx:220:        <div className="pointer-events-none absolute inset-0 bg-radial-fade" />
+/home/z/my-project/src/components/views/case-studies-view.tsx:227:                <span className="text-gradient">
+/home/z/my-project/src/components/views/case-studies-view.tsx:278:            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-accent px-6 py-12 text-center shadow-glow sm:px-12 sm:py-16">
+/home/z/my-project/src/components/views/case-studies-view.tsx:279:              <div className="pointer-events-none absolute inset-0 bg-grid opacity-10" />
+/home/z/my-project/src/components/views/home-view.tsx:132:      <section className="relative isolate overflow-hidden bg-radial-fade pb-24 pt-20 sm:pt-28">
+/home/z/my-project/src/components/views/home-view.tsx:134:        <div className="absolute inset-0 -z-10 bg-grid opacity-60 [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)]" />
+/home/z/my-project/src/components/views/home-view.tsx:159:              {t('hero.title')} <span className="text-gradient">{t('hero.titleAccent')}</span> {t('hero.titleEnd')}
+/home/z/my-project/src/components/views/home-view.tsx:224:            <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft">
+/home/z/my-project/src/components/views/home-view.tsx:248:                    className="group relative overflow-hidden rounded-xl border border-border/60 bg-background p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft"
+/home/z/my-project/src/components/views/home-view.tsx:255:                        <span className="inline-flex items-center gap-0.5 rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent ltr-num">
+/home/z/my-project/src/components/views/home-view.tsx:260:                      <p className="mt-1 text-2xl font-bold ltr-num">{stat.value}</p>
+/home/z/my-project/src/components/views/home-view.tsx:293:                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary ltr-num">
+/home/z/my-project/src/components/views/home-view.tsx:310:                              <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 rounded bg-foreground px-1.5 py-0.5 text-[9px] font-medium text-background opacity-0 shadow-soft transition-opacity duration-200 group-hover/bar:opacity-100">
+/home/z/my-project/src/components/views/home-view.tsx:311:                                <span className="ltr-num">{h}</span>
+/home/z/my-project/src/components/views/home-view.tsx:379:                          <span className="text-xl font-bold ltr-num">87%</span>
+/home/z/my-project/src/components/views/home-view.tsx:392:                        <p className="mt-0.5 text-xs font-semibold ltr-num">{m.value}</p>
+/home/z/my-project/src/components/views/home-view.tsx:405:              className="pointer-events-none absolute -left-4 top-1/3 hidden rounded-xl border border-border/60 bg-card/80 p-2.5 shadow-glow backdrop-blur-md sm:block"
+/home/z/my-project/src/components/views/home-view.tsx:423:              className="pointer-events-none absolute -right-4 bottom-1/4 hidden rounded-xl border border-border/60 bg-card/80 p-2.5 shadow-glow backdrop-blur-md sm:block"
+/home/z/my-project/src/components/views/home-view.tsx:437:            <div className="pointer-events-none absolute -right-6 -top-6 hidden animate-float rounded-xl border border-border/60 bg-card p-3 shadow-soft sm:block">
+/home/z/my-project/src/components/views/home-view.tsx:489:                <Card className="group relative overflow-hidden border-border/60 p-6 text-center transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-soft sm:p-8">
+/home/z/my-project/src/components/views/home-view.tsx:497:                  <div className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl ltr-num">
+/home/z/my-project/src/components/views/home-view.tsx:584:                    <span className="text-3xl font-bold text-white/10 transition group-hover:text-white/20 ltr-num">
+/home/z/my-project/src/components/views/home-view.tsx:621:                <div className="group flex h-20 items-center justify-center rounded-xl border border-border/60 bg-card transition hover:border-primary/40 hover:shadow-soft">
+/home/z/my-project/src/components/views/home-view.tsx:634:        <div className="absolute inset-0 bg-radial-fade" />
+/home/z/my-project/src/components/views/home-view.tsx:635:        <div className="absolute inset-0 bg-grid opacity-[0.04]" />
+/home/z/my-project/src/components/views/home-view.tsx:660:                    'hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft',
+/home/z/my-project/src/components/views/home-view.tsx:661:                    'data-[state=open]:border-primary/30 data-[state=open]:bg-gradient-to-r data-[state=open]:from-primary/[0.04] data-[state=open]:to-accent/[0.04] data-[state=open]:shadow-soft'
+/home/z/my-project/src/components/views/home-view.tsx:685:              className="h-12 rounded-full bg-gradient-to-r from-primary to-accent px-7 text-base text-primary-foreground shadow-glow transition hover:opacity-90 hover:shadow-glow"
+/home/z/my-project/src/components/views/home-view.tsx:711:        className="group cursor-pointer overflow-hidden border-border/60 p-0 transition duration-300 hover:-translate-y-1 hover:shadow-soft"
+/home/z/my-project/src/components/views/home-view.tsx:732:            <span className="ltr-num">{portfolio.year}</span>
+/home/z/my-project/src/components/views/home-view.tsx:754:                <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground ltr-num">
+/home/z/my-project/src/components/views/home-view.tsx:776:      <Card className="group relative h-full overflow-hidden border-border/60 p-6 transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-soft">
+/home/z/my-project/src/components/views/home-view.tsx:782:        <span className="absolute right-4 top-4 text-3xl font-bold text-muted-foreground/8 transition group-hover:text-primary/15 ltr-num">
+/home/z/my-project/src/components/views/home-view.tsx:786:          <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary transition duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-glow">
+/home/z/my-project/src/components/views/home-view.tsx:839:      <div className="absolute inset-0 bg-radial-fade" />
+/home/z/my-project/src/components/views/home-view.tsx:840:      <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.04]" />
+/home/z/my-project/src/components/views/home-view.tsx:849:          <Card className="group relative overflow-hidden rounded-3xl border-border/60 p-8 transition-all duration-300 hover:border-primary/30 hover:shadow-glow sm:p-14">
+/home/z/my-project/src/components/views/home-view.tsx:853:            <div className="pointer-events-none absolute inset-0 bg-radial-fade" />
+/home/z/my-project/src/components/views/home-view.tsx:854:            <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.05]" />
+/home/z/my-project/src/components/views/home-view.tsx:951:            className="grid h-11 w-11 place-items-center rounded-full border border-border/60 bg-card text-foreground transition hover:border-primary/40 hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-primary-foreground hover:shadow-glow"
+/home/z/my-project/src/components/views/home-view.tsx:958:            className="grid h-11 w-11 place-items-center rounded-full border border-border/60 bg-card text-foreground transition hover:border-primary/40 hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-primary-foreground hover:shadow-glow"
+/home/z/my-project/src/components/views/home-view.tsx:965:            className="ml-2 h-11 rounded-full bg-gradient-to-r from-primary to-accent px-6 text-primary-foreground shadow-glow transition hover:opacity-90 hover:shadow-glow"
+/home/z/my-project/src/components/views/home-view.tsx:981:      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-accent p-10 text-primary-foreground shadow-glow sm:p-16">
+/home/z/my-project/src/components/views/home-view.tsx:982:        <div className="absolute inset-0 bg-grid opacity-20" />
+/home/z/my-project/src/components/site/cookie-consent.tsx:64:        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/95 p-5 shadow-soft backdrop-blur-xl sm:p-6">
+/home/z/my-project/src/components/views/about-view.tsx:83:        <div className="pointer-events-none absolute inset-0 -z-10 bg-grid" aria-hidden />
+/home/z/my-project/src/components/views/about-view.tsx:84:        <div className="pointer-events-none absolute inset-0 -z-10 bg-radial-fade" aria-hidden />
+/home/z/my-project/src/components/views/about-view.tsx:161:                  <Card className="overflow-hidden rounded-2xl p-6 shadow-soft">
+/home/z/my-project/src/components/views/about-view.tsx:168:                    <div className="mt-3 text-5xl font-bold tracking-tight ltr-num">2012</div>
+/home/z/my-project/src/components/views/about-view.tsx:173:                  <Card className="overflow-hidden rounded-2xl bg-secondary p-6 text-secondary-foreground shadow-soft">
+/home/z/my-project/src/components/views/about-view.tsx:184:                  <Card className="overflow-hidden rounded-2xl border-primary/20 bg-primary/5 p-6 shadow-soft">
+/home/z/my-project/src/components/views/about-view.tsx:188:                    <div className="mt-3 text-5xl font-bold tracking-tight text-primary ltr-num">
+/home/z/my-project/src/components/views/about-view.tsx:195:                  <Card className="overflow-hidden rounded-2xl p-6 shadow-soft">
+/home/z/my-project/src/components/views/about-view.tsx:199:                    <div className="mt-3 text-5xl font-bold tracking-tight ltr-num">
+/home/z/my-project/src/components/views/about-view.tsx:226:                <Card className="group h-full rounded-2xl p-8 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow">
+/home/z/my-project/src/components/views/about-view.tsx:249:                <div className="group relative flex flex-col items-center rounded-2xl border border-secondary-foreground/10 bg-secondary-foreground/[0.04] p-6 text-center transition-all duration-300 hover:-translate-y-1 hover:border-secondary-foreground/25 hover:bg-secondary-foreground/[0.08] hover:shadow-glow">
+/home/z/my-project/src/components/views/about-view.tsx:250:                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-glow transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+/home/z/my-project/src/components/views/about-view.tsx:253:                  <div className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl ltr-num text-gradient">
+/home/z/my-project/src/components/views/about-view.tsx:271:        <div className="pointer-events-none absolute inset-0 -z-10 bg-radial-fade" aria-hidden />
+/home/z/my-project/src/components/views/about-view.tsx:273:          className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-50"
+/home/z/my-project/src/components/views/about-view.tsx:355:          className="pointer-events-none absolute inset-0 bg-grid opacity-50"
+/home/z/my-project/src/components/views/about-view.tsx:379:                  <div className="relative h-full overflow-hidden rounded-2xl border border-border/60 bg-card p-6 shadow-soft transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/30 group-hover:shadow-glow">
+/home/z/my-project/src/components/views/about-view.tsx:386:                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-soft transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+/home/z/my-project/src/components/views/about-view.tsx:418:                className="group/pill relative inline-flex shrink-0 items-center gap-2 rounded-full border border-border/60 bg-card px-5 py-2.5 text-sm font-medium text-foreground shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow"
+/home/z/my-project/src/components/views/about-view.tsx:442:        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-3xl bg-secondary px-6 py-16 text-center text-secondary-foreground shadow-soft sm:px-12 sm:py-20">
+/home/z/my-project/src/components/views/about-view.tsx:443:          <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" aria-hidden />
+/home/z/my-project/src/components/views/about-view.tsx:444:          <div className="pointer-events-none absolute inset-0 bg-radial-fade" aria-hidden />
+/home/z/my-project/src/components/views/about-view.tsx:502:        <Card className="relative h-full overflow-hidden rounded-2xl p-6 shadow-soft transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-glow">
+/home/z/my-project/src/components/views/about-view.tsx:519:              <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-card bg-accent shadow-soft" />
+/home/z/my-project/src/components/views/about-view.tsx:538:                  className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-all duration-300 hover:-translate-y-0.5 hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-white hover:shadow-glow"
+/home/z/my-project/src/components/site/back-to-top.tsx:31:            'border border-border/60 bg-card/90 text-foreground shadow-soft backdrop-blur',
+/home/z/my-project/src/components/site/back-to-top.tsx:32:            'transition hover:border-primary/40 hover:text-primary hover:shadow-glow',
+/home/z/my-project/src/components/site/compare-projects.tsx:37:        <span className="ltr-num rounded-full bg-primary/20 px-1.5 text-xs font-bold">
+/home/z/my-project/src/components/site/compare-projects.tsx:69:            <Badge variant="secondary" className="ltr-num">{items.length}</Badge>
+/home/z/my-project/src/components/site/compare-projects.tsx:104:                  <CompareRow label="Year" items={items} render={(p) => <span className="ltr-num">{p.year}</span>} />
+/home/z/my-project/src/components/site/compare-projects.tsx:106:                  <CompareRow label="Views" items={items} render={(p) => <span className="ltr-num">{p.views}</span>} />
+/home/z/my-project/src/components/site/compare-projects.tsx:109:                  <CompareRow label="Features" items={items} render={(p) => { const f = parseList(p.features); return <span className="ltr-num">{f.length}</span> }} />
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:123:                      className="group inline-flex items-center gap-2.5 rounded-full border bg-background px-4 py-2 text-sm font-medium shadow-xs transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:shadow-soft"
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:148:                    <div className="group flex items-start gap-3 rounded-xl border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-soft">
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:194:              <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-accent px-6 py-12 text-primary-foreground shadow-soft sm:px-12 sm:py-16">
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:195:                <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:235:      <div className="bg-grid pointer-events-none absolute inset-0 opacity-40" />
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:274:              <span className="ltr-num">{item.year}</span>
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:278:              <span className="ltr-num">{item.views}</span>{' '}
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:320:          className="mt-10 overflow-hidden rounded-2xl border shadow-soft"
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:401:          'h-full gap-4 border-l-4 p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow',
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:494:                'group cursor-pointer overflow-hidden rounded-xl border shadow-xs transition-shadow hover:shadow-soft',
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:597:                  <span className="ltr-num">{active + 1}</span>
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:599:                  <span className="ltr-num">{total}</span>
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:662:                  'relative h-full gap-4 border-l-4 p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow',
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:688:                      Step <span className="ltr-num">{i + 1}</span>
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:939:          <span className="ltr-num text-foreground">{activeIndex + 1}</span>
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:941:          <span className="ltr-num">{items.length}</span>
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:974:        'group relative block h-full w-72 shrink-0 cursor-pointer overflow-hidden rounded-2xl border bg-card text-left shadow-soft transition-all duration-300 focus-visible:outline-none',
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:975:        active ? 'border-primary/40 ring-2 ring-primary/20' : 'border-border/60 hover:shadow-glow',
+/home/z/my-project/src/components/views/portfolio-detail-view.tsx:998:            <span className="ltr-num">{String(index + 1).padStart(2, '0')}</span>
+/home/z/my-project/src/components/views/case-study-detail-view.tsx:116:    <div className="group relative flex flex-col items-center gap-1 overflow-hidden rounded-2xl border border-border/60 bg-card p-5 text-center shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow">
+/home/z/my-project/src/components/views/case-study-detail-view.tsx:121:      <span className="text-gradient text-3xl font-extrabold tracking-tight sm:text-4xl">
+/home/z/my-project/src/components/views/case-study-detail-view.tsx:142:            'relative overflow-hidden rounded-2xl border border-l-4 p-6 shadow-soft transition-all duration-300 hover:shadow-glow sm:p-8',
+/home/z/my-project/src/components/views/case-study-detail-view.tsx:332:        <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
+/home/z/my-project/src/components/views/case-study-detail-view.tsx:333:        <div className="pointer-events-none absolute inset-0 bg-radial-fade" />
+/home/z/my-project/src/components/views/case-study-detail-view.tsx:365:            <div className="relative overflow-hidden rounded-2xl border border-border/60 shadow-soft">
+/home/z/my-project/src/components/views/case-study-detail-view.tsx:427:          <div className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-accent px-6 py-12 text-center text-primary-foreground shadow-soft sm:px-12 sm:py-14">
+/home/z/my-project/src/components/views/case-study-detail-view.tsx:428:            <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+/home/z/my-project/src/components/views/estimate-view.tsx:231:        className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40"
+/home/z/my-project/src/components/views/estimate-view.tsx:239:      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-radial-fade" />
+/home/z/my-project/src/components/views/estimate-view.tsx:250:          title={<span className="text-gradient">{t('estimate.title')}</span>}
+/home/z/my-project/src/components/views/estimate-view.tsx:261:                  <span className="font-bold text-gradient ltr-num">{step + 1}</span>{' '}
+/home/z/my-project/src/components/views/estimate-view.tsx:263:                  <span className="font-bold text-foreground ltr-num">{TOTAL_STEPS}</span>
+/home/z/my-project/src/components/views/estimate-view.tsx:277:              <span className="ltr-num">{Math.round(stage === 'wizard' ? progress : 100)}%</span>{' '}
+/home/z/my-project/src/components/views/estimate-view.tsx:289:                <span className="absolute right-0 top-1/2 size-3 -translate-y-1/2 translate-x-1/2 rounded-full bg-accent shadow-glow">
+/home/z/my-project/src/components/views/estimate-view.tsx:303:          <Card className="group relative overflow-hidden border-border/60 shadow-soft transition-all duration-300">
+/home/z/my-project/src/components/views/estimate-view.tsx:354:                                  'group relative flex flex-col items-center gap-1 overflow-hidden rounded-2xl border p-4 text-center shadow-soft transition-all',
+/home/z/my-project/src/components/views/estimate-view.tsx:356:                                    ? 'border-transparent bg-gradient-to-br from-primary/10 to-accent/10 shadow-glow'
+/home/z/my-project/src/components/views/estimate-view.tsx:357:                                    : 'border-border/60 bg-card hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow',
+/home/z/my-project/src/components/views/estimate-view.tsx:365:                                    'text-xl font-bold tracking-tight ltr-num transition-transform group-hover:scale-110',
+/home/z/my-project/src/components/views/estimate-view.tsx:366:                                    active ? 'text-gradient' : 'text-foreground',
+/home/z/my-project/src/components/views/estimate-view.tsx:405:                          className="shadow-soft transition-all hover:shadow-glow"
+/home/z/my-project/src/components/views/estimate-view.tsx:420:                          className="shadow-soft transition-all hover:shadow-glow"
+/home/z/my-project/src/components/views/estimate-view.tsx:445:                      <span className="text-gradient">{t('estimate.calculating')}</span>
+/home/z/my-project/src/components/views/estimate-view.tsx:482:                            <span className="text-5xl font-bold tracking-tight text-gradient ltr-num sm:text-6xl lg:text-7xl">
+/home/z/my-project/src/components/views/estimate-view.tsx:493:                            <span className="text-5xl font-bold tracking-tight text-gradient ltr-num sm:text-6xl lg:text-7xl">
+/home/z/my-project/src/components/views/estimate-view.tsx:502:                        <span className="ltr-num">4–12</span> weeks
+/home/z/my-project/src/components/views/estimate-view.tsx:511:                      <ul className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft">
+/home/z/my-project/src/components/views/estimate-view.tsx:532:                            <span className="font-mono text-sm font-semibold text-foreground ltr-num">
+/home/z/my-project/src/components/views/estimate-view.tsx:549:                    <div className="relative mt-8 overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card to-muted/20 p-5 shadow-soft sm:p-6">
+/home/z/my-project/src/components/views/estimate-view.tsx:630:                            className="group relative overflow-hidden bg-gradient-to-r from-primary to-primary text-primary-foreground shadow-soft transition-all hover:from-primary hover:to-accent hover:shadow-glow sm:min-w-[200px]"
+/home/z/my-project/src/components/views/estimate-view.tsx:695:                      className="relative flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glow"
+/home/z/my-project/src/components/views/estimate-view.tsx:723:                      <span className="text-gradient">{t('estimate.savedTitle')}</span>
+/home/z/my-project/src/components/views/estimate-view.tsx:741:                        className="shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-glow"
+/home/z/my-project/src/components/views/estimate-view.tsx:749:                        className="shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow"
+/home/z/my-project/src/components/views/estimate-view.tsx:787:        <span className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-base font-bold text-primary-foreground shadow-soft ltr-num">
+/home/z/my-project/src/components/views/estimate-view.tsx:811:      className="group relative flex cursor-pointer items-start gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-soft transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow has-[:checked]:border-primary has-[:checked]:shadow-glow"
+/home/z/my-project/src/components/views/estimate-view.tsx:816:      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 text-primary ring-1 ring-inset ring-primary/10 transition-all group-has-[:checked]:from-primary group-has-[:checked]:to-accent group-has-[:checked]:text-primary-foreground group-has-[:checked]:ring-transparent group-has-[:checked]:shadow-glow">
+/home/z/my-project/src/components/views/estimate-view.tsx:850:              'group relative flex flex-col items-start gap-2 overflow-hidden rounded-2xl border p-5 text-left shadow-soft transition-all',
+/home/z/my-project/src/components/views/estimate-view.tsx:853:                  ? 'border-accent/60 bg-gradient-to-br from-accent/15 to-accent/5 shadow-glow'
+/home/z/my-project/src/components/views/estimate-view.tsx:854:                  : 'border-rose-400/60 bg-gradient-to-br from-rose-500/10 to-rose-500/5 shadow-glow'
+/home/z/my-project/src/components/views/estimate-view.tsx:855:                : 'border-border/60 bg-card hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow',
+/home/z/my-project/src/components/site/footer.tsx:47:            <div className="[&_span]:!text-secondary-foreground [&_.text-gradient]:!bg-gradient-to-r [&_.text-gradient]:from-white [&_.text-gradient]:to-accent">
+/home/z/my-project/src/components/site/footer.tsx:108:            <span className="ltr-num">+1 (555) 123-4567</span>
+/home/z/my-project/src/components/site/logo.tsx:8:      <div className="relative grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glow">
+/home/z/my-project/src/components/site/logo.tsx:15:          Dev<span className="text-gradient">Studio</span>
+/home/z/my-project/src/components/views/blog-detail-view.tsx:252:          <span className="ltr-num">0</span>
+/home/z/my-project/src/components/views/blog-detail-view.tsx:267:              'hover:-translate-y-0.5 hover:border-transparent hover:shadow-soft',
+/home/z/my-project/src/components/views/blog-detail-view.tsx:296:          className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:text-primary hover:shadow-soft"
+/home/z/my-project/src/components/views/blog-detail-view.tsx:377:    <pre className="overflow-x-auto rounded-xl border border-border/60 bg-gradient-to-br from-secondary to-secondary/80 p-4 text-sm text-secondary-foreground shadow-soft">
+/home/z/my-project/src/components/views/blog-detail-view.tsx:473:      <div className="relative flex gap-4 rounded-2xl border border-border/60 bg-card p-3 shadow-xs transition-shadow duration-300 group-hover:shadow-soft">
+/home/z/my-project/src/components/views/blog-detail-view.tsx:493:            <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
+/home/z/my-project/src/components/views/blog-detail-view.tsx:680:                <span className="text-gradient">{item.category.name}</span>
+/home/z/my-project/src/components/views/blog-detail-view.tsx:699:                      <span className="ltr-num">{formatDate(item.createdAt)}</span>
+/home/z/my-project/src/components/views/blog-detail-view.tsx:703:                      <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
+/home/z/my-project/src/components/views/blog-detail-view.tsx:707:                      <span className="ltr-num">{item.views}</span> {t('blogDetail.views')}
+/home/z/my-project/src/components/views/blog-detail-view.tsx:728:                            className="ltr-num"
+/home/z/my-project/src/components/views/blog-detail-view.tsx:746:          <div className="mt-10 overflow-hidden rounded-2xl border border-border/60 shadow-soft">
+/home/z/my-project/src/components/views/blog-detail-view.tsx:781:            <div className="relative mt-10 flex items-center gap-4 overflow-hidden rounded-2xl border border-border/60 p-5 shadow-soft">
+/home/z/my-project/src/components/views/blog-detail-view.tsx:795:                  <span className="ltr-num">{item.views + 1}</span> {t('blogDetail.views')} ·{' '}
+/home/z/my-project/src/components/views/blog-detail-view.tsx:796:                  <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
+/home/z/my-project/src/components/views/blog-detail-view.tsx:805:              <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft">
+/home/z/my-project/src/components/views/blog-detail-view.tsx:854:          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-accent px-6 py-14 text-center text-primary-foreground shadow-soft md:px-12 md:py-16">
+/home/z/my-project/src/components/views/blog-detail-view.tsx:855:            <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+/home/z/my-project/src/components/views/admin-view.tsx:1248:        'group relative flex w-full flex-col gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-5 text-left shadow-soft transition-all duration-300',
+/home/z/my-project/src/components/views/admin-view.tsx:1249:        'hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow',
+/home/z/my-project/src/components/views/admin-view.tsx:1381:    <Card className="flex flex-col border-border/60 shadow-soft">
+/home/z/my-project/src/components/views/admin-view.tsx:1584:      <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.04] via-background to-accent/[0.04] p-6 shadow-soft sm:p-8">
+/home/z/my-project/src/components/views/admin-view.tsx:1594:              Welcome back, <span className="text-gradient">Studio</span>
+/home/z/my-project/src/components/views/admin-view.tsx:1636:      <section className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft sm:p-6">
+/home/z/my-project/src/components/views/admin-view.tsx:1652:                  a.variant === 'default' && 'shadow-soft',
+/home/z/my-project/src/components/views/portfolio-view.tsx:67:  return <span className="ltr-num tabular-nums">{display}</span>
+/home/z/my-project/src/components/views/portfolio-view.tsx:128:      <section className="relative overflow-hidden border-b bg-radial-fade">
+/home/z/my-project/src/components/views/portfolio-view.tsx:130:          className="bg-grid pointer-events-none absolute inset-0 opacity-50"
+/home/z/my-project/src/components/views/portfolio-view.tsx:146:                <span className="text-gradient">
+/home/z/my-project/src/components/views/portfolio-view.tsx:156:              <span className="ltr-num">{items.length || 0}</span>{' '}
+/home/z/my-project/src/components/views/portfolio-view.tsx:176:            ? 'border-border/60 bg-gradient-to-r from-background/95 via-background/90 to-background/95 shadow-soft'
+/home/z/my-project/src/components/views/portfolio-view.tsx:221:                  <span className="ltr-num rounded-full bg-accent/20 px-1.5 text-xs font-bold">
+/home/z/my-project/src/components/views/portfolio-view.tsx:352:        <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+/home/z/my-project/src/components/views/portfolio-view.tsx:468:      <Card className="relative h-full overflow-hidden p-0 transition-shadow duration-300 group-hover:shadow-soft">
+/home/z/my-project/src/components/views/portfolio-view.tsx:491:            <span className="ltr-num">{item.views}</span>
+/home/z/my-project/src/components/views/portfolio-view.tsx:543:                  +<span className="ltr-num">{item.technologies.length - 4}</span>
+/home/z/my-project/src/components/views/portfolio-view.tsx:551:            <span className="ltr-num">{item.year}</span>
+/home/z/my-project/src/components/views/portfolio-view.tsx:614:        <span className="text-gradient">No projects found</span>

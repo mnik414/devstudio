@@ -939,3 +939,77 @@ Stage Summary:
 - Portfolio related projects transformed from static grid to interactive carousel with navigation, progress dots, RTL support
 - All features work in both English (LTR) and Persian (RTL) modes
 - Platform continues to be stable and increasingly premium
+
+---
+Task ID: 13-a
+Agent: full-stack-developer (case study metrics)
+Task: Enhance the Case Study detail view's metrics banner with animated number counters, per-metric icons, premium card styling, and staggered entrance animations.
+Work Log:
+- Read worklog.md and the existing `case-study-detail-view.tsx` to understand the design system (blue #2563EB primary, teal #14B8A6 accent, text-gradient utility, shadow-soft/shadow-glow, ltr-num for Persian).
+- Reviewed the shared `Counter` component (`@/components/site/counter`) and `Reveal` (`@/components/site/reveal`) APIs; confirmed Counter rounds to integers so a local decimal-aware counter is needed for values like "99.98%".
+- Expanded lucide-react imports: added Activity, Clock, DollarSign, Rocket, ShieldCheck, Star, Users (kept TrendingUp — used both as a section icon and the "Conversion" metric icon).
+- Imported `useInView` from framer-motion for in-view detection.
+- Added `parseMetricValue(value)` helper: regex `/^(\d+(?:\.\d+)?)([A-Za-z+%]*)$/` parses numeric prefix + compact (no-whitespace) suffix. "1M+"→{1,"M+"}, "99.98%"→{99.98,"%"}, "4x"→{4,"x"}, "200k"→{200,"k"}, "90 days"→non-numeric (whitespace breaks the match).
+- Added `METRIC_ICON_RULES` static lookup table + `DEFAULT_METRIC_ICON` (Activity) — keyword→icon mapping per spec (Users, ShieldCheck, DollarSign, TrendingUp, Clock, Star, Rocket). Defined as a static const (not a function) to satisfy the `react-hooks/static-components` lint rule.
+- Added local `MetricCounter` component: framer-motion `useInView({ once: true })` triggers a rAF loop with easeOutExpo; preserves the input's decimal precision (e.g. 99.98 stays 2 decimals via `toFixed`); integers use `toLocaleString('en-US')` for thousands separators.
+- Rewrote `MetricStat`:
+  • Accepts `index` prop for stagger delay (0.08 + index*0.08).
+  • Wraps the card in `Reveal delay={delay} y={20}` for staggered entrance.
+  • Premium styling: gradient icon circle (`bg-gradient-to-br from-primary to-accent` with `text-primary-foreground` + ring-white/20 inset), large `text-gradient` number, muted uppercase label.
+  • Subtle gradient background tint (`from-primary/5 via-transparent to-accent/5`).
+  • Floating accent blob behind on hover (size-28, accent/20, blur-2xl, opacity transition + translate-y on group-hover).
+  • Hover lift + shadow-glow, relative positioning so absolute decorative layers don't overlap text.
+  • Numeric values rendered via `<MetricCounter>` wrapped in `<span className="ltr-num">` for Persian RTL; non-numeric values rendered as-is also wrapped in ltr-num.
+- Updated the metrics banner section to drop the outer `Reveal` (each card now has its own staggered Reveal), pass `index={i}` to `MetricStat`, and use `${m.label}-${i}` as the key.
+- Ran `bun run lint` — initially flagged `react-hooks/static-components` on `const Icon = getMetricIcon(...)`; refactored to a static `METRIC_ICON_RULES.find(...)` lookup with `const Icon: LucideIcon = matchedRule?.icon ?? DEFAULT_METRIC_ICON`. Re-ran lint → clean (no errors, no warnings).
+- Verified dev server is compiling the file cleanly (no HMR errors in dev.log).
+Stage Summary:
+- Case Study detail metrics banner now features: per-metric icons chosen by keyword, gradient icon circles, animated decimal-aware number counters that count up from 0 on scroll-into-view, gradient text numbers, premium card styling with gradient tint + floating accent blob + hover lift + glow, staggered entrance via Reveal, full RTL/Persian support via ltr-num wrapping, and preserved responsive grid (2 cols mobile, 4 cols desktop). All changes are confined to `src/components/views/case-study-detail-view.tsx`; no translation logic, data fetching, or new i18n keys were touched. Lint passes clean.
+
+---
+Task ID: 13-b
+Agent: full-stack-developer (estimate resume + blog TOC)
+Task: Add estimate wizard progress save/resume via localStorage + blog detail mobile TOC toggle (bottom sheet)
+Work Log:
+- Read worklog.md, estimate-view.tsx, blog-detail-view.tsx, cookie-consent.tsx (for useSyncExternalStore pattern), sheet.tsx, i18n keys, dev.log.
+- Estimated view: added module-scope helpers (PROGRESS_KEY, readProgress/writeProgress/clearProgress, SavedProgress type) + emptySubscribe; added useEffect + useSyncExternalStore + Play to React/lucide imports.
+- EstimateView component: added `mounted` flag, `dismissedResume` state, `savedProgress` useMemo, `showResumePrompt` derived flag, save-progress useEffect, `handleResume`/`handleStartOverPrompt` handlers; wired `clearProgress()` into `restart()` and into `submitLead()` after `setStage('saved')`.
+- Rendered resume-prompt card (AnimatePresence + motion height/opacity/y) between progress bar and main panel: RotateCcw icon badge, "Step X of 7" message with ltr-num, Resume (Play) + Start over (X) buttons, RTL-aware icon spacing.
+- Blog detail: imported Sheet components; extended `TableOfContents` with optional `onNavigate` callback that closes the sheet first then defers scrollIntoView by 280ms (so Radix releases body scroll lock before smooth-scroll).
+- BlogDetailView: added `tocSheetOpen` state, floating `motion.button` (lg:hidden, ltr:right-6 rtl:left-6, gradient pill, spring entrance) shown only when TOC has items, plus bottom `Sheet` with SheetHeader/SheetTitle reusing `activeTocId` for active highlighting.
+- Ran `bun run lint` → exit 0 (no errors/warnings). Verified dev.log shows successful incremental compilation.
+Stage Summary:
+- Estimate wizard now persists `{ step, answers }` to `devstudio-estimate-progress` on every change while in the wizard stage; on next mount, a premium animated "Resume your estimate?" card appears (Step X of 7) with Resume (restores state + jumps to saved step) and Start over (clears localStorage) actions. Progress is cleared on lead submit (`stage === 'saved'`) and on any restart path. Uses the same SSR-safe `useSyncExternalStore` pattern as cookie-consent to avoid hydration mismatch and setState-in-effect lint.
+- Blog detail on mobile (<lg) now shows a floating gradient "Contents" button at the bottom corner (RTL-aware) that opens a bottom Sheet containing the same TableOfContents with active-section highlighting reused from the existing IntersectionObserver. Tapping a link closes the sheet and smooth-scrolls to the section. Desktop sticky sidebar is unchanged and the mobile button is hidden on lg+.
+- All existing functionality preserved; no new i18n keys; lint passes cleanly.
+
+---
+Task ID: 13
+Agent: Main (orchestrator) — cron review round
+Task: QA testing, case study animated metrics, estimate wizard resume, blog mobile TOC
+
+Work Log:
+- QA tested all views, estimate wizard flow (7 steps), admin CRUD — all clean, no errors
+- Dispatched 2 parallel subagents:
+  * 13-a: Enhanced case study detail with animated metrics counters
+    - parseMetricValue() helper: extracts numeric portion + suffix from values like "1M+", "99.98%", "4x", "200k"; non-numeric values like "90 days" displayed as-is
+    - MetricCounter: local decimal-aware counter using framer-motion useInView + rAF with easeOutExpo (preserves decimal precision like 99.98)
+    - Per-metric icons via keyword matching: Users→Users, Uptime→ShieldCheck, Revenue→DollarSign, Conversion→TrendingUp, Time→Clock, Satisfaction→Star, Adoption→Rocket, default→Activity
+    - Premium cards: gradient icon circle (from-primary to-accent), text-gradient numbers, hover lift + shadow-glow, floating accent blob on hover, staggered Reveal entrance
+    - All numbers wrapped in ltr-num for Persian RTL
+  * 13-b: Added estimate wizard save/resume + blog mobile TOC toggle
+    - Estimate resume: saves {step, answers} to localStorage on every change; on mount shows "Resume your estimate?" prompt with Step X of 7, Resume/Start over buttons; clears on completion or explicit start over; uses useSyncExternalStore for SSR-safe localStorage
+    - Blog mobile TOC: floating "Contents" button (lg:hidden, gradient pill, spring entrance) opens bottom Sheet with TOC links; active section highlighting via existing IntersectionObserver; closes on link click with deferred scroll; RTL-aware button position
+- Fixed accessibility warning: blog mobile TOC Sheet was missing SheetDescription → added sr-only description
+- Verified case study metrics: animated counters show 99.98 (uptime), 4x faster (response time), 60 (cost reduction) with gradient text and icons
+- Verified estimate resume: answered SaaS + advanced to step 2, navigated away, returned → resume prompt appeared, clicked Resume → restored to step 2
+- Verified blog mobile TOC: floating button appears on mobile, opens bottom sheet with all section links, clicking navigates to section
+- Verified all features work in Persian RTL mode (no console errors)
+- Lint passes with 0 errors; all endpoints return 200
+
+Stage Summary:
+- Case study detail metrics now animate with counters, gradient numbers, and per-metric icons
+- Estimate wizard saves progress to localStorage and offers resume prompt — users don't lose their place
+- Blog detail has a mobile-friendly TOC bottom sheet with active section highlighting
+- All features bilingual (en/fa) with RTL support
+- Platform continues to be stable and increasingly premium

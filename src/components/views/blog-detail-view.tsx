@@ -25,6 +25,7 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Reveal } from '@/components/site/reveal'
 import { SectionHeading } from '@/components/site/section-heading'
 import { useNav } from '@/lib/store'
@@ -397,18 +398,30 @@ const markdownComponents: Components = {
 function TableOfContents({
   items,
   activeId,
+  onNavigate,
 }: {
   items: { id: string; text: string }[]
   activeId: string
+  /** Optional callback fired after a link is clicked (e.g. to close a mobile sheet). */
+  onNavigate?: () => void
 }) {
   const t = useT()
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault()
-    const el = document.getElementById(id)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      // update hash without jumping
-      if (typeof history !== 'undefined') history.replaceState(null, '', `#${id}`)
+    const doScroll = () => {
+      const el = document.getElementById(id)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        // update hash without jumping
+        if (typeof history !== 'undefined') history.replaceState(null, '', `#${id}`)
+      }
+    }
+    if (onNavigate) {
+      // Close the sheet first, then scroll (after its exit animation releases the body)
+      onNavigate()
+      window.setTimeout(doScroll, 280)
+    } else {
+      doScroll()
     }
   }
 
@@ -435,7 +448,7 @@ function TableOfContents({
                 href={`#${item.id}`}
                 onClick={(e) => handleClick(e, item.id)}
                 className={cn(
-                  '-ml-px block border-l-2 pl-4 py-1 transition-all duration-200',
+                  '-ml-px block border-l-2 py-1 pl-4 transition-all duration-200',
                   isActive
                     ? 'border-transparent font-semibold text-foreground'
                     : 'border-transparent text-muted-foreground hover:translate-x-0.5 hover:border-primary hover:text-primary',
@@ -601,6 +614,8 @@ export function BlogDetailView() {
   const content = item?.content ?? ''
   const toc = useMemo(() => extractTOC(content), [content])
   const [activeTocId, setActiveTocId] = useState<string>('')
+  // Mobile TOC sheet state (desktop keeps its sticky sidebar)
+  const [tocSheetOpen, setTocSheetOpen] = useState(false)
 
   // Track active section for TOC highlighting (only when there is content to track)
   useEffect(() => {
@@ -900,6 +915,57 @@ export function BlogDetailView() {
           </div>
         </section>
       </article>
+
+      {/* Mobile TOC: floating button + bottom sheet (desktop keeps its sticky sidebar) */}
+      {toc.length > 0 && (
+        <motion.button
+          type="button"
+          onClick={() => setTocSheetOpen(true)}
+          initial={{ opacity: 0, scale: 0.5, y: 24 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          whileTap={{ scale: 0.92 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 22, delay: 0.4 }}
+          aria-label={t('blogDetail.contents')}
+          className={cn(
+            'fixed bottom-6 z-40 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground shadow-glow transition-shadow hover:shadow-soft lg:hidden',
+            'ltr:right-6 rtl:left-6',
+          )}
+        >
+          <List className="size-5" />
+          <span>{t('blogDetail.contents')}</span>
+        </motion.button>
+      )}
+
+      <Sheet open={tocSheetOpen} onOpenChange={setTocSheetOpen}>
+        <SheetContent
+          side="bottom"
+          className="max-h-[80vh] gap-0 p-0 [&>button:last-child]:top-3.5 [&>button:last-child]:right-3.5"
+        >
+          <SheetHeader className="border-b border-border/60 pb-3">
+            <SheetTitle className="flex items-center gap-2 text-base font-semibold">
+              <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-primary">
+                <List className="h-4 w-4" />
+              </span>
+              {t('blogDetail.contents')}
+            </SheetTitle>
+            <SheetDescription className="sr-only">
+              Navigate to sections within this article
+            </SheetDescription>
+          </SheetHeader>
+          <div className="max-h-[60vh] overflow-y-auto px-4 py-5">
+            <TableOfContents
+              items={toc}
+              activeId={activeTocId}
+              onNavigate={() => setTocSheetOpen(false)}
+            />
+            {toc.length === 0 && (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Use the headings above to navigate this article.
+              </p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   )
 }
