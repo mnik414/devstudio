@@ -1070,3 +1070,117 @@ Stage Summary:
 - Blog related articles enhanced with gradient heading, reading-time/date badges, View all button
 - All features work in both English (LTR) and Persian (RTL) modes
 - Platform continues to be stable and increasingly premium
+
+---
+Task ID: 15-a
+Agent: full-stack-developer (process timeline)
+Task: Transform the Home view "Development Process" section from a static 7-card grid into an animated, scroll-triggered timeline (horizontal zigzag on desktop, vertical on mobile) with gradient progress line, pulsing numbered nodes, alternating cards, and full RTL support — keeping the existing "Ready to start?" CTA.
+
+Work Log:
+- Read worklog.md + home-view.tsx to locate the Development Process section (around line 565) and confirmed the PROCESS_STEPS array (icon, titleKey, descKey) plus existing translation keys.
+- Verified RTL mechanism: `<LangDirection/>` sets `<html dir="rtl|ltr">` + `lang-fa` class dynamically; `useLang` returns 'en'|'fa'. Added `isRtl = lang === 'fa'` to HomeView scope.
+- Updated imports: added `useInView` to the framer-motion import and `useRef` to the react import.
+- Added a scroll-trigger in HomeView: `timelineRef` + `timelineInView = useInView(timelineRef, { once: true, margin: '-120px' })` to drive the line-draw + node pop-in animations.
+- Replaced the old `grid sm:grid-cols-2 lg:grid-cols-4` block with a two-layout structure:
+  • Desktop (lg+): a `relative hidden lg:block` wrapper containing an absolutely-positioned horizontal line (static `bg-white/10` track + animated `motion.div` gradient from-primary to-accent with `scaleX 0→1`, `origin-left`/`origin-right` per direction), and a 7-column grid where each column has a top region (h-48, justify-end) + node (h-12) + bottom region (h-48, justify-start). Cards alternate above (i%2===0) / below the line via small vertical gradient connectors.
+  • Mobile (<lg): a `relative lg:hidden` wrapper with a vertical line (w-0.5) positioned `left-7` (LTR) / `right-7` (RTL), animated via `scaleY 0→1` from `origin-top`. Steps stack vertically with nodes (`absolute left-0`/`right-0`, h-14 w-14) sitting on the line and cards to the side (`pl-20`/`pr-20`).
+- Built numbered nodes with: gradient bg (from-primary to-accent), `animate-ping` pulsing ring (`bg-primary/30`, 2.6s duration), soft blur glow, `whileHover={{ scale: 1.18 }}` (desktop) / `1.12` (mobile), and spring pop-in gated on `timelineInView` with staggered `delay: 0.2 + i * 0.12`.
+- Cards: created a compact `ProcessTimelineCard` sub-component (icon-in-gradient-circle, title, `line-clamp-3` description, hover lift + gradient top-border fill + glow overlay) for the narrow desktop columns. Mobile cards use a horizontal icon+title row then description.
+- Staggered card entrances via `Reveal` (existing component) with `delay={i * 0.08}` (desktop) / `i * 0.06` (mobile).
+- RTL: line origin mirrored (`origin-right`), connectors' gradient direction swapped, mobile line/node positions flipped to the right edge, padding swapped to `pr-20`.
+- Preserved the "Ready to start?" CTA, restyling it as a responsive full-width banner (stacked on mobile, row on sm+) that still calls `setView('contact')`.
+- Ran `bun run lint` — clean, no errors. Verified dev.log shows successful recompiles after edits.
+
+Stage Summary:
+- The Development Process section is now an animated timeline that "draws" itself when scrolled into view.
+- Desktop: 7 step nodes on a horizontal gradient line with cards zigzagging above (1,3,5,7) and below (2,4,6); each node has a pulsing ring + hover scale; cards lift/glow on hover with staggered Reveal entrances.
+- Mobile: vertical timeline with line on the leading edge (left LTR / right RTL), numbered nodes, and cards to the side.
+- RTL (fa) fully mirrored — line draws right-to-left, nodes/line on the right, connectors' gradient reversed.
+- All existing translation keys reused (no new i18n); PROCESS_STEPS array untouched; "Ready to start?" CTA retained at the end.
+- ESLint passes; dev server recompiles cleanly.
+
+---
+Task ID: 15-b
+Agent: full-stack-developer (blog print + 404)
+Task: Add print-friendly stylesheet + Print/PDF button to blog detail view; create premium animated 404 not-found page
+Work Log:
+- Read worklog.md to understand the design system (blue #2563EB primary, teal #14B8A6 accent, framer-motion animations, bilingual en/fa with RTL via useT()/useLang() from @/lib/lang-store, useNav store for SPA view switching, cn() utility, design tokens bg-grid/bg-radial-fade/shadow-soft/shadow-glow/text-gradient/animate-float)
+- Inspected blog-detail-view.tsx (1159 lines, ShareButtons component, markdown rendering, TOC sidebar, related articles, final CTA, mobile TOC sheet) and layout.tsx (Providers + LangDirection wrap children, not-found.tsx will be rendered inside this layout)
+- Added 6 new i18n keys to src/lib/i18n.ts in BOTH en and fa dictionaries:
+  * `blogDetail.print` ("Print / Save as PDF" / "چاپ / ذخیره به‌عنوان PDF")
+  * `error.404Title` ("Page not found" / "صفحه یافت نشد")
+  * `error.404Desc` ("The page you're looking for doesn't exist or has been moved." / "صفحه‌ای که به دنبال آن هستید وجود ندارد یا جابه‌جا شده است.")
+  * `error.backHome` ("Back to Home" / "بازگشت به خانه")
+  * `error.browseWork` ("Browse Portfolio" / "مرور نمونه‌کارها")
+  * `error.suggested` ("Suggested pages" / "صفحات پیشنهادی")
+- Modified src/components/views/blog-detail-view.tsx:
+  * Imported `Printer` from lucide-react
+  * Added a circular Print button (size-11, rounded-full, Printer icon at h-[18px]) inside ShareButtons, after the brand buttons loop and before the "Copy link" pill. Button calls `window.print()` on click, has `title={t('blogDetail.print')}` ("Print / Save as PDF"), spring hover scale (1.15) via motion.span, and hover color change to primary (hover:border-primary/60 hover:bg-primary/10 hover:text-primary hover:shadow-soft). Includes the same sheen overlay as the share buttons for visual consistency.
+  * Added `no-print` class to the ShareButtons root div (so the entire share cluster — including the print button itself — is hidden in print output)
+  * Added a `<style>{`...`}</style>` block at the top of the article render with `@media print` rules:
+    - `@page { margin: 2cm; }` for proper print margins
+    - Hides `header` (navbar), `footer`, `.no-print`, and `.fixed` (covers reading progress bar, ScrollProgress, BackToTop, CookieConsent, mobile TOC button — all fixed-position UI)
+    - Resets all colors to black-on-white, removes shadows/borders/gradients/text-shadows
+    - Sets body font-size to 12pt and line-height to 1.6
+    - Makes the article container full-width (max-width: 100%, no padding/margin)
+    - Collapses the content+TOC grid into a single full-width column via `.article-grid { display: block }` and `.article-content { width: 100% }`
+    - Adds `page-break-before: always` on article h2 headings
+    - Avoids breaking inside p, li, blockquote, pre, img, table, figure
+    - Keeps headings with following content (page-break-after: avoid)
+  * Added `no-print` class to: back button, views count span, dynamic "min remaining" badge, tags row, premium author footer card, TOC sidebar `<aside>`, related articles section, final CTA section
+  * Added `article-grid` class to the content+TOC grid container and `article-content` class to the main content column div (so the print stylesheet can collapse them to single column)
+- Created src/app/not-found.tsx (premium 404 page):
+  * `'use client'` directive (needed for useRouter, useNav, useT, useLang, framer-motion)
+  * Full-screen layout: `min-h-screen flex-1 flex flex-col items-center justify-center` with `bg-radial-fade` + `bg-grid` background layers and 3 floating gradient blobs (animate-float with staggered delays: 0s, 1.5s, 3s)
+  * Decorative Compass badge (size-16, rounded-2xl, border, shadow-soft) with slow spin animation (`animate-[spin_8s_linear_infinite]`), spring entrance (scale 0.5→1, rotate -45deg→0)
+  * Huge "404" number with `text-gradient` (responsive: text-[7rem] sm:text-[11rem] md:text-[14rem] lg:text-[16rem], font-black, tracking-tighter), spring entrance (scale 0.3→1, y 40→0), and subtle floating animation (y: [0, -10, 0] infinite 4s). Has a blurred gradient glow behind it.
+  * Decorative floating MapPin icon (accent color) positioned near the 404, with y+rotate float animation
+  * Message heading (text-2xl/3xl font-bold) from `t('error.404Title')` and description (text-muted-foreground) from `t('error.404Desc')`
+  * CTA buttons: "Back to Home" (gradient button bg-gradient-to-r from-primary to-accent, shadow-soft hover:shadow-glow, Home icon, → setView('home') + router.push('/')) and "Browse Portfolio" (outline button border-primary/30, ArrowRight icon with rtl-flip in Persian, → setView('portfolio') + router.push('/'))
+  * Suggested links section: 4-card grid (grid-cols-2 sm:grid-cols-4) with Portfolio (FolderKanban), Blog (BookOpen), Case Studies (FileText), Contact (Mail) — each card has icon in primary/10 circle (group-hover fills with primary), label from existing `nav.*` i18n keys, staggered spring entrance (delay 0.9 + i*0.08), whileHover y:-4 lift, whileTap scale:0.97
+  * RTL-aware: Home icon margin swaps (mr-1.5 → ml-1.5 in fa), ArrowRight gets rtl-flip in Persian
+  * Dark mode supported via design tokens (bg-card, border-border, text-muted-foreground, bg-primary/10, etc.)
+- Ran `bun run lint` — 0 errors, 0 warnings
+- Ran `bunx tsc --noEmit` — 0 errors in modified/created files (pre-existing errors in unrelated files untouched)
+- Verified via curl: `GET /nonexistent-route-xyz` returns 404 status with page content containing "404", "Page not found", "Back to Home", "Browse Portfolio", "Suggested pages" — all rendering correctly
+- Dev server compiles cleanly (`✓ Compiled`) with no errors after edits
+
+Stage Summary:
+- Files modified: src/lib/i18n.ts (+6 en keys, +6 fa keys), src/components/views/blog-detail-view.tsx (Printer import, Print button in ShareButtons, print stylesheet `<style>` block, no-print/article-grid/article-content classes on appropriate elements)
+- File created: src/app/not-found.tsx (premium 404 page, ~165 lines, 'use client', framer-motion animations, bilingual, RTL-aware, dark mode)
+- Blog detail now has a "Print / Save as PDF" button that triggers `window.print()`, and a comprehensive `@media print` stylesheet that strips all page chrome (navbar, footer, sidebar TOC, share buttons, back button, related articles, CTA, cookie banner, back-to-top, reading progress, mobile TOC button) and renders only the article title, meta (author, date, reading time), cover image, and content with 12pt/1.6 typography, black-on-white colors, full-width layout, page breaks before h2 headings, and 2cm @page margins — ideal for both printing and "Save as PDF" browser functionality
+- 404 page is premium: huge animated gradient "404", floating gradient blobs, decorative Compass (spinning) + MapPin (floating) icons, spring entrance animations, staggered suggested-links grid, gradient CTA button, full bilingual (en/fa) with RTL support, dark mode ready
+- All features work in both English (LTR) and Persian (RTL) modes; lint clean; TypeScript clean; dev server compiles successfully
+
+---
+Task ID: 15
+Agent: Main (orchestrator) — cron review round
+Task: QA testing, home process animated timeline, blog print/PDF, custom 404 page
+
+Work Log:
+- QA tested all views: dark mode, mobile (375px), desktop (1280px) — all clean, no errors
+- Dispatched 2 parallel subagents:
+  * 15-a: Enhanced home Development Process section with animated timeline
+    - Desktop: horizontal zigzag timeline with 7 steps alternating above/below a gradient line
+    - Mobile: vertical timeline with line on left (LTR) / right (RTL)
+    - Animated progress line: motion.div with scaleX/scaleY 0→1 when scrolled into view (useInView)
+    - Numbered nodes: gradient circles (01-07) with pulsing ring (animate-ping) + spring pop-in
+    - Step cards: icon in gradient circle, title, description, hover lift + gradient top-border + glow
+    - Staggered entrance via Reveal with delay
+    - RTL-aware: line origin mirrored, positions swapped
+    - CTA preserved: "Ready to start?" banner at end
+  * 15-b: Added blog print/PDF + custom 404 not-found page
+    - Blog print: Printer icon button in share section, window.print() on click, @media print stylesheet (hides chrome, black-on-white, 12pt, page breaks before h2, full-width content, @page margin 2cm)
+    - 404 page: full-screen with bg-radial-fade + bg-grid + floating blobs, huge "404" with text-gradient + spring entrance + floating animation, Compass badge with slow spin, "Page not found" heading, "Back to Home" + "Browse Portfolio" buttons, 4 suggested pages grid (Portfolio/Blog/Case Studies/Contact), bilingual with 6 new i18n keys (error.404Title, error.404Desc, error.backHome, error.browseWork, error.suggested, blogDetail.print)
+- Verified process timeline: all 7 steps present (Discovery, Planning, UI/UX Design, Development, Testing, Launch, Support), "Ready to start?" CTA works
+- Verified 404 page: shows 404 heading, Page not found, Back to Home + Browse Portfolio buttons, returns proper 404 status code
+- Verified blog print button: "Print / Save as PDF" button present in share section
+- Verified all features work in Persian RTL mode (no console errors)
+- Lint passes with 0 errors; all endpoints return correct status codes (200 for home/sitemap, 404 for not-found)
+
+Stage Summary:
+- Home process section transformed from static grid to animated zigzag timeline with drawing line, pulsing nodes, and staggered cards
+- Blog posts now have print/PDF support with proper print stylesheet
+- Custom 404 page with premium design, navigation options, and suggested pages
+- All features work in both English (LTR) and Persian (RTL) modes
+- Platform continues to be stable and increasingly premium

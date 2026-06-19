@@ -203,6 +203,7 @@ const en: Dict = {
   'blogDetail.startProject': 'Start your project',
   'blogDetail.notFound': 'Article not found.',
   'blogDetail.views': 'views',
+  'blogDetail.print': 'Print / Save as PDF',
 
   // ---------- Case Studies ----------
   'caseStudies.eyebrow': 'Case Studies',
@@ -481,6 +482,13 @@ const en: Dict = {
   'trust.ndaDesc': 'Your ideas stay confidential. Always.',
   'trust.delivery': 'On-time Delivery',
   'trust.deliveryDesc': 'We ship when we say we will. Period.',
+
+  // ---------- Error pages (404) ----------
+  'error.404Title': 'Page not found',
+  'error.404Desc': "The page you're looking for doesn't exist or has been moved.",
+  'error.backHome': 'Back to Home',
+  'error.browseWork': 'Browse Portfolio',
+  'error.suggested': 'Suggested pages',
 }
 
 const fa: Dict = {
@@ -676,6 +684,7 @@ const fa: Dict = {
   'blogDetail.startProject': 'شروع پروژه شما',
   'blogDetail.notFound': 'مقاله یافت نشد.',
   'blogDetail.views': 'بازدید',
+  'blogDetail.print': 'چاپ / ذخیره به‌عنوان PDF',
 
   // ---------- مطالعات موردی ----------
   'caseStudies.eyebrow': 'مطالعات موردی',
@@ -952,6 +961,13 @@ const fa: Dict = {
   'trust.ndaDesc': 'ایده‌های شما محرمانه می‌مانند. همیشه.',
   'trust.delivery': 'تحویل به‌موقع',
   'trust.deliveryDesc': 'وقتی می‌گوییم تحویل می‌دهیم. به همین سادگی.',
+
+  // ---------- صفحات خطا (۴۰۴) ----------
+  'error.404Title': 'صفحه یافت نشد',
+  'error.404Desc': 'صفحه‌ای که به دنبال آن هستید وجود ندارد یا جابه‌جا شده است.',
+  'error.backHome': 'بازگشت به خانه',
+  'error.browseWork': 'مرور نمونه‌کارها',
+  'error.suggested': 'صفحات پیشنهادی',
 }
 
 export const dictionaries: Record<Lang, Dict> = { en, fa }

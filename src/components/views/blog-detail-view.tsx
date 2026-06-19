@@ -20,6 +20,7 @@ import {
   FileText,
   AlertCircle,
   List,
+  Printer,
   type LucideIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -241,7 +242,7 @@ function ShareButtons({ title }: { title: string }) {
   ]
 
   return (
-    <div className="flex flex-col gap-3" aria-label={t('blogDetail.share')}>
+    <div className="no-print flex flex-col gap-3" aria-label={t('blogDetail.share')}>
       <div className="flex items-center justify-between gap-3">
         <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
           <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-primary">
@@ -292,6 +293,36 @@ function ShareButtons({ title }: { title: string }) {
             />
           </button>
         ))}
+        {/* Print / Save as PDF button — triggers the browser print dialog.
+            The companion @media print stylesheet strips page chrome so the
+            printed (or exported PDF) output contains only the article. */}
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined') window.print()
+          }}
+          aria-label={t('blogDetail.print')}
+          title={t('blogDetail.print')}
+          className={cn(
+            'group relative grid size-11 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all duration-300',
+            'hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary/10 hover:text-primary hover:shadow-soft',
+          )}
+        >
+          <motion.span
+            initial={false}
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+            className="grid place-items-center"
+          >
+            <Printer className="h-[18px] w-[18px]" />
+          </motion.span>
+          {/* sheen on hover */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-white/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          />
+        </button>
         <button
           type="button"
           onClick={onCopy}
@@ -674,6 +705,58 @@ export function BlogDetailView() {
 
   return (
     <>
+      {/* Print stylesheet — strips page chrome (navbar, footer, sidebar TOC,
+          share buttons, back button, related articles, CTA, cookie banner,
+          back-to-top) and renders only the article title, meta, cover image,
+          and content. Adds page breaks before h2 headings and uses 2cm
+          @page margins for proper print/PDF output. */}
+      <style>{`
+        @media print {
+          @page { margin: 2cm; }
+          /* Hide page chrome + any fixed-position UI (progress bars, back-to-top,
+             cookie banner, mobile TOC button) + elements explicitly marked. */
+          header, footer, .no-print, .fixed { display: none !important; }
+          /* Reset colors and visual effects for print */
+          * {
+            background: transparent !important;
+            color: #000 !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+            border-color: #ccc !important;
+          }
+          html, body { background: #fff !important; }
+          /* Print-friendly typography */
+          body {
+            font-size: 12pt !important;
+            line-height: 1.6 !important;
+          }
+          /* Full-width article container */
+          article {
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          /* Collapse the content + TOC grid into a single full-width column */
+          .article-grid { display: block !important; }
+          .article-content { width: 100% !important; max-width: 100% !important; }
+          /* Page breaks before each h2 heading */
+          article h2 {
+            page-break-before: always;
+            break-before: page;
+          }
+          /* Avoid breaking inside these elements */
+          p, li, blockquote, pre, img, table, figure {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          /* Keep headings with their following content */
+          h1, h2, h3, h4, h5, h6 {
+            page-break-after: avoid;
+            break-after: avoid;
+          }
+        }
+      `}</style>
+
       {/* reading progress */}
       <motion.div
         style={{ scaleX }}
@@ -687,7 +770,7 @@ export function BlogDetailView() {
           <button
             type="button"
             onClick={handleBack}
-            className="group mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="no-print group mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className={cn('h-4 w-4 transition-transform group-hover:-translate-x-0.5', lang === 'fa' && 'rtl-flip group-hover:translate-x-0.5')} />
             {t('blogDetail.back')}
@@ -727,12 +810,12 @@ export function BlogDetailView() {
                       <Clock className="h-3 w-3" />
                       <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
                     </span>
-                    <span className="inline-flex items-center gap-1.5">
+                    <span className="no-print inline-flex items-center gap-1.5">
                       <FileText className="h-3 w-3" />
                       <span className="ltr-num">{item.views}</span> {t('blogDetail.views')}
                     </span>
                     {/* Dynamic reading time remaining badge */}
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    <span className="no-print inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                       <Clock className="h-3 w-3" />
                       {isFinished ? (
                         <motion.span
@@ -778,16 +861,16 @@ export function BlogDetailView() {
         </Reveal>
 
         {/* content + TOC */}
-        <div className="mt-12 grid gap-10 lg:grid-cols-3 lg:gap-12">
+        <div className="article-grid mt-12 grid gap-10 lg:grid-cols-3 lg:gap-12">
           {/* main content */}
-          <div className="lg:col-span-2">
+          <div className="article-content lg:col-span-2">
             <div className="space-y-6">
               <ReactMarkdown components={markdownComponents}>{item.content}</ReactMarkdown>
             </div>
 
             {/* tags */}
             {item.tags && item.tags.length > 0 && (
-              <div className="mt-10 flex flex-wrap items-center gap-2 border-t border-border/60 pt-6">
+              <div className="no-print mt-10 flex flex-wrap items-center gap-2 border-t border-border/60 pt-6">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   {t('blog.tags')}
                 </span>
@@ -803,7 +886,7 @@ export function BlogDetailView() {
             )}
 
             {/* Premium author card */}
-            <div className="relative mt-12 overflow-hidden rounded-3xl border border-border/60 p-6 shadow-soft sm:p-8">
+            <div className="no-print relative mt-12 overflow-hidden rounded-3xl border border-border/60 p-6 shadow-soft sm:p-8">
               {/* Decorative gradient mesh background */}
               <div
                 className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent"
@@ -904,7 +987,7 @@ export function BlogDetailView() {
           </div>
 
           {/* sticky TOC */}
-          <aside className="lg:col-span-1">
+          <aside className="no-print lg:col-span-1">
             <div className="lg:sticky lg:top-24">
               <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft">
                 <TableOfContents items={toc} activeId={activeTocId} />
@@ -936,7 +1019,7 @@ export function BlogDetailView() {
 
         {/* related articles */}
         {related.length > 0 && (
-          <section className="mt-20">
+          <section className="no-print mt-20">
             <SectionHeading
               align="left"
               eyebrow="Keep reading"
@@ -969,7 +1052,7 @@ export function BlogDetailView() {
         )}
 
         {/* final CTA */}
-        <section className="mt-20">
+        <section className="no-print mt-20">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-accent px-6 py-14 text-center text-primary-foreground shadow-soft md:px-12 md:py-16">
             <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
             <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" aria-hidden />

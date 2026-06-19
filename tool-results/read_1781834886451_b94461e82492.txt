@@ -1,0 +1,302 @@
+   614→---
+   615→Task ID: 9-b
+   616→Agent: full-stack-developer (portfolio listing + blog features)
+   617→Task: Apply premium styling enhancements to the Portfolio listing view and add a real-time "reading time remaining" indicator to the Blog detail view (no functional/translation/structure changes).
+   618→Work Log:
+   619→- Read worklog.md + both target views; confirmed design tokens (bg-radial-fade, bg-grid, shadow-soft, shadow-glow, text-gradient, ltr-num, rtl-flip, shimmer keyframe) in globals.css.
+   620→- portfolio-view.tsx: added AnimatedCounter (RAF eased number animation) for the "Showing X projects" result count.
+   621→- Hero: kept bg-radial-fade + bg-grid, added a radial mask-image so the grid fades at the edges, plus a soft blurred primary glow.
+   622→- Filter bar: IntersectionObserver sentinel flips a `stuck` state; when stuck the bar gets a gradient background + shadow-soft, otherwise it stays light.
+   623→- Search input: tracked searchFocused to apply ring-2 ring-primary/20 glow on focus and animate the Search icon (scale-110 + text-primary).
+   624→- FilterChip: converted to motion.button with per-group layoutId (filter-chip-cat / filter-chip-tech) so the active background slides smoothly; active state uses a gradient bg.
+   625→- Sort select: SelectTrigger styled with from-primary/10 to-accent/10 gradient + hover intensification.
+   626→- Portfolio cards: cover zoom up to group-hover:scale-110; added hover-only dark gradient overlay (from-black/80 via-black/20 to-transparent); centered "Quick preview" pill that fades+lifts in; "View Project" button bar sliding up from the cover bottom; gradient border ring (-inset-px) fading in on hover; subtle shimmer sweep across the border on hover; tech-badge colored dots scale on hover (group-hover/tech:scale-150).
+   627→- Result count row with AnimatedCounter + fading divider above the grid.
+   628→- Empty state: enlarged icon container (size-20) with gradient bg + ring, text-gradient title, blurred backdrop glow.
+   629→- Skeletons: added moving shimmer sweep overlay (animate-[shimmer_1.8s...]) over a gradient-tinted cover skeleton.
+   630→- Bottom CTA: converted to full-width gradient band (bg-gradient-to-r from-primary to-accent) with bg-grid overlay + two blurred white glow blobs; text in text-primary-foreground.
+   631→- blog-detail-view.tsx: added useMotionValueEvent to framer-motion import; added `remaining` + `prevReadingTime` state, reset via the React "adjust state during render" pattern (satisfies react-hooks/refs and react-hooks/set-state-in-effect); subscribed to existing scrollYProgress with useMotionValueEvent('change', …) computing Math.max(0, Math.ceil(readingTime * (1 - latest))).
+   632→- Added a new badge in the article meta row (after views): bg-primary/10 pill with Clock icon showing "X min remaining" while reading and "Finished reading" when remaining === 0; numeric minutes wrapped in <span className="ltr-num"> for Persian RTL; each value change re-mounts a keyed motion.span with a subtle opacity/y enter transition.
+   633→- Fixed two initial lint errors: removed setState-directly-in-effect in AnimatedCounter (now drives updates via the RAF tick callback) and replaced the ref-based article-change reset with the state-based render-time pattern.
+   634→- Ran `bun run lint` → 0 errors / 0 warnings; dev server compiles cleanly and all routes return 200.
+   635→Stage Summary:
+   636→- Portfolio listing now feels significantly more premium: masked grid hero, sticky filter bar with stuck-state shadow, focus-glow search, animated sliding gradient filter chips, gradient sort trigger, hover-rich project cards (gradient overlay, quick-preview pill, slide-up CTA, gradient ring, shimmer sweep, scaling tech dots), animated result counter, shimmer skeletons, gradient empty state, and a full-width gradient CTA band.
+   637→- Blog detail gained a real-time "X min remaining" reading indicator that derives from the existing scrollYProgress, transitions subtly on each change, switches to "Finished reading" at the end, respects Persian number direction, and resets when switching articles — all without touching existing functionality, translations, or structure.
+   638→
+   639→---
+   640→Task ID: 9
+   641→Agent: Main (orchestrator) — cron review round
+   642→Task: QA testing (mobile + desktop), styling enhancements (contact, estimate, portfolio listing), blog reading time feature
+   643→
+   644→Work Log:
+   645→- QA tested mobile (375px) and desktop (1280px) responsiveness across Home, Portfolio, Estimate wizard — all responsive, no overflow
+   646→- Tested mobile menu, mobile portfolio cards, mobile estimate wizard flow — all working
+   647→- Dispatched 2 parallel subagents:
+   648→  * 9-a: Enhanced ContactView + EstimateView styling
+   649→    - Contact: hero bg-radial-fade + grid, decorative gradient card behind contact details, enlarged icon circles with gradient hover, vertical gradient connector for "what happens next" steps, gradient form card top border, confetti animation on success state (12 motion dots + spring checkmark)
+   650→    - Estimate: gradient progress bar with glowing pulse, gradient step indicator pill, radio cards with gradient selected state, Yes/No distinct colors (accent vs rose), HUGE gradient cost number with float animation, premium receipt-style breakdown, celebration confetti on saved state
+   651→  * 9-b: Enhanced PortfolioView + added blog reading time remaining
+   652→    - Portfolio: hero bg-radial-fade, sticky filter bar with stuck state, search focus glow, animated filter chips (framer-motion layoutId), card hover dark gradient overlay + "Quick preview" pill + "View Project" slide-up button + shimmer border, animated result counter, premium empty state, shimmer skeletons, gradient bottom CTA
+   653→    - Blog detail: added real-time "X min remaining" indicator that updates on scroll using useMotionValueEvent on existing scrollYProgress, switches to "Finished reading" at end, ltr-num wrapped for Persian
+   654→- Verified all enhancements work in English (LTR) and Persian (RTL) modes
+   655→- Lint passes with 0 errors; all endpoints return 200
+   656→
+   657→Stage Summary:
+   658→- 2 views significantly enhanced with premium styling (Contact, Estimate)
+   659→- Portfolio listing cards enhanced with hover quick-preview, animated counters, shimmer effects
+   660→- Blog detail gained a real-time reading time remaining indicator
+   661→- All features bilingual (en/fa) with RTL support
+   662→- Platform continues to be stable and increasingly premium
+   663→
+   664→---
+   665→Task ID: 10-a
+   666→Agent: full-stack-developer (testimonials + FAQ)
+   667→Task: Enhance the TestimonialsSlider and FAQ section styling in home-view.tsx for a more premium, animated, on-brand presentation (blue/teal gradient language, radial-fade + grid backgrounds, floating accent blobs, gradient borders, framer-motion transitions).
+   668→Work Log:
+   669→- Read worklog.md, globals.css and the existing home-view.tsx to understand design tokens (bg-radial-fade, bg-grid, shadow-soft, shadow-glow, animate-float, text-gradient) and the current TestimonialsSlider + FAQ implementation.
+   670→- Extended lucide-react imports with ChevronLeft, ChevronRight, HelpCircle, MessageCircleQuestion; added AnimatePresence to the framer-motion import.
+   671→- Rewrote TestimonialsSlider:
+   672→  * Section now has bg-radial-fade + faint bg-grid ambient background.
+   673→  * Card uses rounded-3xl, larger padding (p-8 / sm:p-14), gradient hover border overlay, floating accent blobs (primary + teal) with animate-float, large decorative Quote icon at opacity-5.
+   674→  * Star rating now renders 5 stars with per-star motion scale-in animation; unfilled stars are tinted muted.
+   675→  * Slide transition uses AnimatePresence mode="wait" with x-translate + fade (RTL-aware direction).
+   676→  * Larger avatar (h-14 w-14) with ring-2 ring-accent/20 + ring-offset-2; gradient-initials fallback preserved.
+   677→  * Role and company separated by a small dot, company emphasized.
+   678→  * Pagination dots now have gradient fill on active state and an animated progress fill (layoutId) as a visual autoplay indicator.
+   679→  * Navigation replaced text buttons with circular ChevronLeft/ChevronRight buttons that fill with a primary->accent gradient + shadow-glow on hover (RTL-aware).
+   680→  * "See more work" CTA upgraded to a gradient pill button (primary->accent) with shadow-glow.
+   681→- Rewrote FAQ section:
+   682→  * Replaced bg-muted/30 with bg-radial-fade + faint bg-grid; added two decorative floating HelpCircle icons (primary/teal, animate-float with staggered delay).
+   683→  * Accordion items upgraded to rounded-2xl with hover lift (-translate-y-0.5) + shadow-soft on hover; open state has gradient tint (from-primary/[0.04] -> to-accent/[0.04]) and an animated gradient left-border (scale-y from primary to accent).
+   684→  * Each question gets a gradient-tinted HelpCircle badge that fills with primary->accent gradient when the item is open.
+   685→  * AccordionContent indented (pl-12) to align with the question text.
+   686→  * "Still have questions?" CTA replaced link button with a prominent gradient pill button (primary->accent, h-12, shadow-glow) featuring a MessageCircleQuestion icon.
+   687→- Preserved all existing logic: slider active state, prev/next navigation, accordion open/close, i18n keys (no new keys added), RTL handling.
+   688→- Ran `bun run lint` (exit 0, no errors) and verified dev.log shows successful compilation with no warnings.
+   689→Stage Summary:
+   690→- TestimonialsSlider and FAQ sections visually upgraded to premium Stripe/Linear-grade presentation.
+   691→- All enhancements use existing design tokens (bg-radial-fade, bg-grid, shadow-glow, animate-float, gradient utilities) and `cn()` for conditional classes.
+   692→- Framer Motion animations added (AnimatePresence slide+fade transitions, animated star fills, progress-bar dot).
+   693→- RTL support preserved and extended to new iconography and animations.
+   694→- Lint clean; no translation logic or component structure changed; no new i18n keys introduced.
+   695→
+   696→---
+   697→Task ID: 10-b
+   698→Agent: full-stack-developer (gallery keyboard nav)
+   699→Task: Add keyboard navigation (ArrowLeft/Right), prev/next circular buttons, image counter badge, and framer-motion fade+slide transitions to the portfolio detail gallery lightbox — all with RTL (Persian) awareness.
+   700→Work Log:
+   701→- Read worklog.md and portfolio-detail-view.tsx to understand the existing GallerySection component and design system (color/blue accent, rtl-flip, ltr-num conventions).
+   702→- Verified `useLang` API in src/lib/lang-store.ts — `lang` is `'en' | 'fa'`, persists via zustand.
+   703→- Added imports: `useEffect` from react, `AnimatePresence` from framer-motion, `ChevronLeft` / `ChevronRight` from lucide-react.
+   704→- Rewrote `GallerySection`:
+   705→  * Changed `active` state from `string | null` (URL) to `number | null` (image index) so we can navigate the array; added a `direction` state (+1 / -1) to drive the slide animation direction.
+   706→  * Added `goPrev` / `goNext` helpers that clamp at the bounds and set the direction.
+   707→  * Added a `useEffect` keyboard listener (mounted only while lightbox open) that maps ArrowLeft/Right to prev/next, mirrored when `lang === 'fa'` (RTL). Escape is still handled natively by the Radix Dialog.
+   708→  * Two absolutely-positioned circular buttons (size-11) inside the lightbox: semi-transparent black/40 + backdrop-blur, hover gradient (from-white/25 to-white/5) with brighter border. Disabled at first/last image with reduced opacity and reset hover. In RTL the icons swap sides: ChevronLeft sits on the right and triggers next, ChevronRight sits on the left and triggers prev. `e.stopPropagation()` prevents the click from reaching the dialog overlay.
+   709→  * Image swapped to `motion.img` wrapped in `<AnimatePresence mode="wait" custom={direction}>` with `enter/center/exit` variants — fade (opacity 0→1→0) plus a 40px horizontal slide whose direction matches navigation. `key={active}` ensures AnimatePresence re-mounts per image.
+   710→  * Added a bottom-center counter badge ("1 / 3") with `ltr-num` on both numbers so Persian digits still render LTR, only shown when total > 1.
+   711→- Preserved all existing functionality: gallery grid, hover overlay, click-outside / backdrop close, sr-only DialogTitle/Description, mobile/touch sizing (44px button targets).
+   712→- Ran `bun run lint` — clean (no errors / no warnings). Confirmed dev.log shows healthy compiles.
+   713→Stage Summary:
+   714→- Lightbox now supports full keyboard, button, and swipe-equivalent navigation with smooth directional transitions.
+   715→- RTL (Persian) users get mirrored arrow keys and swapped button positions, so ChevronLeft always points toward "previous content" visually.
+   716→- Image counter keeps users oriented in multi-image galleries.
+   717→- No new i18n keys, no changes to data fetching or translation logic, no new files, no test files — single-file enhancement to `src/components/views/portfolio-detail-view.tsx`.
+   718→
+   719→---
+   720→Task ID: 10
+   721→Agent: Main (orchestrator) — cron review round
+   722→Task: QA testing (admin panel), styling enhancements (testimonials, FAQ), gallery keyboard navigation
+   723→
+   724→Work Log:
+   725→- QA tested admin panel: login, all 15 resources, newsletter subscribers visible, create portfolio dialog with all form fields
+   726→- QA tested testimonials slider: Previous/Next navigation works, no errors
+   727→- QA tested FAQ accordion: opens/closes correctly
+   728→- Dispatched 2 parallel subagents:
+   729→  * 10-a: Enhanced TestimonialsSlider + FAQ in home-view.tsx
+   730→    - Testimonials: bg-radial-fade + bg-grid, premium card with gradient hover border + floating accent blobs, large decorative Quote icon (opacity-5), animated star rating (per-star scale-in), AnimatePresence slide transitions, larger avatar with ring-2 ring-accent/20, gradient pagination dots with layoutId progress, circular ChevronLeft/Right nav buttons with gradient hover, gradient "See more work" pill button
+   731→    - FAQ: bg-radial-fade + bg-grid, decorative floating HelpCircle icons, premium accordion items with hover lift + gradient tint on open, gradient HelpCircle icon badge per question, animated gradient left-border on open, gradient "Talk to our team" pill CTA
+   732→  * 10-b: Added keyboard navigation to portfolio detail gallery lightbox
+   733→    - Index-based tracking (active state changed from URL string to number index)
+   734→    - Keyboard: ArrowLeft/ArrowRight with RTL awareness (mirrored in fa mode), Escape native
+   735→    - Prev/Next circular buttons (size-11, bg-black/40 backdrop-blur, hover gradient), disabled at first/last
+   736→    - Image counter badge "1 / 3" with ltr-num at bottom center
+   737→    - AnimatePresence fade + 40px directional slide transitions
+   738→    - RTL: icons swap sides (ChevronLeft on right for "next")
+   739→- Verified gallery keyboard nav in English (LTR): ArrowLeft=prev, ArrowRight=next
+   740→- Verified gallery keyboard nav in Persian (RTL): ArrowLeft=next, ArrowRight=prev (correctly mirrored)
+   741→- Lint passes with 0 errors; all endpoints return 200
+   742→
+   743→Stage Summary:
+   744→- Testimonials slider significantly enhanced with premium card, animated stars, gradient nav, slide transitions
+   745→- FAQ section polished with gradient icons, hover lift, animated borders, gradient CTA
+   746→- Portfolio gallery lightbox now has full keyboard navigation + prev/next buttons + image counter + smooth transitions
+   747→- All features bilingual (en/fa) with RTL-aware keyboard navigation
+   748→- Platform continues to be stable and increasingly premium
+   749→
+   750→---
+   751→Task ID: 11-a
+   752→Agent: full-stack-developer (admin dashboard stats)
+   753→Task: Add a dashboard overview screen as the default landing view inside the Admin panel, showing platform stat cards, recent contact-request + lead activity, and quick-action shortcuts — without breaking existing resource CRUD tables.
+   754→
+   755→Work Log:
+   756→- Read worklog.md to understand the project architecture and reviewed the full admin-view.tsx (1389 lines pre-change) to understand the existing ModelKey type, MODEL_CONFIGS, MODEL_ORDER, useAdminFetch/useAdminMutations hooks, LoginCard, DynamicForm, RecordTable, EditDialog/ViewDialog/DeleteDialog and Dashboard components.
+   757→- Verified design tokens exist in globals.css (shadow-soft, shadow-glow, text-gradient) and that `cn` from @/lib/utils was NOT yet imported in admin-view.
+   758→- Added new lucide-react imports (BookOpen, Megaphone, ArrowRight, TrendingUp) and the `cn` import from @/lib/utils.
+   759→- Introduced a new `ActiveView = ModelKey | 'dashboard'` type so the dashboard can be a peer of the resource models without polluting ModelKey (which is used as a typed API query parameter).
+   760→- Refactored the Dashboard component:
+   761→  * Changed `active` state from `useState<ModelKey>('portfolio')` to `useState<ActiveView>('dashboard')` so the admin lands on the dashboard instead of the Portfolios table after login.
+   762→  * Added `activeModel: ModelKey = active === 'dashboard' ? 'portfolio' : active` defensive fallback so the always-mounted EditDialog/ViewDialog/DeleteDialog receive a valid `ModelKey` even when the dashboard is the active view (the dialogs stay closed because their record state is null).
+   763→  * Added two new helpers wired to the dashboard's quick actions: `handleQuickNavigate(m)` (set active + close sidebar) and `handleQuickNew(m)` (set active + close sidebar + set editRecord={} + open EditDialog). Because React batches state updates and the dialog only renders its form once `open=true`, by the time EditDialog paints, `active` is the target model and the correct MODEL_CONFIGS entry is used.
+   764→  * Sidebar now has an "Overview" section above "Resources" containing a Dashboard button (LayoutDashboard icon) that sets active back to 'dashboard'. The button uses the same active styling as resource items (bg-primary + text-primary-foreground + shadow-xs) when active==='dashboard'. Migrated the sidebar buttons' template literals to `cn()` for consistency with the new section.
+   765→  * Main content area now conditionally renders `<DashboardOverview .../>` when `active === 'dashboard'` and the existing `<RecordTable model={active} .../>` otherwise (TS narrows `active` to ModelKey in the else branch).
+   766→  * Updated the three dialog components to receive `model={activeModel}` instead of `model={active}` for type-safety.
+   767→- Built the new `DashboardOverview` component (plus supporting `StatCard`, `ActivityRow`, `ActivityColumn`, `contactStatusBadge`, `leadStatusBadge`, `getInitials` helpers and `DashboardStats`/`StatCardConfig` interfaces) inserted right above the Dashboard component:
+   768→  * Data fetching: a single `useQuery({ queryKey: ['admin', 'dashboard-stats'], ... })` that fires `Promise.all` of six parallel `fetch('/api/admin?model=...')` requests (portfolio, blogPost, contactRequest, lead, newsletter, caseStudy) using the admin token header. Each response is unwrapped to `json.items ?? []` and reshaped into a `DashboardStats` object where contactRequests and leads are kept as arrays (so we can render the recent-activity lists from the same payload — no extra requests). `staleTime: 30_000` and `enabled: !!token` match the existing `useAdminFetch` pattern. Loading skeletons and an error banner with Retry button are wired in.
+   769→  * Welcome header: rounded-2xl gradient card (`from-primary/[0.04] via-background to-accent/[0.04]`) with two blurred accent blobs, an "Admin Dashboard" pill (LayoutDashboard icon), a `Welcome back, Studio` headline using `text-gradient`, an intro paragraph, and a "Refresh stats" button bound to `refetch()` with a spinning RefreshCw while fetching.
+   770→  * Stat cards row: 6 cards in a responsive grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6`) so the layout stays perfectly tiled at every breakpoint (6 cards → 1×6 on xl, 2×3 on lg, 3×2 on sm). Each `StatCard` is a `<button>` with: colored icon circle (primary/accent/rose/amber/violet/emerald), TrendingUp glyph in the top-right corner (muted → accent on hover), big bold count (3xl), uppercase muted label, subtle gradient wash on hover (per-card from/to tokens), shadow-soft → hover:-translate-y-1 + hover:border-primary/40 + hover:shadow-glow. Loading state shows a Skeleton block instead of the number. Clicking a card navigates to the corresponding resource via `onNavigate(model)`.
+   771→  * Quick actions: rounded-2xl card with 4 pill buttons (New Portfolio = primary default, New Blog Post / View Contact Requests / View Leads = outline) — outline buttons get an ArrowRight suffix for affordance. "New" actions call `onNewRecord(model)` (which opens the create dialog for that model); "View" actions call `onNavigate(model)`.
+   772→  * Recent activity: two-column grid (`lg:grid-cols-2`) of `ActivityColumn` cards. Each card has a header with colored icon, title, "Most recent 5 entries" caption, and a "See all" ghost button (ArrowRight suffix) that navigates to the full resource table. The body lists up to 5 `ActivityRow` entries — each with a gradient initials avatar, name + email (truncated), and a right-aligned status badge + formatted date. Contact-request statuses use contactStatusBadge (New/Read/Replied/Archived → primary/amber/accent/muted); lead statuses use leadStatusBadge (New/Contacted/Qualified/Won/Lost → primary/amber/accent/emerald/rose). Loading state shows 3 skeleton rows; empty state shows a dashed-border placeholder.
+   773→  * Recent lists are computed with `React.useMemo` from `data.contactRequests` / `data.leads`, sorted by `createdAt` descending and sliced to 5 — robust against missing createdAt.
+   774→- Ran `cd /home/z/my-project && bun run lint 2>&1 | tail -15` — zero errors, zero warnings. dev.log shows healthy compiles (`✓ Compiled in ...`) with no warnings introduced.
+   775→
+   776→Stage Summary:
+   777→- File modified: `src/components/views/admin-view.tsx` (single file, ~490 lines added; total now ~1880 lines).
+   778→- Admin panel now lands on a premium dashboard overview after login instead of the Portfolios table; a "Dashboard" item was added to the top of the sidebar (under a new "Overview" heading) so users can return to it at any time.
+   779→- Dashboard shows: 6 stat cards (Portfolios, Blog Posts, Contact Requests, Leads, Newsletter, Case Studies) in a responsive 1/2/3/6 grid with gradient hover washes + hover lift + colored icon circles; quick-action pill buttons (New Portfolio, New Blog Post, View Contact Requests, View Leads); and a two-column recent-activity section (top-5 contact requests + top-5 leads, sorted by date desc) with gradient avatars, status badges, and "See all" links to the corresponding resource table.
+   780→- All counts are fetched in a single `Promise.all` of six parallel admin GET requests under the TanStack Query key `['admin', 'dashboard-stats']`, reusing the existing `/api/admin?model=...` endpoint and the admin token header — no API changes needed. The contact-request and lead arrays are kept client-side so the recent-activity lists reuse the same payload.
+   781→- Existing functionality preserved: sidebar navigation, record tables, search/refresh, create/edit/view/delete dialogs, login gate, mobile sheet behavior, dark-mode tokens. The new `ActiveView` type and `activeModel` fallback ensure the always-mounted dialogs stay type-safe and inert while the dashboard is the active view.
+   782→- Lint clean; dev.log shows successful compiles. No other files modified; no new i18n keys (admin is intentionally English-only, per task spec).
+   783→
+   784→---
+   785→Task ID: 11-b
+   786→Agent: full-stack-developer (About + Case Studies)
+   787→Task: Apply premium styling enhancements to AboutView and CaseStudiesView without changing functionality, translations, or component structure.
+   788→
+   789→Work Log:
+   790→- Read worklog.md, both target views, globals.css (text-gradient, bg-grid, bg-radial-fade, shadow-soft, shadow-glow, animate-float, shimmer keyframe), the Card/Badge/Counter components, and the portfolio-view hover pattern reference (-inset-px gradient ring + shimmer sweep + slide-up CTA).
+   791→- Enhanced `src/components/views/about-view.tsx`:
+   792→  * STATS array: added per-stat `icon` (TrendingUp / Award / Heart / Users — all already imported).
+   793→  * Stats band: each stat now lives in its own rounded-2xl card with `border-secondary-foreground/10` + `bg-secondary-foreground/[0.04]`, hover lift (-translate-y-1) + shadow-glow + brighter border/bg; gradient icon circle (size-12, from-primary to-accent, shadow-glow, scale-110 + rotate-3 on hover); numbers now use `text-gradient` via the Counter's parent div (pattern verified against home-view line 281).
+   794→  * Team section: wrapped in `relative overflow-hidden`; added `bg-radial-fade` + masked `bg-grid` (radial-gradient mask), two large blurred `animate-float` gradient-mesh blobs (primary left, accent right, staggered delays), and five decorative floating dots at varied positions/delays.
+   795→  * TeamCard: wrapped Card in a relative `group` container so the gradient border (-inset-px from-primary/50 via-accent/30 to-primary/50) and shimmer sweep (animate-[shimmer_2.5s...]) can sit outside the Card's overflow-hidden; added a top accent gradient line on hover; enlarged avatar to h-20 w-20 with ring-2 ring-primary/20 ring-offset-2 ring-offset-card (intensifies to ring-primary/50 + ring-offset-accent/20 on hover); added an accent status dot at the avatar corner; social icons now use bg-muted base with hover fill of `bg-gradient-to-br from-primary to-accent text-white shadow-glow` and -translate-y-0.5 lift; replaced `hover:` with `group-hover:` for the lift/shadow so the wrapper-level hover drives them.
+   796→  * Values deep-dive section: added a full-width gradient top border (from-primary via-accent to-primary), masked `bg-grid` pattern background, and relative positioning; each value card now sits inside a relative `group` wrapper that carries the -inset-px gradient border on hover; inside the (overflow-hidden) card a top accent gradient line appears on hover; the value icon container upgraded from `bg-accent/10 text-accent` to `bg-gradient-to-br from-primary to-accent text-white shadow-soft` with scale-110 + rotate-3 on hover.
+   797→  * Technologies marquee: each tech pill is now `group/pill`-scoped with hover lift (-translate-y-0.5), hover:border-primary/40, hover:shadow-glow; layered a -inset-px gradient border (from-primary/50 via-accent/40 to-primary/50) and a -inset-2 bg-primary/20 blur-md glow on hover; the bullet dot is now `bg-gradient-to-r from-primary to-accent` and scales to 1.5x on hover; pill content wrapped in `relative` spans so it sits above the overlay layers.
+   798→- Enhanced `src/components/views/case-studies-view.tsx`:
+   799→  * Added `Building2` to lucide-react imports for the client-name row icon.
+   800→  * MetricChip: changed value text from `text-accent` to `text-gradient` (verified pattern against case-study-detail-view line 121).
+   801→  * Hero: applied a radial-gradient `maskImage`/`WebkitMaskImage` to the existing `bg-grid` so it fades out at the edges (mask already had bg-radial-fade overlaid).
+   802→  * CaseStudyCard: motion.article upgraded to `group relative` + `hover:shadow-glow`; added a -inset-px gradient border ring (from-primary/50 via-accent/30 to-primary/50) + a shimmer sweep span (animate-[shimmer_2s...]) that fade in on hover (mirrors portfolio-view pattern); base cover gradient softened from black/55 to black/40; added a hover-only dark gradient overlay (from-black/80 via-black/20 to-transparent); industry Badge restyled to `bg-gradient-to-r from-primary to-accent text-white shadow-glow` with a white dot; the top-right circular ArrowUpRight indicator moved to top-right (was bottom-right) so it no longer collides with the new slide-up button; added a "Read Case Study" button that translates up from the cover bottom on hover (translate-y-full → 0); removed the redundant bottom-of-body "Read Case Study" text since the slide-up button now serves as the primary CTA (kept metrics with `mt-auto` so they pin to the bottom of the body for consistent card heights); client name now prefixed with a Building2 icon and a 1px vertical separator.
+   803→  * Bottom CTA: converted from `bg-secondary` to `bg-gradient-to-r from-primary to-accent` with shadow-glow; swapped the accent/primary blur blobs for white/10 ones; heading now white, description white/80; the CTA button switched to `variant="secondary"` with `bg-white text-primary hover:bg-white/90` for proper contrast on the gradient band.
+   804→- Ran `bun run lint` → 0 errors, 0 warnings.
+   805→- Ran `bunx tsc --noEmit` → no errors in either modified file (all reported TS errors are pre-existing and in unrelated files: examples/, skills/, admin route, admin-view.tsx).
+   806→- dev.log shows healthy `✓ Compiled` lines and `GET /api/case-studies 200` responses after edits.
+   807→
+   808→Stage Summary:
+   809→- AboutView visually upgraded across 4 sub-sections: Stats band (gradient-icon cards + text-gradient numbers + hover lift), Team section (radial-fade + masked grid + floating mesh blobs + decorative dots, team cards with gradient-border + shimmer + larger ringed avatar + gradient-fill socials), Values deep-dive (gradient top border + masked grid background + gradient icons + gradient hover border + top accent line), Technologies marquee (premium pills with gradient border + glow + gradient dot scaling).
+   810→- CaseStudiesView visually upgraded across 3 sub-sections: Hero (masked bg-grid for soft edges), Case study cards (gradient border + shimmer sweep on hover, hover-only dark gradient overlay, gradient industry badge, slide-up "Read Case Study" button on cover, top-right hover indicator, icon + separator on client name, text-gradient metric values), Bottom CTA (full-width from-primary to-accent gradient band with bg-grid overlay + white CTA button).
+   811→- All design tokens used (text-gradient, bg-grid, bg-radial-fade, shadow-soft, shadow-glow, animate-float, animate-[shimmer...], ltr-num, rtl-flip) — no new CSS or i18n keys introduced.
+   812→- All functionality preserved: useSite/useCaseStudies data fetching, parseList metric parsing, tc() translations, useNav navigation, RTL-aware classes (rtl-flip, conditional margins), useT/useLang hooks, framer-motion whileHover on case study cards, loading skeletons, empty state.
+   813→- Two files modified: `src/components/views/about-view.tsx`, `src/components/views/case-studies-view.tsx`. Lint clean, TypeScript clean for both files, dev server compiles successfully.
+   814→
+   815→---
+   816→Task ID: 11
+   817→Agent: Main (orchestrator) — cron review round
+   818→Task: QA testing (dark mode, all views), admin dashboard stats, About + Case Studies styling enhancements
+   819→
+   820→Work Log:
+   821→- QA tested dark mode: toggle works, no console errors on home scroll
+   822→- QA tested About page: team section, values, stats all render correctly
+   823→- QA tested Case Studies listing: all 3 case studies load
+   824→- Dispatched 2 parallel subagents:
+   825→  * 11-a: Added admin dashboard stats overview
+   826→    - Dashboard as default landing view (instead of jumping to Portfolios)
+   827→    - "Dashboard" sidebar item at top with LayoutDashboard icon
+   828→    - 6 stat cards: Portfolios (8), Blog Posts (6), Contact Requests (3), Leads (0), Newsletter (5), Case Studies (3) — each with colored icon circle, big number, label, gradient hover, click to navigate
+   829→    - Quick Actions: New Portfolio, New Blog Post, View Contact Requests, View Leads
+   830→    - Recent Activity: two-column layout showing top-5 contact requests + top-5 leads with initials avatar, name/email, status badge, date
+   831→    - Welcome header with gradient card, "Welcome back, Studio" heading, Refresh stats button
+   832→    - Single useQuery with Promise.all of 6 parallel admin API calls
+   833→  * 11-b: Enhanced About page + Case Studies listing
+   834→    - About team section: bg-radial-fade + masked bg-grid, floating gradient-mesh blur blobs, decorative dots, team cards with gradient border ring + shimmer sweep on hover, enlarged avatar with ring-2 ring-primary/20, social icons with gradient hover circles
+   835→    - About values: full-width gradient top border, masked bg-grid, value cards with gradient border + gradient icon (from-primary to-accent) with scale+rotate on hover
+   836→    - About stats: individual rounded-2xl cards with gradient icon circles, text-gradient numbers, hover lift + shadow-glow
+   837→    - About tech marquee: pills with gradient border overlay, blurred primary glow, gradient dot on hover
+   838→    - Case studies hero: radial-gradient mask on bg-grid
+   839→    - Case study cards: gradient border ring + shimmer on hover, hover dark gradient overlay, slide-up "Read Case Study" button, industry badge with gradient background, Building2 icon + separator for client name, MetricChip with text-gradient values, top-right circular ArrowUpRight
+   840→    - Case studies bottom CTA: full-width gradient band (from-primary to-accent) with bg-grid + white blur blobs
+   841→- Verified admin dashboard: stat cards show real counts, clicking navigates to resource table, recent activity shows data
+   842→- Verified About + Case Studies enhanced styling renders correctly in English and Persian RTL
+   843→- Lint passes with 0 errors; all endpoints return 200
+   844→
+   845→Stage Summary:
+   846→- Admin panel now has a comprehensive dashboard overview with real-time stats, quick actions, and recent activity
+   847→- About page team + values + stats + tech sections significantly enhanced with premium styling
+   848→- Case Studies listing cards enhanced with hover overlays, gradient borders, metrics display, slide-up CTAs
+   849→- All features work in both English (LTR) and Persian (RTL) modes
+   850→- Platform continues to be stable and increasingly premium
+   851→
+   852→---
+   853→Task ID: 12-b
+   854→Agent: full-stack-developer (blog share + portfolio related)
+   855→Task: Enhance blog post share buttons (premium circular design with brand-color hovers + Facebook) and transform the portfolio detail "Related Projects" section into an RTL-aware snap-scroll carousel with arrows + progress dots.
+   856→Work Log:
+   857→- Read worklog.md to align with the design system (blue #2563EB / teal #14B8A6, Framer Motion, RTL via useT/useLang).
+   858→- blog-detail-view.tsx:
+   859→  - Added `AnimatePresence`, `Facebook`, `Share2` to the framer-motion/lucide imports.
+   860→  - Rewrote `ShareButtons` with a premium layout: a "Share" header label with Share2 icon, a "0 shares" visual badge, and a row of circular `size-11` brand buttons (Twitter/X, LinkedIn, Facebook, copy-link) with per-brand gradient + brand-tinted glow on hover (`from-sky-500 to-blue-600`, `from-blue-600 to-blue-800`, `from-blue-700 to-indigo-700`, `from-primary to-accent`).
+   861→  - Wrapped each icon in a `motion.span` with `AnimatePresence` + spring `whileHover`/`whileTap` for icon scale animation; added a subtle sheen overlay on hover.
+   862→  - Added `onFacebook` calling `https://www.facebook.com/sharer/sharer.php?u=${url}` (Twitter/LinkedIn already wired); kept copy-link toast flow and the secondary copy-link pill button.
+   863→- portfolio-detail-view.tsx:
+   864→  - Added `useRef`, `useCallback` to React imports.
+   865→  - Replaced the static 1/2/3-col grid with a new `RelatedProjects` component: horizontal scrollable carousel (`overflow-x-auto` + hidden scrollbar via `[scrollbar-width:none]`, webkit `<style>` override), `snap-x snap-mandatory` with each card `snap-start`, `scroll-smooth`.
+   866→  - Added desktop circular arrow buttons (prev/next) with gradient hover (primary→accent) and disabled state based on scroll position; arrow icons swap (ChevronLeft/ChevronRight) when `lang === 'fa'` and scroll direction is inverted via `flex-row-reverse` + signed `scrollBy`.
+   867→  - Added mobile-only animated "Swipe to explore" hint using a Framer Motion looping chevron.
+   868→  - Added gradient edge-fade overlays on both sides of the carousel (positions swap for RTL).
+   869→  - Added progress dots: clickable pills that scroll to the matching card, with an active `w-6 bg-gradient-to-r from-primary to-accent` indicator and a `1/N` counter (LTR-num enforced).
+   870→  - Rewrote `RelatedCard`: fixed `w-72` width, `aspect-[16/10]` cover with `group-hover:scale-110` zoom, gradient overlay (`from-slate-950/80`), top row with category badge + padded index counter, bottom-overlay title (white drop-shadow), and a "View Project" pill button that fills with primary color on hover (RTL arrow flip preserved).
+   871→  - Active card gets `ring-2 ring-primary/20` highlight driven by the carousel's scroll-position tracking.
+   872→  - Fixed ESLint `react-hooks/set-state-in-effect` by deferring the initial `updateState` measurement through `requestAnimationFrame`.
+   873→- Ran `bun run lint` — clean (0 errors, 0 warnings). Verified dev server recompiles successfully (dev.log shows fresh ✓ Compiled entries).
+   874→Stage Summary:
+   875→- Blog share row is now a premium branded experience: 4 circular brand-colored share buttons (Twitter/X, LinkedIn, Facebook, copy) with AnimatePresence-driven spring icon scaling, gradient hover fills, brand glow shadows, a Share2-labeled header, and a subtle "0 shares" visual counter. Copy-link toast flow preserved.
+   876→- Portfolio "Related Projects" is now an interactive RTL-aware carousel: snap scrolling, gradient-hover navigation arrows (RTL-swapped), mobile swipe hint, clickable progress dots with active state + numeric counter, edge-fade overlays, and redesigned cards (fixed w-72, hover-zoom cover, gradient overlay, category badge, index counter, overlay title, hover-fill "View Project" pill). All existing data fetching, translation, and navigation logic untouched.
+   877→
+   878→---
+   879→Task ID: 12-a
+   880→Agent: full-stack-developer (home hero dashboard)
+   881→Task: Enhance the Home view hero section's floating dashboard mockup to be more premium and realistic with line chart overlay, donut progress ring, sparklines, live activity indicator, floating notification cards, gradient glow, and mini metrics row.
+   882→Work Log:
+   883→- Read worklog.md and home-view.tsx to understand the existing dashboard structure and design system.
+   884→- Verified available i18n keys (hero.activeUsers, hero.revenue, hero.conversion, hero.aiInsights, hero.live) and design tokens (shadow-soft, shadow-glow, text-gradient, ltr-num, bg-grid) exist.
+   885→- Added three new data arrays after `dashboardStats` inside HomeView(): `dashboardSparkPaths` (3 SVG path strings for sparklines), `dashboardBars` (12-bar heights extracted from inline literal), and `dashboardMiniMetrics` (CPU/Memory/API/Uptime compact labels).
+   886→- Replaced the entire Floating dashboard mockup section with an enhanced version implementing all 8 requested features:
+   887→  1. Animated SVG line chart overlay on top of the bar chart using motion.path with pathLength 0→1 animation and gradient stroke (#2563EB → #14B8A6).
+   888→  2. Donut/circular progress ring (87% Goal) using motion.circle with strokeDasharray/strokeDashoffset animation and gradient stroke.
+   889→  3. Enhanced stat cards: each has a sparkline mini-chart, subtle gradient hover background, prominent pill-shaped trend indicator with ArrowUpRight icon, and hover lift effect.
+   890→  4. Live activity indicator in browser chrome bar: pulsing green dot (animate-ping) + "Live" text in accent color, pushed to the right via ml-auto.
+   891→  5. Two floating notification cards at the dashboard edges ("New signup +1" left, "Revenue goal reached" right) with spring physics (stiffness 200, damping 18), backdrop-blur-md, shadow-glow, and staggered delays.
+   892→  6. Pulsing gradient glow behind the entire dashboard: motion.div animating background between primary→accent radial gradients over 6s with infinite repeat.
+   893→  7. Enhanced bar chart: gradient fill (from-primary/40 to-accent), rounded-t-md tops, and a hover tooltip showing the bar value (visual only, via group-hover/bar).
+   894→  8. Mini metrics row below the main chart: 4 compact cells (CPU 42%, Memory 68%, API 12ms, Uptime 99.9%) in a grid-cols-4 layout.
+   895→- Preserved the existing browser chrome bar (3 dots + URL) and the existing AI insights floating card (top-right).
+   896→- Used existing imports (ArrowUpRight, CheckCircle2, Sparkles, motion) — no new imports needed.
+   897→- Wrapped all numeric values in <span className="ltr-num"> for Persian RTL mode.
+   898→- Kept the dashboard height reasonable: still fits nicely in the hero (stat cards ~same height, chart area unchanged h-32, only added thin mini metrics row).
+   899→- Ran `bun run lint` — passed with zero errors. Checked dev.log — no runtime errors.
+   900→Stage Summary:
+   901→- The hero dashboard mockup is now significantly more premium and realistic with 8 layered enhancements.
+   902→- All animations use framer-motion (motion.path, motion.circle, motion.div) with carefully staggered delays so the dashboard "comes alive" progressively on mount.
+   903→- The line chart overlay and donut ring share the same primary→accent gradient language as the rest of the design system.
+   904→- Floating notification cards add depth via spring physics, backdrop-blur, and shadow-glow.
+   905→- Pulsing gradient glow behind the dashboard shifts color between primary and accent, giving the mockup a living, premium feel.
+   906→- No new i18n keys added; dashboard-only labels (Weekly Activity, Monthly Target, Goal, New signup +1, Revenue goal reached, CPU, Memory, API, Uptime) kept in English per task constraints.
+   907→- File modified: /home/z/my-project/src/components/views/home-view.tsx (only the hero dashboard mockup section + 3 new data arrays; no other views touched).
+   908→- Lint clean, dev server compiling successfully.
+   909→
+   910→---
+   911→Task ID: 12
+   912→Agent: Main (orchestrator) — cron review round
+   913→Task: QA testing (admin CRUD), home hero dashboard enhancement, blog share + portfolio related carousel
+
+[showing lines 614-913 of 1073; use offset=914 with limit to continue reading]

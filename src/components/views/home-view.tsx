@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useInView } from 'framer-motion'
 import {
   ArrowRight,
   ArrowUpRight,
@@ -28,7 +28,7 @@ import {
   HelpCircle,
   MessageCircleQuestion,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -89,6 +89,11 @@ export function HomeView() {
   const { data: portfolioData, isLoading: portfolioLoading } = usePortfolios({ featured: 'true', limit: '6' })
   const t = useT()
   const lang = useLang((s) => s.lang)
+  const isRtl = lang === 'fa'
+
+  // Timeline scroll-trigger ref — drives the animated line draw + node pop-in
+  const timelineRef = useRef<HTMLDivElement>(null)
+  const timelineInView = useInView(timelineRef, { once: true, margin: '-120px' })
 
   const featuredPortfolios = portfolioData?.items ?? []
   const services = siteData?.services ?? []
@@ -573,34 +578,168 @@ export function HomeView() {
             </p>
           </div>
 
-          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {PROCESS_STEPS.map((step, i) => (
-              <Reveal key={step.titleKey} delay={i * 0.06}>
-                <div className="group relative h-full rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:bg-white/[0.08]">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground">
-                      <step.icon className="h-5 w-5" />
+          {/* ===== Animated zigzag timeline (desktop) + vertical timeline (mobile) ===== */}
+          <div ref={timelineRef} className="mt-16">
+            {/* ---------- Desktop: horizontal zigzag timeline ---------- */}
+            <div className="relative hidden lg:block">
+              {/* Horizontal line: static track + animated gradient progress */}
+              <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2">
+                <div className="absolute inset-0 bg-white/10" />
+                <motion.div
+                  className={cn(
+                    'absolute inset-0 bg-gradient-to-r from-primary to-accent',
+                    isRtl ? 'origin-right' : 'origin-left',
+                  )}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: timelineInView ? 1 : 0 }}
+                  transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+                />
+              </div>
+
+              {/* Steps row — alternating above/below the line (zigzag) */}
+              <div className="relative grid grid-cols-7 gap-3">
+                {PROCESS_STEPS.map((step, i) => {
+                  const above = i % 2 === 0 // step 1, 3, 5, 7 above; 2, 4, 6 below
+                  return (
+                    <div key={step.titleKey} className="flex flex-col items-center">
+                      {/* Top region — card (when above) sits at the bottom of this region */}
+                      <div className="flex h-48 w-full flex-col justify-end">
+                        {above && (
+                          <Reveal delay={i * 0.08} className="flex flex-col items-center">
+                            <ProcessTimelineCard step={step} />
+                            <div
+                              className={cn(
+                                'mt-2 h-6 w-px bg-gradient-to-b',
+                                isRtl ? 'from-primary/40 to-accent/40' : 'from-accent/40 to-primary/40',
+                              )}
+                            />
+                          </Reveal>
+                        )}
+                      </div>
+
+                      {/* Node on the line — number, gradient bg, pulsing ring, hover scale */}
+                      <motion.div
+                        className="relative isolate grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-xs font-bold text-primary-foreground shadow-lg shadow-primary/30"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={timelineInView ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+                        transition={{ delay: 0.2 + i * 0.12, type: 'spring', stiffness: 220, damping: 16 }}
+                        whileHover={{ scale: 1.18 }}
+                      >
+                        {/* Pulsing ring */}
+                        <span
+                          aria-hidden
+                          className="absolute inset-0 animate-ping rounded-full bg-primary/30"
+                          style={{ animationDuration: '2.6s' }}
+                        />
+                        {/* Soft glow */}
+                        <span aria-hidden className="absolute -inset-1 rounded-full bg-primary/25 blur-md" />
+                        <span className="relative ltr-num">{String(i + 1).padStart(2, '0')}</span>
+                      </motion.div>
+
+                      {/* Bottom region — card (when below) sits at the top of this region */}
+                      <div className="flex h-48 w-full flex-col justify-start">
+                        {!above && (
+                          <Reveal delay={i * 0.08} className="flex flex-col items-center">
+                            <div
+                              className={cn(
+                                'mt-2 h-6 w-px bg-gradient-to-t',
+                                isRtl ? 'from-primary/40 to-accent/40' : 'from-accent/40 to-primary/40',
+                              )}
+                            />
+                            <ProcessTimelineCard step={step} />
+                          </Reveal>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-3xl font-bold text-white/10 transition group-hover:text-white/20 ltr-num">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold">{t(step.titleKey)}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-secondary-foreground/70">{t(step.descKey)}</p>
-                </div>
-              </Reveal>
-            ))}
-            <Reveal delay={0.42}>
-              <button
-                onClick={() => setView('contact')}
-                className="group flex h-full w-full flex-col items-start justify-center rounded-2xl border border-accent/30 bg-accent/10 p-6 text-left transition hover:bg-accent/20"
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* ---------- Mobile: vertical timeline (line on left LTR / right RTL) ---------- */}
+            <div className="relative lg:hidden">
+              {/* Vertical line track + animated gradient progress */}
+              <div
+                className={cn(
+                  'absolute bottom-0 top-0 w-0.5',
+                  isRtl ? 'right-7' : 'left-7',
+                )}
               >
-                <ArrowUpRight className="mb-3 h-6 w-6 text-accent transition group-hover:translate-x-1 group-hover:-translate-y-1 rtl-flip" />
-                <h3 className="text-lg font-semibold">{t('process.ready')}</h3>
-                <p className="mt-2 text-sm text-secondary-foreground/70">{t('process.readyDesc')}</p>
-              </button>
-            </Reveal>
+                <div className="absolute inset-0 bg-white/10" />
+                <motion.div
+                  className="absolute inset-0 origin-top bg-gradient-to-b from-primary to-accent"
+                  initial={{ scaleY: 0 }}
+                  animate={{ scaleY: timelineInView ? 1 : 0 }}
+                  transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+                />
+              </div>
+
+              <div className="space-y-5">
+                {PROCESS_STEPS.map((step, i) => {
+                  const Icon = step.icon
+                  return (
+                    <Reveal
+                      key={step.titleKey}
+                      delay={i * 0.06}
+                      className={cn(
+                        'relative flex items-start gap-4',
+                        isRtl ? 'pr-20' : 'pl-20',
+                      )}
+                    >
+                      {/* Node on the line */}
+                      <motion.div
+                        className={cn(
+                          'absolute top-0 isolate grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground shadow-lg shadow-primary/30',
+                          isRtl ? 'right-0' : 'left-0',
+                        )}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={timelineInView ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }}
+                        transition={{ delay: 0.2 + i * 0.1, type: 'spring', stiffness: 220, damping: 16 }}
+                        whileHover={{ scale: 1.12 }}
+                      >
+                        <span
+                          aria-hidden
+                          className="absolute inset-0 animate-ping rounded-full bg-primary/30"
+                          style={{ animationDuration: '2.6s' }}
+                        />
+                        <span aria-hidden className="absolute -inset-1 rounded-full bg-primary/25 blur-md" />
+                        <span className="relative ltr-num">{String(i + 1).padStart(2, '0')}</span>
+                      </motion.div>
+
+                      {/* Step card */}
+                      <div className="group flex-1 rounded-2xl border border-white/10 bg-white/5 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-white/[0.08] hover:shadow-[0_8px_30px_rgba(37,99,235,0.2)]">
+                        {/* gradient border glow on hover */}
+                        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/0 to-accent/0 opacity-0 transition-opacity duration-300 group-hover:from-primary/[0.08] group-hover:to-accent/[0.08] group-hover:opacity-100" />
+                        <div className="relative flex items-center gap-3">
+                          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-md shadow-primary/20 transition-transform duration-300 group-hover:scale-110">
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <h3 className="text-base font-semibold">{t(step.titleKey)}</h3>
+                        </div>
+                        <p className="mt-2 text-sm leading-relaxed text-secondary-foreground/60">
+                          {t(step.descKey)}
+                        </p>
+                      </div>
+                    </Reveal>
+                  )
+                })}
+              </div>
+            </div>
           </div>
+
+          {/* "Ready to start?" CTA — kept from original */}
+          <Reveal delay={0.1} className="mt-10">
+            <button
+              onClick={() => setView('contact')}
+              className="group flex w-full flex-col items-start justify-center rounded-2xl border border-accent/30 bg-accent/10 p-6 text-left transition hover:bg-accent/20 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+            >
+              <div>
+                <h3 className="text-lg font-semibold sm:text-xl">{t('process.ready')}</h3>
+                <p className="mt-2 text-sm text-secondary-foreground/70 sm:text-base">{t('process.readyDesc')}</p>
+              </div>
+              <ArrowUpRight className="mt-3 h-6 w-6 shrink-0 text-accent transition group-hover:translate-x-1 group-hover:-translate-y-1 rtl-flip sm:mt-0" />
+            </button>
+          </Reveal>
         </div>
       </section>
 
@@ -853,6 +992,31 @@ function ServiceCard({ service, index, onCta }: { service: Service; index: numbe
         <div className="absolute inset-x-0 bottom-0 h-0.5 w-0 bg-gradient-to-r from-primary to-accent transition-all duration-500 ease-out group-hover:w-full" />
       </Card>
     </Reveal>
+  )
+}
+
+// Compact card used in the desktop zigzag timeline (each column is narrow,
+// so the layout is icon-on-top + title + clamped description, with a gradient
+// hover border + lift + glow).
+function ProcessTimelineCard({ step }: { step: (typeof PROCESS_STEPS)[number] }) {
+  const t = useT()
+  const Icon = step.icon
+  return (
+    <div className="group relative w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-white/[0.08] hover:shadow-[0_8px_30px_rgba(37,99,235,0.25)]">
+      {/* Gradient hover glow overlay */}
+      <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/0 to-accent/0 opacity-0 transition-opacity duration-300 group-hover:from-primary/[0.08] group-hover:to-accent/[0.08] group-hover:opacity-100" />
+      {/* Gradient top border that fills on hover */}
+      <div className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-primary to-accent transition-transform duration-300 group-hover:scale-x-100 ltr:origin-left rtl:origin-right" />
+      <div className="relative">
+        <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-md shadow-primary/20 transition-transform duration-300 group-hover:scale-110">
+          <Icon className="h-4 w-4" />
+        </div>
+        <h3 className="text-sm font-semibold leading-tight">{t(step.titleKey)}</h3>
+        <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-secondary-foreground/60">
+          {t(step.descKey)}
+        </p>
+      </div>
+    </div>
   )
 }
 
