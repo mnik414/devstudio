@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Search,
@@ -42,6 +42,31 @@ import { tc } from '@/lib/content-i18n'
 
 type SortKey = 'newest' | 'oldest' | 'title' | 'views'
 
+/* ------------------------- helpers ------------------------- */
+
+/** Smoothly animates a number from its previous value to the next. */
+function AnimatedCounter({ value }: { value: number }) {
+  const [display, setDisplay] = useState(value)
+  const prev = useRef(value)
+  useEffect(() => {
+    const from = prev.current
+    const to = value
+    const duration = 450
+    const start = performance.now()
+    let raf = 0
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setDisplay(Math.round(from + (to - from) * eased))
+      if (p < 1) raf = requestAnimationFrame(tick)
+      else prev.current = to
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [value])
+  return <span className="ltr-num tabular-nums">{display}</span>
+}
+
 export function PortfolioView() {
   const t = useT()
   const lang = useLang((s) => s.lang)
@@ -56,11 +81,28 @@ export function PortfolioView() {
   ]
 
   const [search, setSearch] = useState('')
+  const [searchFocused, setSearchFocused] = useState(false)
   const [category, setCategory] = useState<string>('')
   const [tech, setTech] = useState<string>('')
   const [sort, setSort] = useState<SortKey>('newest')
   const [savedOnly, setSavedOnly] = useState(false)
+  const [stuck, setStuck] = useState(false)
   const favoriteIds = useFavorites((s) => s.ids)
+
+  const filterSentinelRef = useRef<HTMLDivElement>(null)
+
+  // Detect when the filter bar becomes "stuck" to the top so we can
+  // intensify its background + shadow for a premium sticky feel.
+  useEffect(() => {
+    const el = filterSentinelRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => setStuck(!entry.isIntersecting),
+      { threshold: 0 },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   const params = useMemo(
     () => ({
@@ -84,7 +126,17 @@ export function PortfolioView() {
     <div className="relative">
       {/* Hero */}
       <section className="relative overflow-hidden border-b bg-radial-fade">
-        <div className="bg-grid pointer-events-none absolute inset-0 opacity-50" />
+        <div
+          className="bg-grid pointer-events-none absolute inset-0 opacity-50"
+          style={{
+            maskImage: 'radial-gradient(70% 60% at 50% 0%, black 0%, transparent 80%)',
+            WebkitMaskImage: 'radial-gradient(70% 60% at 50% 0%, black 0%, transparent 80%)',
+          }}
+        />
+        <div
+          className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[40rem] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden
+        />
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
           <SectionHeading
             eyebrow={t('portfolio.eyebrow')}
@@ -113,16 +165,38 @@ export function PortfolioView() {
         </div>
       </section>
 
+      {/* Sticky sentinel — drives the "stuck" state for the filter bar */}
+      <div ref={filterSentinelRef} className="pointer-events-none h-px w-full" />
+
       {/* Filter Bar */}
-      <section className="sticky top-16 z-30 border-b bg-background/80 backdrop-blur-md">
+      <section
+        className={cn(
+          'sticky top-16 z-30 border-b backdrop-blur-md transition-all duration-300',
+          stuck
+            ? 'border-border/60 bg-gradient-to-r from-background/95 via-background/90 to-background/95 shadow-soft'
+            : 'border-border/40 bg-background/70',
+        )}
+      >
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             {/* Search */}
-            <div className="relative w-full max-w-sm">
-              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <div
+              className={cn(
+                'relative w-full max-w-sm rounded-md transition-all duration-300',
+                searchFocused && 'ring-2 ring-primary/20 ring-offset-0',
+              )}
+            >
+              <Search
+                className={cn(
+                  'pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 transition-all duration-300',
+                  searchFocused ? 'scale-110 text-primary' : 'text-muted-foreground',
+                )}
+              />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
                 placeholder={t('portfolio.search')}
                 className="pl-9"
                 aria-label={t('portfolio.search')}
@@ -155,7 +229,10 @@ export function PortfolioView() {
                 {t('portfolio.sort')}
               </span>
               <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-                <SelectTrigger className="w-[180px]" aria-label="Sort projects">
+                <SelectTrigger
+                  className="w-[180px] border-primary/20 bg-gradient-to-r from-primary/10 to-accent/10 font-medium hover:from-primary/15 hover:to-accent/15"
+                  aria-label="Sort projects"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -175,15 +252,13 @@ export function PortfolioView() {
               <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Category
               </span>
-              <FilterChip
-                active={category === ''}
-                onClick={() => setCategory('')}
-              >
+              <FilterChip groupId="cat" active={category === ''} onClick={() => setCategory('')}>
                 {t('portfolio.allCategories')}
               </FilterChip>
               {categories.map((c) => (
                 <FilterChip
                   key={c.id}
+                  groupId="cat"
                   active={category === c.slug}
                   onClick={() => setCategory(c.slug)}
                 >
@@ -199,12 +274,13 @@ export function PortfolioView() {
               <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Tech
               </span>
-              <FilterChip active={tech === ''} onClick={() => setTech('')}>
+              <FilterChip groupId="tech" active={tech === ''} onClick={() => setTech('')}>
                 {t('portfolio.allTech')}
               </FilterChip>
               {technologies.map((techItem) => (
                 <FilterChip
                   key={techItem.id}
+                  groupId="tech"
                   active={tech === techItem.slug}
                   onClick={() => setTech(techItem.slug)}
                 >
@@ -222,6 +298,16 @@ export function PortfolioView() {
 
       {/* Grid */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+        {/* Result count with animated counter */}
+        {!isLoading && !isError && items.length > 0 && (
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              Showing <AnimatedCounter value={items.length} /> projects
+            </p>
+            <div className="hidden h-px flex-1 bg-gradient-to-r from-border/60 to-transparent sm:block" />
+          </div>
+        )}
+
         {isLoading ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -261,30 +347,36 @@ export function PortfolioView() {
         )}
       </section>
 
-      {/* CTA band */}
-      <section className="border-t bg-secondary">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-          <div className="relative overflow-hidden rounded-2xl bg-primary px-6 py-12 text-primary-foreground shadow-soft sm:px-12 sm:py-16">
-            <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
-            <div className="relative flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-              <div className="max-w-xl">
-                <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                  {t('portfolio.ctaTitle')}
-                </h3>
-                <p className="mt-2 text-sm text-primary-foreground/80 sm:text-base">
-                  {t('portfolio.ctaDesc')}
-                </p>
-              </div>
-              <Button
-                size="lg"
-                variant="secondary"
-                className="group shrink-0"
-                onClick={() => setView('contact')}
-              >
-                {t('portfolio.ctaButton')}
-                <ArrowRight className={cn('size-4 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
-              </Button>
+      {/* CTA band — full-width gradient */}
+      <section className="relative overflow-hidden border-t bg-gradient-to-r from-primary to-accent">
+        <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+        <div
+          className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-white/10 blur-3xl"
+          aria-hidden
+        />
+        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+            <div className="max-w-xl text-primary-foreground">
+              <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                {t('portfolio.ctaTitle')}
+              </h3>
+              <p className="mt-2 text-sm text-primary-foreground/80 sm:text-base">
+                {t('portfolio.ctaDesc')}
+              </p>
             </div>
+            <Button
+              size="lg"
+              variant="secondary"
+              className="group shrink-0"
+              onClick={() => setView('contact')}
+            >
+              {t('portfolio.ctaButton')}
+              <ArrowRight className={cn('size-4 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
+            </Button>
           </div>
         </div>
       </section>
@@ -298,25 +390,36 @@ function FilterChip({
   active,
   onClick,
   children,
+  groupId,
 }: {
   active: boolean
   onClick: () => void
   children: React.ReactNode
+  groupId: string
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
       aria-pressed={active}
+      layout
+      transition={{ type: 'spring', stiffness: 400, damping: 32 }}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all',
+        'relative inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
         active
-          ? 'border-primary bg-primary text-primary-foreground shadow-xs'
+          ? 'border-transparent text-primary-foreground'
           : 'border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground',
       )}
     >
-      {children}
-    </button>
+      {active && (
+        <motion.span
+          layoutId={`filter-chip-${groupId}`}
+          className="absolute inset-0 rounded-full bg-gradient-to-r from-primary to-primary/85 shadow-xs"
+          transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+        />
+      )}
+      <span className="relative z-10 flex items-center gap-1.5">{children}</span>
+    </motion.button>
   )
 }
 
@@ -345,18 +448,36 @@ function PortfolioCard({
       }}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="group block h-full w-full cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl"
+      className="group relative block h-full w-full cursor-pointer rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
-      <Card className="h-full overflow-hidden p-0 transition-shadow duration-300 hover:shadow-soft">
+      {/* Gradient border ring on hover */}
+      <span
+        className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-br from-primary/50 via-accent/30 to-primary/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        aria-hidden
+      />
+      {/* Shimmer sweep on hover */}
+      <span
+        className="pointer-events-none absolute -inset-px overflow-hidden rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        aria-hidden
+      >
+        <span
+          className="absolute inset-0 animate-[shimmer_2s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent"
+          style={{ transform: 'translateX(-100%)' }}
+        />
+      </span>
+      <Card className="relative h-full overflow-hidden p-0 transition-shadow duration-300 group-hover:shadow-soft">
         {/* Cover */}
         <div className="relative aspect-video overflow-hidden">
           <img
             src={item.coverImage}
             alt={`${title} cover image`}
             loading="lazy"
-            className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
           />
+          {/* base subtle gradient (always visible) */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          {/* hover dark gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           {item.category && (
             <Badge className="absolute top-3 left-3 border-0 bg-white/90 text-foreground shadow-xs backdrop-blur">
               {item.category.name}
@@ -368,6 +489,24 @@ function PortfolioCard({
           <div className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur">
             <Eye className="size-3" />
             <span className="ltr-num">{item.views}</span>
+          </div>
+
+          {/* Quick preview overlay */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
+            <span className="inline-flex translate-y-2 items-center gap-1.5 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white ring-1 ring-white/25 backdrop-blur-md transition-transform duration-300 group-hover:translate-y-0">
+              Quick preview
+              <ArrowUpRight className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
+            </span>
+          </div>
+
+          {/* View Project button slides up from bottom */}
+          <div className="absolute inset-x-0 bottom-0 translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0">
+            <div className="p-3">
+              <span className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg">
+                {t('portfolio.viewProject')}
+                <ArrowRight className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
+              </span>
+            </div>
           </div>
         </div>
 
@@ -390,10 +529,10 @@ function PortfolioCard({
                 <Badge
                   key={tech.id}
                   variant="secondary"
-                  className="inline-flex items-center gap-1.5 font-normal"
+                  className="group/tech inline-flex items-center gap-1.5 font-normal transition-colors hover:bg-accent/10"
                 >
                   <span
-                    className="inline-block size-1.5 rounded-full"
+                    className="inline-block size-1.5 rounded-full transition-transform duration-200 group-hover/tech:scale-150"
                     style={{ background: tech.color ?? 'var(--accent)' }}
                   />
                   {tech.name}
@@ -430,8 +569,15 @@ function PortfolioCard({
 
 function PortfolioCardSkeleton() {
   return (
-    <Card className="overflow-hidden p-0">
-      <Skeleton className="aspect-video w-full rounded-none" />
+    <Card className="relative overflow-hidden p-0">
+      {/* Shimmer sweep overlay */}
+      <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+        <div
+          className="absolute inset-0 animate-[shimmer_1.8s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-foreground/[0.06] to-transparent"
+          style={{ transform: 'translateX(-100%)' }}
+        />
+      </div>
+      <Skeleton className="aspect-video w-full rounded-none bg-gradient-to-br from-muted to-muted/60" />
       <div className="flex flex-col gap-3 p-5">
         <Skeleton className="h-5 w-2/3" />
         <Skeleton className="h-4 w-full" />
@@ -456,11 +602,17 @@ function EmptyState({
 }) {
   const t = useT()
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed bg-muted/30 px-6 py-20 text-center">
-      <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-        <FolderOpen className="size-7" />
+    <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed bg-muted/30 px-6 py-20 text-center">
+      <div
+        className="pointer-events-none absolute -top-12 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full bg-primary/5 blur-2xl"
+        aria-hidden
+      />
+      <div className="relative flex size-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-accent/15 text-primary ring-1 ring-primary/10">
+        <FolderOpen className="size-10" />
       </div>
-      <h3 className="mt-5 text-lg font-semibold">No projects found</h3>
+      <h3 className="mt-6 text-xl font-bold">
+        <span className="text-gradient">No projects found</span>
+      </h3>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
         {hasFilters ? t('portfolio.noResults') : 'Projects will appear here once published.'}
       </p>

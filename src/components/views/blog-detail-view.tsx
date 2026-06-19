@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
-import { motion, useScroll, useSpring } from 'framer-motion'
+import { motion, useMotionValueEvent, useScroll, useSpring } from 'framer-motion'
 import { format } from 'date-fns'
 import {
   ArrowLeft,
@@ -485,6 +485,25 @@ export function BlogDetailView() {
     restDelta: 0.001,
   })
 
+  // Dynamic "reading time remaining" indicator — updates in real time
+  // as the user scrolls through the article. The reset-on-article-change
+  // uses the recommended "adjust state during render" pattern (storing the
+  // previous value in state rather than a ref or effect).
+  const [remaining, setRemaining] = useState<number>(item?.readingTime ?? 0)
+  const [prevReadingTime, setPrevReadingTime] = useState<number | undefined>(
+    item?.readingTime,
+  )
+  if (item && item.readingTime !== prevReadingTime) {
+    setPrevReadingTime(item.readingTime)
+    setRemaining(item.readingTime)
+  }
+  const isFinished = remaining === 0
+  useMotionValueEvent(scrollYProgress, 'change', (latest) => {
+    if (!item) return
+    const next = Math.max(0, Math.ceil(item.readingTime * (1 - latest)))
+    setRemaining(next)
+  })
+
   const related = data?.related ?? []
   const content = item?.content ?? ''
   const toc = useMemo(() => extractTOC(content), [content])
@@ -593,6 +612,33 @@ export function BlogDetailView() {
                     <span className="inline-flex items-center gap-1.5">
                       <FileText className="h-3 w-3" />
                       <span className="ltr-num">{item.views}</span> {t('blogDetail.views')}
+                    </span>
+                    {/* Dynamic reading time remaining badge */}
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      <Clock className="h-3 w-3" />
+                      {isFinished ? (
+                        <motion.span
+                          key="finished"
+                          initial={{ opacity: 0, y: -3 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.25 }}
+                        >
+                          Finished reading
+                        </motion.span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <motion.span
+                            key={remaining}
+                            initial={{ opacity: 0, y: -3 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="ltr-num"
+                          >
+                            {remaining}
+                          </motion.span>
+                          <span>min remaining</span>
+                        </span>
+                      )}
                     </span>
                   </div>
                 </div>

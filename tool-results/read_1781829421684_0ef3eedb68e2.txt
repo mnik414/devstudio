@@ -1,0 +1,767 @@
+     1→'use client'
+     2→
+     3→import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+     4→import ReactMarkdown, { type Components } from 'react-markdown'
+     5→import { motion, useScroll, useSpring } from 'framer-motion'
+     6→import { format } from 'date-fns'
+     7→import {
+     8→  ArrowLeft,
+     9→  ArrowRight,
+    10→  ArrowUpRight,
+    11→  Clock,
+    12→  Calendar,
+    13→  Twitter,
+    14→  Linkedin,
+    15→  Link2,
+    16→  Copy,
+    17→  FileText,
+    18→  AlertCircle,
+    19→  List,
+    20→  type LucideIcon,
+    21→} from 'lucide-react'
+    22→import { toast } from 'sonner'
+    23→import { Badge } from '@/components/ui/badge'
+    24→import { Button } from '@/components/ui/button'
+    25→import { Skeleton } from '@/components/ui/skeleton'
+    26→import { Reveal } from '@/components/site/reveal'
+    27→import { SectionHeading } from '@/components/site/section-heading'
+    28→import { useNav } from '@/lib/store'
+    29→import { useBlogPost, type BlogPost } from '@/lib/hooks'
+    30→import { useT, useLang } from '@/lib/lang-store'
+    31→import { tc } from '@/lib/content-i18n'
+    32→import { cn } from '@/lib/utils'
+    33→
+    34→/* ------------------------------ helpers ------------------------------ */
+    35→
+    36→function getInitials(name: string): string {
+    37→  return name
+    38→    .split(' ')
+    39→    .filter(Boolean)
+    40→    .slice(0, 2)
+    41→    .map((n) => n[0]?.toUpperCase() ?? '')
+    42→    .join('')
+    43→}
+    44→
+    45→const AVATAR_PALETTE = [
+    46→  'bg-blue-500',
+    47→  'bg-emerald-500',
+    48→  'bg-amber-500',
+    49→  'bg-rose-500',
+    50→  'bg-violet-500',
+    51→  'bg-cyan-500',
+    52→  'bg-pink-500',
+    53→  'bg-teal-500',
+    54→]
+    55→
+    56→function colorFromString(str: string): string {
+    57→  let hash = 0
+    58→  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash)
+    59→  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length]
+    60→}
+    61→
+    62→function formatDate(iso: string): string {
+    63→  try {
+    64→    return format(new Date(iso), 'MMM d, yyyy')
+    65→  } catch {
+    66→    return ''
+    67→  }
+    68→}
+    69→
+    70→function slugify(text: string): string {
+    71→  return text
+    72→    .toLowerCase()
+    73→    .replace(/[^\w\s-]/g, '')
+    74→    .trim()
+    75→    .replace(/[\s_-]+/g, '-')
+    76→    .replace(/^-+|-+$/g, '')
+    77→}
+    78→
+    79→function extractText(node: ReactNode): string {
+    80→  if (typeof node === 'string') return node
+    81→  if (typeof node === 'number') return String(node)
+    82→  if (Array.isArray(node)) return node.map(extractText).join('')
+    83→  if (node && typeof node === 'object' && 'props' in node) {
+    84→    // @ts-expect-error - react element shape
+    85→    return extractText(node.props?.children)
+    86→  }
+    87→  return ''
+    88→}
+    89→
+    90→function extractTOC(markdown: string): { id: string; text: string }[] {
+    91→  const lines = markdown.split('\n')
+    92→  const toc: { id: string; text: string }[] = []
+    93→  let inCodeBlock = false
+    94→  for (const line of lines) {
+    95→    if (line.trim().startsWith('```')) {
+    96→      inCodeBlock = !inCodeBlock
+    97→      continue
+    98→    }
+    99→    if (inCodeBlock) continue
+   100→    const match = line.match(/^##\s+(.+?)\s*$/)
+   101→    if (match) {
+   102→      const text = match[1].replace(/[*_`~]/g, '').trim()
+   103→      toc.push({ id: slugify(text), text })
+   104→    }
+   105→  }
+   106→  return toc
+   107→}
+   108→
+   109→/* ------------------------------ avatar ------------------------------ */
+   110→
+   111→function AuthorAvatar({
+   112→  post,
+   113→  size = 'md',
+   114→}: {
+   115→  post: BlogPost
+   116→  size?: 'sm' | 'md' | 'lg'
+   117→}) {
+   118→  const sizeCls =
+   119→    size === 'lg'
+   120→      ? 'h-12 w-12 text-base'
+   121→      : size === 'md'
+   122→        ? 'h-10 w-10 text-sm'
+   123→        : 'h-8 w-8 text-xs'
+   124→
+   125→  if (post.authorAvatar) {
+   126→    return (
+   127→      <img
+   128→        src={post.authorAvatar}
+   129→        alt={post.authorName}
+   130→        className={cn('rounded-full object-cover ring-2 ring-background', sizeCls)}
+   131→      />
+   132→    )
+   133→  }
+   134→  return (
+   135→    <div
+   136→      className={cn(
+   137→        'grid place-items-center rounded-full font-semibold text-white ring-2 ring-background',
+   138→        sizeCls,
+   139→        colorFromString(post.authorName),
+   140→      )}
+   141→      aria-hidden
+   142→    >
+   143→      {getInitials(post.authorName) || 'A'}
+   144→    </div>
+   145→  )
+   146→}
+   147→
+   148→/* ------------------------------ share buttons ------------------------------ */
+   149→
+   150→function ShareButtons({ title }: { title: string }) {
+   151→  const t = useT()
+   152→  const getUrl = () => (typeof window !== 'undefined' ? window.location.href : '')
+   153→
+   154→  const shareText = encodeURIComponent(title)
+   155→
+   156→  const onTwitter = () => {
+   157→    const url = encodeURIComponent(getUrl())
+   158→    window.open(
+   159→      `https://twitter.com/intent/tweet?text=${shareText}&url=${url}`,
+   160→      '_blank',
+   161→      'noopener,noreferrer',
+   162→    )
+   163→  }
+   164→  const onLinkedIn = () => {
+   165→    const url = encodeURIComponent(getUrl())
+   166→    window.open(
+   167→      `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+   168→      '_blank',
+   169→      'noopener,noreferrer',
+   170→    )
+   171→  }
+   172→  const onCopy = async () => {
+   173→    try {
+   174→      await navigator.clipboard.writeText(getUrl())
+   175→      toast.success(t('blogDetail.linkCopied'))
+   176→    } catch {
+   177→      toast.error('Failed to copy link')
+   178→    }
+   179→  }
+   180→
+   181→  const buttons: { icon: LucideIcon; label: string; onClick: () => void }[] = [
+   182→    { icon: Twitter, label: 'Share on Twitter/X', onClick: onTwitter },
+   183→    { icon: Linkedin, label: 'Share on LinkedIn', onClick: onLinkedIn },
+   184→    { icon: Link2, label: t('blogDetail.copyLink'), onClick: onCopy },
+   185→  ]
+   186→
+   187→  return (
+   188→    <div className="flex items-center gap-2" aria-label={t('blogDetail.share')}>
+   189→      {buttons.map(({ icon: Icon, label, onClick }) => (
+   190→        <button
+   191→          key={label}
+   192→          type="button"
+   193→          onClick={onClick}
+   194→          aria-label={label}
+   195→          title={label}
+   196→          className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all duration-200 hover:scale-110 hover:border-primary/40 hover:bg-primary/10 hover:text-primary hover:shadow-soft"
+   197→        >
+   198→          <Icon className="h-4 w-4" />
+   199→        </button>
+   200→      ))}
+   201→      <button
+   202→        type="button"
+   203→        onClick={onCopy}
+   204→        className="hidden items-center gap-1.5 rounded-full border border-border/60 bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:text-primary sm:inline-flex"
+   205→      >
+   206→        <Copy className="h-3.5 w-3.5" />
+   207→        {t('blogDetail.copyLink')}
+   208→      </button>
+   209→    </div>
+   210→  )
+   211→}
+   212→
+   213→/* ------------------------------ markdown components ------------------------------ */
+   214→
+   215→const markdownComponents: Components = {
+   216→  h1: ({ children }) => (
+   217→    <h1 className="mt-10 scroll-mt-24 text-3xl font-bold tracking-tight first:mt-0 md:text-4xl">
+   218→      {children}
+   219→    </h1>
+   220→  ),
+   221→  h2: ({ children }) => {
+   222→    const id = slugify(extractText(children))
+   223→    return (
+   224→      <h2
+   225→        id={id}
+   226→        className="mt-12 scroll-mt-24 border-l-2 border-primary/30 pl-4 text-2xl font-bold tracking-tight md:text-3xl"
+   227→      >
+   228→        {children}
+   229→      </h2>
+   230→    )
+   231→  },
+   232→  h3: ({ children }) => (
+   233→    <h3 className="mt-8 scroll-mt-24 text-xl font-semibold tracking-tight md:text-2xl">
+   234→      {children}
+   235→    </h3>
+   236→  ),
+   237→  h4: ({ children }) => (
+   238→    <h4 className="mt-6 scroll-mt-24 text-lg font-semibold tracking-tight">{children}</h4>
+   239→  ),
+   240→  p: ({ children }) => (
+   241→    <p className="text-[1.02rem] leading-[1.75] text-muted-foreground">{children}</p>
+   242→  ),
+   243→  a: ({ children, href }) => (
+   244→    <a
+   245→      href={href}
+   246→      target="_blank"
+   247→      rel="noopener noreferrer"
+   248→      className="font-medium text-primary underline underline-offset-4 decoration-primary/40 transition-colors hover:decoration-primary"
+   249→    >
+   250→      {children}
+   251→    </a>
+   252→  ),
+   253→  ul: ({ children }) => (
+   254→    <ul className="list-disc space-y-2 pl-6 text-muted-foreground marker:text-primary">
+   255→      {children}
+   256→    </ul>
+   257→  ),
+   258→  ol: ({ children }) => (
+   259→    <ol className="list-decimal space-y-2 pl-6 text-muted-foreground marker:font-semibold marker:text-primary">
+   260→      {children}
+   261→    </ol>
+   262→  ),
+   263→  li: ({ children }) => <li className="leading-[1.7]">{children}</li>,
+   264→  blockquote: ({ children }) => (
+   265→    <blockquote className="border-l-4 border-primary/50 bg-muted/40 px-5 py-3 italic text-foreground/90">
+   266→      {children}
+   267→    </blockquote>
+   268→  ),
+   269→  hr: () => <hr className="border-border/60" />,
+   270→  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+   271→  em: ({ children }) => <em className="italic">{children}</em>,
+   272→  code: ({ className, children }) => {
+   273→    const isBlock = !!className && className.includes('language-')
+   274→    if (isBlock) {
+   275→      return <code className={cn(className, 'font-mono')}>{children}</code>
+   276→    }
+   277→    return (
+   278→      <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-primary">
+   279→        {children}
+   280→      </code>
+   281→    )
+   282→  },
+   283→  pre: ({ children }) => (
+   284→    <pre className="overflow-x-auto rounded-xl border border-border/60 bg-gradient-to-br from-secondary to-secondary/80 p-4 text-sm text-secondary-foreground shadow-soft">
+   285→      {children}
+   286→    </pre>
+   287→  ),
+   288→  table: ({ children }) => (
+   289→    <div className="overflow-x-auto rounded-xl border border-border/60">
+   290→      <table className="w-full border-collapse text-sm">{children}</table>
+   291→    </div>
+   292→  ),
+   293→  thead: ({ children }) => <thead className="bg-muted/60">{children}</thead>,
+   294→  th: ({ children }) => (
+   295→    <th className="border-b border-border/60 px-4 py-2 text-left font-semibold">{children}</th>
+   296→  ),
+   297→  td: ({ children }) => (
+   298→    <td className="border-b border-border/40 px-4 py-2 text-muted-foreground">{children}</td>
+   299→  ),
+   300→}
+   301→
+   302→/* ------------------------------ TOC ------------------------------ */
+   303→
+   304→function TableOfContents({
+   305→  items,
+   306→  activeId,
+   307→}: {
+   308→  items: { id: string; text: string }[]
+   309→  activeId: string
+   310→}) {
+   311→  const t = useT()
+   312→  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+   313→    e.preventDefault()
+   314→    const el = document.getElementById(id)
+   315→    if (el) {
+   316→      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+   317→      // update hash without jumping
+   318→      if (typeof history !== 'undefined') history.replaceState(null, '', `#${id}`)
+   319→    }
+   320→  }
+   321→
+   322→  if (items.length === 0) return null
+   323→
+   324→  return (
+   325→    <nav aria-label={t('blogDetail.contents')} className="text-sm">
+   326→      <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+   327→        <List className="h-3.5 w-3.5" />
+   328→        {t('blogDetail.contents')}
+   329→      </p>
+   330→      <ul className="space-y-1 border-l border-border/60">
+   331→        {items.map((item) => {
+   332→          const isActive = activeId === item.id
+   333→          return (
+   334→            <li key={item.id} className="relative">
+   335→              {isActive && (
+   336→                <span
+   337→                  className="absolute -left-px top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-gradient-to-b from-primary to-accent"
+   338→                  aria-hidden
+   339→                />
+   340→              )}
+   341→              <a
+   342→                href={`#${item.id}`}
+   343→                onClick={(e) => handleClick(e, item.id)}
+   344→                className={cn(
+   345→                  '-ml-px block border-l-2 pl-4 py-1 transition-all duration-200',
+   346→                  isActive
+   347→                    ? 'border-transparent font-semibold text-foreground'
+   348→                    : 'border-transparent text-muted-foreground hover:translate-x-0.5 hover:border-primary hover:text-primary',
+   349→                )}
+   350→              >
+   351→                {item.text}
+   352→              </a>
+   353→            </li>
+   354→          )
+   355→        })}
+   356→      </ul>
+   357→    </nav>
+   358→  )
+   359→}
+   360→
+   361→/* ------------------------------ related compact card ------------------------------ */
+   362→
+   363→function CompactCard({ post }: { post: BlogPost }) {
+   364→  const openDetail = useNav((s) => s.openDetail)
+   365→  const t = useT()
+   366→  const lang = useLang((s) => s.lang)
+   367→  const title = tc('blogPost', post.slug, 'title', post.title, lang)
+   368→  return (
+   369→    <motion.article
+   370→      onClick={() => openDetail('blog', post.slug)}
+   371→      whileHover={{ y: -4 }}
+   372→      transition={{ duration: 0.25, ease: 'easeOut' }}
+   373→      className="group relative cursor-pointer rounded-2xl p-px"
+   374→    >
+   375→      {/* Gradient border on hover */}
+   376→      <span
+   377→        className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-primary to-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+   378→        aria-hidden
+   379→      />
+   380→      <div className="relative flex gap-4 rounded-2xl border border-border/60 bg-card p-3 shadow-xs transition-shadow duration-300 group-hover:shadow-soft">
+   381→        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl">
+   382→          <img
+   383→            src={post.coverImage}
+   384→            alt={title}
+   385→            loading="lazy"
+   386→            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+   387→          />
+   388→        </div>
+   389→        <div className="flex min-w-0 flex-1 flex-col py-0.5">
+   390→          {post.category && (
+   391→            <span className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary">
+   392→              {post.category.name}
+   393→            </span>
+   394→          )}
+   395→          <h4 className="line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
+   396→            {title}
+   397→          </h4>
+   398→          <p className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
+   399→            <Clock className="h-3 w-3" />
+   400→            <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
+   401→          </p>
+   402→        </div>
+   403→      </div>
+   404→    </motion.article>
+   405→  )
+   406→}
+   407→
+   408→/* ------------------------------ skeletons ------------------------------ */
+   409→
+   410→function ArticleSkeleton() {
+   411→  return (
+   412→    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+   413→      <Skeleton className="mt-8 h-4 w-32" />
+   414→      <div className="mt-6 space-y-4">
+   415→        <Skeleton className="h-10 w-3/4" />
+   416→        <Skeleton className="h-10 w-1/2" />
+   417→        <Skeleton className="h-5 w-full" />
+   418→        <Skeleton className="h-5 w-5/6" />
+   419→      </div>
+   420→      <div className="mt-8 flex items-center gap-4">
+   421→        <Skeleton className="h-12 w-12 rounded-full" />
+   422→        <div className="space-y-2">
+   423→          <Skeleton className="h-4 w-32" />
+   424→          <Skeleton className="h-3 w-48" />
+   425→        </div>
+   426→      </div>
+   427→      <Skeleton className="mt-10 aspect-[16/8] w-full rounded-2xl" />
+   428→      <div className="mt-10 grid gap-10 lg:grid-cols-3">
+   429→        <div className="space-y-4 lg:col-span-2">
+   430→          {Array.from({ length: 10 }).map((_, i) => (
+   431→            <Skeleton key={i} className="h-4 w-full" />
+   432→          ))}
+   433→        </div>
+   434→        <Skeleton className="hidden h-64 lg:block" />
+   435→      </div>
+   436→    </div>
+   437→  )
+   438→}
+   439→
+   440→/* ------------------------------ not found ------------------------------ */
+   441→
+   442→function NotFound({ onBack }: { onBack: () => void }) {
+   443→  const t = useT()
+   444→  const lang = useLang((s) => s.lang)
+   445→  return (
+   446→    <div className="mx-auto flex max-w-2xl flex-col items-center justify-center gap-4 px-4 py-32 text-center">
+   447→      <div className="grid h-16 w-16 place-items-center rounded-full bg-destructive/10 text-destructive">
+   448→        <AlertCircle className="h-7 w-7" />
+   449→      </div>
+   450→      <div>
+   451→        <h1 className="text-2xl font-bold tracking-tight">{t('blogDetail.notFound')}</h1>
+   452→        <p className="mt-2 text-muted-foreground">
+   453→          The article you&apos;re looking for may have been moved or doesn&apos;t exist.
+   454→        </p>
+   455→      </div>
+   456→      <Button onClick={onBack} variant="outline" className="mt-2 rounded-full">
+   457→        <ArrowLeft className={cn('mr-1.5 h-4 w-4', lang === 'fa' && 'rtl-flip mr-0 ml-1.5')} />
+   458→        {t('blogDetail.back')}
+   459→      </Button>
+   460→    </div>
+   461→  )
+   462→}
+   463→
+   464→/* ------------------------------ view ------------------------------ */
+   465→
+   466→export function BlogDetailView() {
+   467→  const slug = useNav((s) => s.detailSlug)
+   468→  const closeDetail = useNav((s) => s.closeDetail)
+   469→  const setView = useNav((s) => s.setView)
+   470→  const { data, isLoading, isError } = useBlogPost(slug)
+   471→  const t = useT()
+   472→  const lang = useLang((s) => s.lang)
+   473→
+   474→  const articleRef = useRef<HTMLElement>(null)
+   475→  const item = data?.item
+   476→  // Only track scroll when the article is actually rendered (avoids
+   477→  // framer-motion "Target ref is defined but not hydrated" crash during loading)
+   478→  const { scrollYProgress } = useScroll({
+   479→    target: item ? articleRef : undefined,
+   480→    offset: ['start start', 'end end'],
+   481→  })
+   482→  const scaleX = useSpring(scrollYProgress, {
+   483→    stiffness: 100,
+   484→    damping: 30,
+   485→    restDelta: 0.001,
+   486→  })
+   487→
+   488→  const related = data?.related ?? []
+   489→  const content = item?.content ?? ''
+   490→  const toc = useMemo(() => extractTOC(content), [content])
+   491→  const [activeTocId, setActiveTocId] = useState<string>('')
+   492→
+   493→  // Track active section for TOC highlighting (only when there is content to track)
+   494→  useEffect(() => {
+   495→    if (toc.length === 0) return
+   496→    const observer = new IntersectionObserver(
+   497→      (entries) => {
+   498→        const visible = entries
+   499→          .filter((e) => e.isIntersecting)
+   500→          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
+   501→        if (visible[0]?.target.id) {
+   502→          setActiveTocId(visible[0].target.id)
+   503→        }
+   504→      },
+   505→      { rootMargin: '-20% 0px -65% 0px', threshold: [0, 0.25, 0.5, 1] },
+   506→    )
+   507→    toc.forEach((entry) => {
+   508→      const el = document.getElementById(entry.id)
+   509→      if (el) observer.observe(el)
+   510→    })
+   511→    return () => observer.disconnect()
+   512→  }, [toc])
+   513→
+   514→  const handleBack = () => {
+   515→    closeDetail()
+   516→    setView('blog')
+   517→  }
+   518→
+   519→  if (isLoading) {
+   520→    return (
+   521→      <div className="pt-8">
+   522→        {/* progress placeholder */}
+   523→        <div className="fixed left-0 right-0 top-16 z-40 h-1 bg-border/60" />
+   524→        <ArticleSkeleton />
+   525→      </div>
+   526→    )
+   527→  }
+   528→
+   529→  if (!item || isError) {
+   530→    return (
+   531→      <div className="pt-8">
+   532→        <div className="fixed left-0 right-0 top-16 z-40 h-1 bg-border/60" />
+   533→        <NotFound onBack={handleBack} />
+   534→      </div>
+   535→    )
+   536→  }
+   537→
+   538→  return (
+   539→    <>
+   540→      {/* reading progress */}
+   541→      <motion.div
+   542→        style={{ scaleX }}
+   543→        className="fixed left-0 right-0 top-16 z-50 h-1 origin-left bg-gradient-to-r from-primary to-accent"
+   544→        aria-hidden
+   545→      />
+   546→
+   547→      <article ref={articleRef} className="relative mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+   548→        {/* back button */}
+   549→        <Reveal>
+   550→          <button
+   551→            type="button"
+   552→            onClick={handleBack}
+   553→            className="group mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+   554→          >
+   555→            <ArrowLeft className={cn('h-4 w-4 transition-transform group-hover:-translate-x-0.5', lang === 'fa' && 'rtl-flip group-hover:translate-x-0.5')} />
+   556→            {t('blogDetail.back')}
+   557→          </button>
+   558→        </Reveal>
+   559→
+   560→        {/* hero */}
+   561→        <Reveal>
+   562→          <header className="mx-auto max-w-4xl">
+   563→            {item.category && (
+   564→              <Badge
+   565→                variant="secondary"
+   566→                className="mb-5 border-0 bg-primary/10"
+   567→              >
+   568→                <span className="text-gradient">{item.category.name}</span>
+   569→              </Badge>
+   570→            )}
+   571→            <h1 className="text-balance text-3xl font-bold leading-[1.1] tracking-tight sm:text-4xl md:text-5xl lg:text-[3.4rem] lg:leading-[1.05]">
+   572→              {tc('blogPost', item.slug, 'title', item.title, lang)}
+   573→            </h1>
+   574→            <p className="mt-6 text-balance text-lg leading-relaxed text-muted-foreground sm:text-xl">
+   575→              {tc('blogPost', item.slug, 'excerpt', item.excerpt, lang)}
+   576→            </p>
+   577→
+   578→            {/* meta row */}
+   579→            <div className="mt-8 flex flex-col gap-4 border-y border-border/60 py-5 sm:flex-row sm:items-center sm:justify-between">
+   580→              <div className="flex items-center gap-3">
+   581→                <AuthorAvatar post={item} size="md" />
+   582→                <div className="min-w-0">
+   583→                  <p className="text-sm font-semibold">{item.authorName}</p>
+   584→                  <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+   585→                    <span className="inline-flex items-center gap-1.5">
+   586→                      <Calendar className="h-3 w-3" />
+   587→                      <span className="ltr-num">{formatDate(item.createdAt)}</span>
+   588→                    </span>
+   589→                    <span className="inline-flex items-center gap-1.5">
+   590→                      <Clock className="h-3 w-3" />
+   591→                      <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
+   592→                    </span>
+   593→                    <span className="inline-flex items-center gap-1.5">
+   594→                      <FileText className="h-3 w-3" />
+   595→                      <span className="ltr-num">{item.views}</span> {t('blogDetail.views')}
+   596→                    </span>
+   597→                  </div>
+   598→                </div>
+   599→              </div>
+   600→              <ShareButtons title={tc('blogPost', item.slug, 'title', item.title, lang)} />
+   601→            </div>
+   602→          </header>
+   603→        </Reveal>
+   604→
+   605→        {/* cover image */}
+   606→        <Reveal delay={0.1}>
+   607→          <div className="mt-10 overflow-hidden rounded-2xl border border-border/60 shadow-soft">
+   608→            <img
+   609→              src={item.coverImage}
+   610→              alt={tc('blogPost', item.slug, 'title', item.title, lang)}
+   611→              className="aspect-[16/8] w-full object-cover"
+   612→            />
+   613→          </div>
+   614→        </Reveal>
+   615→
+   616→        {/* content + TOC */}
+   617→        <div className="mt-12 grid gap-10 lg:grid-cols-3 lg:gap-12">
+   618→          {/* main content */}
+   619→          <div className="lg:col-span-2">
+   620→            <div className="space-y-6">
+   621→              <ReactMarkdown components={markdownComponents}>{item.content}</ReactMarkdown>
+   622→            </div>
+   623→
+   624→            {/* tags */}
+   625→            {item.tags && item.tags.length > 0 && (
+   626→              <div className="mt-10 flex flex-wrap items-center gap-2 border-t border-border/60 pt-6">
+   627→                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+   628→                  {t('blog.tags')}
+   629→                </span>
+   630→                {item.tags.map((tg) => (
+   631→                  <span
+   632→                    key={tg.id}
+   633→                    className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
+   634→                  >
+   635→                    #{tg.name}
+   636→                  </span>
+   637→                ))}
+   638→              </div>
+   639→            )}
+   640→
+   641→            {/* author footer */}
+   642→            <div className="relative mt-10 flex items-center gap-4 overflow-hidden rounded-2xl border border-border/60 p-5 shadow-soft">
+   643→              <div
+   644→                className="pointer-events-none absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-transparent"
+   645→                aria-hidden
+   646→              />
+   647→              <div className="relative">
+   648→                <AuthorAvatar post={item} size="lg" />
+   649→              </div>
+   650→              <div className="relative">
+   651→                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+   652→                  Written by
+   653→                </p>
+   654→                <p className="text-base font-semibold">{item.authorName}</p>
+   655→                <p className="mt-0.5 text-sm text-muted-foreground">
+   656→                  <span className="ltr-num">{item.views + 1}</span> {t('blogDetail.views')} ·{' '}
+   657→                  <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
+   658→                </p>
+   659→              </div>
+   660→            </div>
+   661→          </div>
+   662→
+   663→          {/* sticky TOC */}
+   664→          <aside className="lg:col-span-1">
+   665→            <div className="lg:sticky lg:top-24">
+   666→              <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft">
+   667→                <TableOfContents items={toc} activeId={activeTocId} />
+   668→                {toc.length === 0 && (
+   669→                  <p className="text-sm text-muted-foreground">
+   670→                    Use the headings above to navigate this article.
+   671→                  </p>
+   672→                )}
+   673→              </div>
+   674→
+   675→              {/* mini CTA in sidebar */}
+   676→              <div className="mt-4 rounded-2xl border border-border/60 bg-secondary p-5 text-secondary-foreground">
+   677→                <p className="text-sm font-semibold">{t('blogDetail.likeCta')}</p>
+   678→                <p className="mt-1 text-xs text-secondary-foreground/70">
+   679→                  We craft digital products that ship fast and scale gracefully.
+   680→                </p>
+   681→                <button
+   682→                  type="button"
+   683→                  onClick={() => setView('contact')}
+   684→                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
+   685→                >
+   686→                  {t('blogDetail.startProject')}
+   687→                  <ArrowRight className={cn('h-3.5 w-3.5', lang === 'fa' && 'rtl-flip')} />
+   688→                </button>
+   689→              </div>
+   690→            </div>
+   691→          </aside>
+   692→        </div>
+   693→
+   694→        {/* related articles */}
+   695→        {related.length > 0 && (
+   696→          <section className="mt-20">
+   697→            <SectionHeading
+   698→              align="left"
+   699→              eyebrow="Keep reading"
+   700→              title={t('blogDetail.related')}
+   701→              description="More perspectives from our team."
+   702→            />
+   703→            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   704→              {related.map((post, i) => (
+   705→                <Reveal key={post.id} delay={Math.min(i * 0.06, 0.24)}>
+   706→                  <CompactCard post={post} />
+   707→                </Reveal>
+   708→              ))}
+   709→            </div>
+   710→          </section>
+   711→        )}
+   712→
+   713→        {/* final CTA */}
+   714→        <section className="mt-20">
+   715→          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-accent px-6 py-14 text-center text-primary-foreground shadow-soft md:px-12 md:py-16">
+   716→            <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+   717→            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+   718→            <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+   719→            <div className="relative mx-auto max-w-2xl">
+   720→              <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur">
+   721→                <span className="h-1.5 w-1.5 rounded-full bg-white" />
+   722→                Let&apos;s build
+   723→              </span>
+   724→              <h2 className="text-balance text-2xl font-bold tracking-tight md:text-3xl">
+   725→                {t('blogDetail.ctaTitle')}
+   726→              </h2>
+   727→              <p className="mt-3 text-base text-primary-foreground/80">
+   728→                {t('blogDetail.ctaDesc')}
+   729→              </p>
+   730→              <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+   731→                <Button
+   732→                  size="lg"
+   733→                  variant="secondary"
+   734→                  onClick={() => setView('contact')}
+   735→                  className="rounded-full"
+   736→                >
+   737→                  {t('blogDetail.startProject')}
+   738→                  <ArrowRight className={cn('ml-1.5 h-4 w-4', lang === 'fa' && 'rtl-flip ml-0 mr-1.5')} />
+   739→                </Button>
+   740→                <Button
+   741→                  size="lg"
+   742→                  variant="outline"
+   743→                  onClick={() => setView('estimate')}
+   744→                  className="rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+   745→                >
+   746→                  {t('cta.getEstimate')}
+   747→                </Button>
+   748→              </div>
+   749→              <a
+   750→                href="#"
+   751→                onClick={(e) => {
+   752→                  e.preventDefault()
+   753→                  setView('contact')
+   754→                }}
+   755→                className="mt-6 inline-flex items-center gap-1 text-sm text-primary-foreground/70 transition-colors hover:text-white"
+   756→              >
+   757→                or subscribe to our newsletter
+   758→                <ArrowUpRight className={cn('h-3.5 w-3.5', lang === 'fa' && 'rtl-flip')} />
+   759→              </a>
+   760→            </div>
+   761→          </div>
+   762→        </section>
+   763→      </article>
+   764→    </>
+   765→  )
+   766→}
+   767→

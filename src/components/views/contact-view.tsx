@@ -55,6 +55,22 @@ const SOCIALS = [
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+// Confetti dot trajectories for the success state animation
+const CONFETTI = [
+  { x: -110, y: -30, rotate: -40, color: 'bg-primary' },
+  { x: -80, y: -90, rotate: -25, color: 'bg-accent' },
+  { x: -40, y: -120, rotate: -10, color: 'bg-primary' },
+  { x: 0, y: -130, rotate: 0, color: 'bg-accent' },
+  { x: 40, y: -120, rotate: 10, color: 'bg-primary' },
+  { x: 80, y: -90, rotate: 25, color: 'bg-accent' },
+  { x: 110, y: -30, rotate: 40, color: 'bg-primary' },
+  { x: -120, y: 30, rotate: -55, color: 'bg-accent' },
+  { x: 120, y: 30, rotate: 55, color: 'bg-primary' },
+  { x: -70, y: 60, rotate: -70, color: 'bg-accent' },
+  { x: 70, y: 60, rotate: 70, color: 'bg-primary' },
+  { x: 0, y: -70, rotate: 0, color: 'bg-accent' },
+]
+
 export function ContactView() {
   const t = useT()
   const lang = useLang((s) => s.lang)
@@ -167,15 +183,27 @@ export function ContactView() {
   return (
     <section className="relative overflow-hidden py-20 sm:py-28">
       {/* ambient backdrop */}
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40" />
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40"
+        style={{
+          maskImage:
+            'radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%)',
+          WebkitMaskImage:
+            'radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%)',
+        }}
+      />
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-radial-fade" />
+      {/* floating accent blobs */}
+      <div className="pointer-events-none absolute -top-20 left-[8%] -z-10 size-72 rounded-full bg-primary/15 blur-3xl animate-float" />
+      <div
+        className="pointer-events-none absolute top-44 right-[6%] -z-10 size-72 rounded-full bg-accent/15 blur-3xl animate-float"
+        style={{ animationDelay: '2.5s' }}
+      />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow={t('contact.eyebrow')}
-          title={
-            <span className="text-gradient">{t('contact.title')}</span>
-          }
+          title={<span className="text-gradient">{t('contact.title')}</span>}
           description={t('contact.desc')}
         />
 
@@ -191,37 +219,48 @@ export function ContactView() {
               </p>
             </div>
 
-            {/* contact details */}
-            <div className="grid gap-3 sm:grid-cols-2">
-              {CONTACT_DETAILS.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="group flex items-start gap-3 rounded-2xl border border-border/60 bg-card/60 p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow"
-                >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                    <item.icon className="size-5" />
-                  </span>
-                  <span className="flex flex-col">
-                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      {item.label}
+            {/* contact details — wrapped with decorative gradient backdrop + floating accent blobs */}
+            <div className="relative">
+              <div className="pointer-events-none absolute -inset-4 -z-10 rounded-3xl bg-gradient-to-br from-primary/10 via-accent/5 to-transparent" />
+              <div className="pointer-events-none absolute -left-6 top-1/3 -z-10 size-32 rounded-full bg-primary/10 blur-2xl animate-float" />
+              <div
+                className="pointer-events-none absolute -right-4 -top-6 -z-10 size-28 rounded-full bg-accent/10 blur-2xl animate-float"
+                style={{ animationDelay: '3s' }}
+              />
+              <div className="grid gap-3 sm:grid-cols-2">
+                {CONTACT_DETAILS.map((item) => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    className="group flex items-start gap-4 rounded-2xl border border-border/60 bg-card/80 p-5 shadow-soft backdrop-blur transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow"
+                  >
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-accent/10 text-primary ring-1 ring-inset ring-primary/10 transition-all group-hover:from-primary group-hover:to-accent group-hover:text-primary-foreground group-hover:ring-transparent group-hover:shadow-glow">
+                      <item.icon className="size-6 transition-transform group-hover:scale-110" />
                     </span>
-                    <span
-                      className={cn(
-                        'mt-0.5 text-sm font-semibold text-foreground',
-                        item.ltr && 'ltr-num',
-                      )}
-                    >
-                      {item.value}
+                    <span className="flex flex-col">
+                      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        {item.label}
+                      </span>
+                      <span
+                        className={cn(
+                          'mt-0.5 text-sm font-semibold text-foreground',
+                          item.ltr && 'ltr-num',
+                        )}
+                      >
+                        {item.value}
+                      </span>
                     </span>
-                  </span>
-                </a>
-              ))}
+                  </a>
+                ))}
+              </div>
             </div>
 
             {/* response time promise */}
-            <div className="flex items-center gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-4">
-              <Clock className="size-5 shrink-0 text-accent" />
+            <div className="relative flex items-center gap-3 overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent p-4 shadow-soft">
+              <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-accent/15 blur-2xl" />
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent ring-1 ring-inset ring-accent/20">
+                <Clock className="size-5" />
+              </span>
               <p className="text-sm font-medium text-foreground">
                 <span className="text-accent">{t('contact.responseTime')}</span>
               </p>
@@ -232,22 +271,32 @@ export function ContactView() {
               <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('contact.whatsNext')}
               </h4>
-              <ol className="space-y-3">
+              <ol className="relative space-y-3">
+                {/* vertical gradient connector line on the left */}
+                <span
+                  className={cn(
+                    'pointer-events-none absolute top-5 bottom-5 w-px bg-gradient-to-b from-primary/60 via-accent/40 to-transparent',
+                    lang === 'fa' ? 'right-5' : 'left-5',
+                  )}
+                  aria-hidden
+                />
                 {NEXT_STEPS.map((step, idx) => (
                   <li
                     key={step.title}
-                    className="group flex items-start gap-4 rounded-2xl border border-transparent p-3 transition-colors hover:border-border/60 hover:bg-card/60"
+                    className="group relative flex items-start gap-4 rounded-2xl border border-transparent p-3 transition-all hover:-translate-y-0.5 hover:border-border/60 hover:bg-card/60 hover:shadow-soft"
                   >
-                    <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-secondary-foreground">
+                    <span className="relative z-10 flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-soft ring-4 ring-background">
                       <step.icon className="size-5" />
-                      <span className={cn(
-                        'absolute -top-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground',
-                        lang === 'fa' ? '-left-1' : '-right-1',
-                      )}>
+                      <span
+                        className={cn(
+                          'absolute -top-1.5 flex size-5 items-center justify-center rounded-full bg-background text-[10px] font-bold text-primary ring-2 ring-primary/30',
+                          lang === 'fa' ? '-left-1.5' : '-right-1.5',
+                        )}
+                      >
                         <span className="ltr-num">{idx + 1}</span>
                       </span>
                     </span>
-                    <div className="flex flex-col">
+                    <div className="flex flex-col pt-1">
                       <span className="text-sm font-semibold">{step.title}</span>
                       <span className="mt-0.5 text-sm text-muted-foreground">{step.desc}</span>
                     </div>
@@ -267,7 +316,7 @@ export function ContactView() {
                     target="_blank"
                     rel="noreferrer"
                     aria-label={s.label}
-                    className="flex size-9 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:text-primary"
+                    className="flex size-10 items-center justify-center rounded-xl border border-border/60 bg-card/60 text-muted-foreground shadow-soft transition-all hover:-translate-y-1 hover:border-primary/40 hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-primary-foreground hover:shadow-glow"
                   >
                     <s.icon className="size-4" />
                   </a>
@@ -278,12 +327,14 @@ export function ContactView() {
 
           {/* RIGHT — form / success */}
           <Reveal delay={0.1}>
-            <Card className="overflow-hidden border-border/60 shadow-soft">
-              <CardHeader className="border-b bg-muted/30 pb-6">
-                <CardTitle className="text-xl">Start your project</CardTitle>
-                <CardDescription>
-                  Fill in the form and we&apos;ll be in touch shortly.
-                </CardDescription>
+            <Card className="group relative overflow-hidden border-border/60 shadow-soft transition-all duration-300 focus-within:-translate-y-0.5 focus-within:shadow-glow">
+              {/* gradient top border that brightens on focus-within */}
+              <span className="absolute inset-x-0 top-0 z-10 h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-60 transition-opacity duration-300 group-focus-within:opacity-100" />
+              <CardHeader className="relative border-b bg-gradient-to-br from-muted/40 to-muted/10 pb-6">
+                <CardTitle className="text-xl">
+                  <span className="text-gradient">Start your project</span>
+                </CardTitle>
+                <CardDescription>Fill in the form and we&apos;ll be in touch shortly.</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 {submitted ? (
@@ -291,25 +342,85 @@ export function ContactView() {
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex flex-col items-center py-8 text-center"
+                    className="relative flex flex-col items-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-accent/5 to-transparent px-6 py-10 text-center"
                   >
+                    {/* confetti dots */}
+                    {CONFETTI.map((c, i) => (
+                      <motion.span
+                        key={i}
+                        initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
+                        animate={{
+                          opacity: [0, 1, 1, 0],
+                          x: c.x,
+                          y: c.y,
+                          scale: [0, 1, 1, 0.5],
+                          rotate: c.rotate,
+                        }}
+                        transition={{ duration: 1.6, delay: 0.15 + i * 0.04, ease: 'easeOut' }}
+                        className={cn(
+                          'pointer-events-none absolute top-12 size-2 rounded-full',
+                          c.color,
+                        )}
+                        style={{ left: '50%' }}
+                      />
+                    ))}
+                    {/* glowing backdrop */}
+                    <span className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_30%,color-mix(in_oklch,var(--accent)_22%,transparent),transparent_60%)]" />
                     <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.1, type: 'spring', stiffness: 220, damping: 18 }}
-                      className="flex size-16 items-center justify-center rounded-full bg-accent/15 text-accent"
+                      initial={{ scale: 0, rotate: -30 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 14 }}
+                      className="relative flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glow"
                     >
-                      <CheckCircle2 className="size-9" />
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.25, type: 'spring', stiffness: 280, damping: 16 }}
+                      >
+                        <CheckCircle2 className="size-14" strokeWidth={2.5} />
+                      </motion.span>
+                      {/* pulse ring */}
+                      <motion.span
+                        initial={{ scale: 1, opacity: 0.6 }}
+                        animate={{ scale: 1.6, opacity: 0 }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: 'easeOut',
+                          delay: 0.3,
+                        }}
+                        className="absolute inset-0 rounded-full bg-accent/40"
+                      />
                     </motion.span>
-                    <h3 className="mt-6 text-2xl font-semibold tracking-tight">
-                      {t('contact.successTitle')}
-                    </h3>
-                    <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+                    <motion.h3
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="mt-6 text-2xl font-semibold tracking-tight sm:text-3xl"
+                    >
+                      <span className="text-gradient">{t('contact.successTitle')}</span>
+                    </motion.h3>
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="mt-2 max-w-sm text-sm text-muted-foreground sm:text-base"
+                    >
                       {t('contact.successDesc')}
-                    </p>
-                    <Button onClick={resetForm} variant="outline" className="mt-8">
-                      {t('contact.sendAnother')}
-                    </Button>
+                    </motion.p>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                    >
+                      <Button
+                        onClick={resetForm}
+                        variant="outline"
+                        className="mt-8 shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow"
+                      >
+                        {t('contact.sendAnother')}
+                      </Button>
+                    </motion.div>
                   </motion.div>
                 ) : (
                   <form onSubmit={onSubmit} noValidate className="grid gap-5">
@@ -341,7 +452,12 @@ export function ContactView() {
                     </div>
 
                     <div className="grid gap-5 sm:grid-cols-2">
-                      <Field id="email" label={t('contact.emailLabel')} required error={errors.email}>
+                      <Field
+                        id="email"
+                        label={t('contact.emailLabel')}
+                        required
+                        error={errors.email}
+                      >
                         <Input
                           id="email"
                           type="email"
@@ -365,11 +481,11 @@ export function ContactView() {
                     </div>
 
                     <Field id="budget" label={t('contact.budget')} error={undefined}>
-                      <Select
-                        value={form.budget}
-                        onValueChange={(v) => update('budget', v)}
-                      >
-                        <SelectTrigger id="budget" className="w-full">
+                      <Select value={form.budget} onValueChange={(v) => update('budget', v)}>
+                        <SelectTrigger
+                          id="budget"
+                          className="h-12 w-full bg-card text-base font-medium shadow-sm transition-all hover:border-primary/40 hover:shadow-soft"
+                        >
                           <SelectValue placeholder="Select a range" />
                         </SelectTrigger>
                         <SelectContent>
@@ -406,19 +522,22 @@ export function ContactView() {
                         type="submit"
                         size="lg"
                         disabled={submitting}
-                        className="sm:min-w-[180px]"
+                        className="group relative overflow-hidden bg-gradient-to-r from-primary to-primary text-primary-foreground shadow-soft transition-all hover:from-primary hover:to-accent hover:shadow-glow sm:min-w-[180px]"
                       >
-                        {submitting ? (
-                          <>
-                            <Loader2 className="size-4 animate-spin" />
-                            {t('contact.sending')}
-                          </>
-                        ) : (
-                          <>
-                            {t('contact.send')}
-                            <Send className={cn('size-4', lang === 'fa' ? 'mr-1.5' : 'ml-1.5')} />
-                          </>
-                        )}
+                        <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                        <span className="relative flex items-center">
+                          {submitting ? (
+                            <>
+                              <Loader2 className="size-4 animate-spin" />
+                              {t('contact.sending')}
+                            </>
+                          ) : (
+                            <>
+                              {t('contact.send')}
+                              <Send className={cn('size-4', lang === 'fa' ? 'mr-1.5' : 'ml-1.5')} />
+                            </>
+                          )}
+                        </span>
                       </Button>
                     </div>
                   </form>
@@ -430,7 +549,10 @@ export function ContactView() {
 
         {/* bottom CTA strip */}
         <Reveal delay={0.15} className="mt-16">
-          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-border/60 bg-secondary px-6 py-6 text-center text-secondary-foreground shadow-soft sm:flex-row sm:text-left">
+          <div className="relative flex flex-col items-center justify-between gap-4 overflow-hidden rounded-2xl border border-border/60 bg-secondary px-6 py-6 text-center text-secondary-foreground shadow-soft transition-all hover:shadow-glow sm:flex-row sm:text-left">
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-10" />
+            <div className="pointer-events-none absolute -left-10 -top-10 -z-10 size-40 rounded-full bg-accent/20 blur-3xl" />
+            <div className="pointer-events-none absolute -right-10 -bottom-10 -z-10 size-40 rounded-full bg-primary/20 blur-3xl" />
             <div className="flex items-center gap-3">
               <ArrowRight className={cn('size-5 text-accent', lang === 'fa' && 'rtl-flip')} />
               <div>
@@ -445,10 +567,16 @@ export function ContactView() {
               onClick={() => {
                 // soft nudge: smooth scroll handled by anchor
               }}
-              className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-foreground transition-colors hover:bg-accent/90"
+              className="group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-accent to-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-glow"
             >
               Get an estimate
-              <ArrowRight className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
+              <ArrowRight
+                className={cn(
+                  'size-4 transition-transform group-hover:translate-x-0.5',
+                  lang === 'fa' &&
+                    'rtl-flip group-hover:translate-x-0 group-hover:-translate-x-0.5',
+                )}
+              />
             </a>
           </div>
         </Reveal>
@@ -485,9 +613,7 @@ function Field({
         )}
       </Label>
       {children}
-      {error ? (
-        <p className={cn('text-xs font-medium text-destructive')}>{error}</p>
-      ) : null}
+      {error ? <p className={cn('text-xs font-medium text-destructive')}>{error}</p> : null}
     </div>
   )
 }

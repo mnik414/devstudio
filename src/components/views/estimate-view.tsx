@@ -23,6 +23,7 @@ import {
   RotateCcw,
   Info,
   PartyPopper,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -79,6 +80,22 @@ const STEPS: StepDef[] = [
 ]
 
 const TOTAL_STEPS = STEPS.length
+
+// Confetti dot trajectories for the saved celebration animation
+const CONFETTI = [
+  { x: -120, y: -30, rotate: -40, color: 'bg-primary' },
+  { x: -85, y: -95, rotate: -25, color: 'bg-accent' },
+  { x: -45, y: -130, rotate: -10, color: 'bg-primary' },
+  { x: 0, y: -140, rotate: 0, color: 'bg-accent' },
+  { x: 45, y: -130, rotate: 10, color: 'bg-primary' },
+  { x: 85, y: -95, rotate: 25, color: 'bg-accent' },
+  { x: 120, y: -30, rotate: 40, color: 'bg-primary' },
+  { x: -130, y: 30, rotate: -55, color: 'bg-accent' },
+  { x: 130, y: 30, rotate: 55, color: 'bg-primary' },
+  { x: -75, y: 65, rotate: -70, color: 'bg-accent' },
+  { x: 75, y: 65, rotate: 70, color: 'bg-primary' },
+  { x: 0, y: -70, rotate: 0, color: 'bg-accent' },
+]
 
 /* --------------------------------- view ---------------------------------- */
 
@@ -210,53 +227,82 @@ export function EstimateView() {
 
   return (
     <section id="estimate-cta" className="relative overflow-hidden py-20 sm:py-28">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40" />
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40"
+        style={{
+          maskImage:
+            'radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%)',
+          WebkitMaskImage:
+            'radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%)',
+        }}
+      />
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-radial-fade" />
+      {/* floating accent blobs */}
+      <div className="pointer-events-none absolute -top-16 left-[12%] -z-10 size-72 rounded-full bg-primary/15 blur-3xl animate-float" />
+      <div
+        className="pointer-events-none absolute top-40 right-[8%] -z-10 size-72 rounded-full bg-accent/15 blur-3xl animate-float"
+        style={{ animationDelay: '2.5s' }}
+      />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading
           eyebrow={t('estimate.eyebrow')}
-          title={
-            <span className="text-gradient">{t('estimate.title')}</span>
-          }
+          title={<span className="text-gradient">{t('estimate.title')}</span>}
           description={t('estimate.desc')}
         />
 
         {/* progress + step indicator */}
         <Reveal delay={0.05} className="mt-12">
-          <div className="mb-6 flex items-center justify-between text-sm">
-            <span className="font-medium text-muted-foreground">
+          <div className="mb-6 flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 px-3.5 py-1.5 text-sm font-medium ring-1 ring-inset ring-primary/15">
               {stage === 'wizard' ? (
                 <>
                   {t('estimate.question')}{' '}
-                  <span className="font-semibold text-foreground ltr-num">{step + 1}</span>{' '}
+                  <span className="font-bold text-gradient ltr-num">{step + 1}</span>{' '}
                   {t('estimate.of')}{' '}
-                  <span className="font-semibold text-foreground ltr-num">{TOTAL_STEPS}</span>
+                  <span className="font-bold text-foreground ltr-num">{TOTAL_STEPS}</span>
                 </>
               ) : stage === 'result' || stage === 'saved' ? (
                 <span className="inline-flex items-center gap-1.5 font-semibold text-accent">
                   <CheckCircle2 className="size-4" /> Estimate ready
                 </span>
               ) : (
-                <>Crunching numbers…</>
+                <span className="inline-flex items-center gap-1.5">
+                  <Loader2 className="size-3.5 animate-spin" />
+                  Crunching numbers…
+                </span>
               )}
             </span>
-            <span className="text-xs text-muted-foreground">
-              <span className="ltr-num">{Math.round(stage === 'wizard' ? progress : 100)}%</span> complete
+            <span className="text-xs font-medium text-muted-foreground">
+              <span className="ltr-num">{Math.round(stage === 'wizard' ? progress : 100)}%</span>{' '}
+              complete
             </span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
+              className="relative h-full rounded-full bg-gradient-to-r from-primary to-accent"
               animate={{ width: `${stage === 'wizard' ? progress : 100}%` }}
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            />
+            >
+              {/* glowing pulse at leading edge */}
+              {stage === 'wizard' && progress > 0 && progress < 100 && (
+                <span className="absolute right-0 top-1/2 size-3 -translate-y-1/2 translate-x-1/2 rounded-full bg-accent shadow-glow">
+                  <motion.span
+                    animate={{ scale: [1, 1.9, 1], opacity: [0.7, 0, 0.7] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut' }}
+                    className="absolute inset-0 rounded-full bg-accent"
+                  />
+                </span>
+              )}
+            </motion.div>
           </div>
         </Reveal>
 
         {/* main panel */}
         <Reveal delay={0.1} className="mt-8">
-          <Card className="overflow-hidden border-border/60 shadow-soft">
+          <Card className="group relative overflow-hidden border-border/60 shadow-soft transition-all duration-300">
+            {/* subtle gradient top accent that brightens on hover */}
+            <span className="absolute inset-x-0 top-0 z-10 h-0.5 bg-gradient-to-r from-primary via-accent to-primary opacity-50 transition-opacity duration-300 group-hover:opacity-100" />
             <CardContent className="p-0">
               <AnimatePresence mode="wait" custom={direction}>
                 {/* WIZARD */}
@@ -305,16 +351,19 @@ export function EstimateView() {
                                 type="button"
                                 onClick={() => setAnswer('pages', opt.value)}
                                 className={cn(
-                                  'group flex flex-col items-center gap-1 rounded-2xl border p-4 text-center transition-all',
+                                  'group relative flex flex-col items-center gap-1 overflow-hidden rounded-2xl border p-4 text-center shadow-soft transition-all',
                                   active
-                                    ? 'border-primary bg-primary/5 shadow-glow'
-                                    : 'border-border/60 hover:-translate-y-0.5 hover:border-primary/40'
+                                    ? 'border-transparent bg-gradient-to-br from-primary/10 to-accent/10 shadow-glow'
+                                    : 'border-border/60 bg-card hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow',
                                 )}
                               >
+                                {active && (
+                                  <span className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-inset ring-primary/40" />
+                                )}
                                 <span
                                   className={cn(
-                                    'text-xl font-bold tracking-tight ltr-num',
-                                    active ? 'text-primary' : 'text-foreground'
+                                    'text-xl font-bold tracking-tight ltr-num transition-transform group-hover:scale-110',
+                                    active ? 'text-gradient' : 'text-foreground',
                                   )}
                                 >
                                   {opt.label}
@@ -342,7 +391,9 @@ export function EstimateView() {
                         onClick={() => goTo(step - 1)}
                         disabled={step === 0}
                       >
-                        <ArrowLeft className={cn('size-4', lang === 'fa' ? 'ml-1.5 rtl-flip' : 'mr-1.5')} />
+                        <ArrowLeft
+                          className={cn('size-4', lang === 'fa' ? 'ml-1.5 rtl-flip' : 'mr-1.5')}
+                        />
                         {t('estimate.back')}
                       </Button>
 
@@ -351,15 +402,22 @@ export function EstimateView() {
                           type="button"
                           onClick={() => goTo(step + 1)}
                           disabled={!isAnswered}
+                          className="shadow-soft transition-all hover:shadow-glow"
                         >
                           {t('estimate.next')}
-                          <ArrowRight className={cn('size-4', lang === 'fa' ? 'mr-1.5 rtl-flip' : 'ml-1.5')} />
+                          <ArrowRight
+                            className={cn(
+                              'size-4',
+                              lang === 'fa' ? 'mr-1.5 rtl-flip' : 'ml-1.5',
+                            )}
+                          />
                         </Button>
                       ) : (
                         <Button
                           type="button"
                           onClick={handleSeeEstimate}
                           disabled={!isAnswered}
+                          className="shadow-soft transition-all hover:shadow-glow"
                         >
                           {t('estimate.seeEstimate')}
                           <Sparkles className="size-4" />
@@ -378,12 +436,17 @@ export function EstimateView() {
                     exit={{ opacity: 0 }}
                     className="flex flex-col items-center justify-center gap-4 py-20 text-center"
                   >
-                    <span className="relative flex size-16 items-center justify-center">
+                    <span className="relative flex size-20 items-center justify-center">
                       <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
-                      <Loader2 className="size-9 animate-spin text-primary" />
+                      <span className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/15 to-accent/15 blur-md" />
+                      <Loader2 className="size-10 animate-spin text-primary" />
                     </span>
-                    <p className="text-base font-medium">{t('estimate.calculating')}</p>
-                    <p className="text-sm text-muted-foreground">Matching your answers against our pricing model.</p>
+                    <p className="text-base font-semibold">
+                      <span className="text-gradient">{t('estimate.calculating')}</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Matching your answers against our pricing model.
+                    </p>
                   </motion.div>
                 )}
 
@@ -402,43 +465,71 @@ export function EstimateView() {
                         <Sparkles className="size-3.5" />
                         Your estimate
                       </span>
-                      <div className="mt-5 flex items-end justify-center gap-3">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Min</span>
-                          <span className="text-4xl font-bold tracking-tight text-gradient ltr-num sm:text-5xl">
-                            $<Counter to={estimate.min} duration={1.4} />
+
+                      {/* HUGE cost range with floating animation + glow */}
+                      <div className="relative mt-6 flex flex-col items-center">
+                        {/* glow effect behind */}
+                        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_50%,color-mix(in_oklch,var(--primary)_25%,transparent),transparent_60%)] blur-2xl" />
+                        <motion.div
+                          animate={{ y: [0, -6, 0] }}
+                          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                          className="flex items-end justify-center gap-3 sm:gap-4"
+                        >
+                          <div className="flex flex-col items-center">
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                              Min
+                            </span>
+                            <span className="text-5xl font-bold tracking-tight text-gradient ltr-num sm:text-6xl lg:text-7xl">
+                              $<Counter to={estimate.min} duration={1.4} />
+                            </span>
+                          </div>
+                          <span className="pb-3 text-3xl font-light text-muted-foreground sm:pb-4 sm:text-4xl">
+                            –
                           </span>
-                        </div>
-                        <span className="pb-2 text-2xl font-light text-muted-foreground">–</span>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Max</span>
-                          <span className="text-4xl font-bold tracking-tight text-gradient ltr-num sm:text-5xl">
-                            $<Counter to={estimate.max} duration={1.6} />
-                          </span>
-                        </div>
+                          <div className="flex flex-col items-center">
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                              Max
+                            </span>
+                            <span className="text-5xl font-bold tracking-tight text-gradient ltr-num sm:text-6xl lg:text-7xl">
+                              $<Counter to={estimate.max} duration={1.6} />
+                            </span>
+                          </div>
+                        </motion.div>
                       </div>
-                      <p className="mt-3 text-sm text-muted-foreground">
+
+                      <p className="mt-4 text-sm text-muted-foreground">
                         {t('estimate.estimatedCost')} · typical timeline{' '}
                         <span className="ltr-num">4–12</span> weeks
                       </p>
                     </div>
 
-                    {/* breakdown */}
+                    {/* breakdown — premium receipt with monospace + alternating rows */}
                     <div className="mt-8">
                       <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                         {t('estimate.breakdown')}
                       </h4>
-                      <ul className="mt-3 space-y-2">
+                      <ul className="mt-3 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft">
                         {estimate.breakdown.map((b, i) => (
                           <motion.li
                             key={b.label}
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.2 + i * 0.07 }}
-                            className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-4 py-3"
+                            className={cn(
+                              'flex items-center justify-between px-4 py-3',
+                              i % 2 === 0 ? 'bg-card/60' : 'bg-muted/30',
+                              i !== estimate.breakdown.length - 1 &&
+                                'border-b border-border/40',
+                            )}
                           >
-                            <span className="text-sm font-medium text-foreground">{b.label}</span>
-                            <span className="text-sm font-semibold text-foreground ltr-num">
+                            <span className="flex items-center gap-2.5 text-sm font-medium text-foreground">
+                              <span
+                                className="size-1.5 rounded-full bg-gradient-to-r from-primary to-accent"
+                                aria-hidden
+                              />
+                              {b.label}
+                            </span>
+                            <span className="font-mono text-sm font-semibold text-foreground ltr-num">
                               ${b.cost.toLocaleString()}
                             </span>
                           </motion.li>
@@ -454,82 +545,113 @@ export function EstimateView() {
                       </p>
                     </div>
 
-                    {/* lead capture */}
-                    <form onSubmit={submitLead} className="mt-8 space-y-4">
-                      <div className="flex items-center gap-2">
-                        <span className="h-px flex-1 bg-border" />
-                        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                          Save your estimate
-                        </span>
-                        <span className="h-px flex-1 bg-border" />
-                      </div>
-                      <p className="text-center text-sm text-muted-foreground">
-                        Drop your details and we&apos;ll send a tailored proposal within 24 hours.
-                      </p>
+                    {/* lead capture — premium card with gradient top border */}
+                    <div className="relative mt-8 overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-card to-muted/20 p-5 shadow-soft sm:p-6">
+                      <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+                      <form onSubmit={submitLead} className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="h-px flex-1 bg-border" />
+                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                            Save your estimate
+                          </span>
+                          <span className="h-px flex-1 bg-border" />
+                        </div>
+                        <p className="text-center text-sm text-muted-foreground">
+                          Drop your details and we&apos;ll send a tailored proposal within 24 hours.
+                        </p>
 
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <LabeledField id="est-name" label={t('estimate.name')} required error={contactErrors.name}>
-                          <Input
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <LabeledField
                             id="est-name"
-                            value={contact.name}
-                            onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))}
-                            placeholder="Jane Doe"
-                            autoComplete="name"
-                            aria-invalid={!!contactErrors.name}
-                          />
-                        </LabeledField>
-                        <LabeledField id="est-company" label={t('estimate.company')} error={undefined}>
-                          <Input
+                            label={t('estimate.name')}
+                            required
+                            error={contactErrors.name}
+                          >
+                            <Input
+                              id="est-name"
+                              value={contact.name}
+                              onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))}
+                              placeholder="Jane Doe"
+                              autoComplete="name"
+                              aria-invalid={!!contactErrors.name}
+                            />
+                          </LabeledField>
+                          <LabeledField
                             id="est-company"
-                            value={contact.company}
-                            onChange={(e) => setContact((c) => ({ ...c, company: e.target.value }))}
-                            placeholder="Acme Inc. (optional)"
-                            autoComplete="organization"
-                          />
-                        </LabeledField>
-                        <LabeledField id="est-email" label={t('estimate.email')} required error={contactErrors.email}>
-                          <Input
+                            label={t('estimate.company')}
+                            error={undefined}
+                          >
+                            <Input
+                              id="est-company"
+                              value={contact.company}
+                              onChange={(e) =>
+                                setContact((c) => ({ ...c, company: e.target.value }))
+                              }
+                              placeholder="Acme Inc. (optional)"
+                              autoComplete="organization"
+                            />
+                          </LabeledField>
+                          <LabeledField
                             id="est-email"
-                            type="email"
-                            value={contact.email}
-                            onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
-                            placeholder="jane@acme.com"
-                            autoComplete="email"
-                            aria-invalid={!!contactErrors.email}
-                          />
-                        </LabeledField>
-                        <LabeledField id="est-phone" label={t('estimate.phone')} error={undefined}>
-                          <Input
-                            id="est-phone"
-                            type="tel"
-                            value={contact.phone}
-                            onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))}
-                            placeholder="+1 (415) 555-0192"
-                            autoComplete="tel"
-                          />
-                        </LabeledField>
-                      </div>
+                            label={t('estimate.email')}
+                            required
+                            error={contactErrors.email}
+                          >
+                            <Input
+                              id="est-email"
+                              type="email"
+                              value={contact.email}
+                              onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
+                              placeholder="jane@acme.com"
+                              autoComplete="email"
+                              aria-invalid={!!contactErrors.email}
+                            />
+                          </LabeledField>
+                          <LabeledField id="est-phone" label={t('estimate.phone')} error={undefined}>
+                            <Input
+                              id="est-phone"
+                              type="tel"
+                              value={contact.phone}
+                              onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))}
+                              placeholder="+1 (415) 555-0192"
+                              autoComplete="tel"
+                            />
+                          </LabeledField>
+                        </div>
 
-                      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
-                        <Button type="button" variant="ghost" onClick={restart}>
-                          <RotateCcw className="size-4" />
-                          Start over
-                        </Button>
-                        <Button type="submit" disabled={savingLead} className="sm:min-w-[200px]">
-                          {savingLead ? (
-                            <>
-                              <Loader2 className="size-4 animate-spin" />
-                              Saving…
-                            </>
-                          ) : (
-                            <>
-                              {t('estimate.saveEstimate')}
-                              <ArrowRight className={cn('size-4', lang === 'fa' ? 'mr-1.5 rtl-flip' : 'ml-1.5')} />
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </form>
+                        <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
+                          <Button type="button" variant="ghost" onClick={restart}>
+                            <RotateCcw className="size-4" />
+                            Start over
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={savingLead}
+                            className="group relative overflow-hidden bg-gradient-to-r from-primary to-primary text-primary-foreground shadow-soft transition-all hover:from-primary hover:to-accent hover:shadow-glow sm:min-w-[200px]"
+                          >
+                            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                            <span className="relative flex items-center">
+                              {savingLead ? (
+                                <>
+                                  <Loader2 className="size-4 animate-spin" />
+                                  Saving…
+                                </>
+                              ) : (
+                                <>
+                                  {t('estimate.saveEstimate')}
+                                  <ArrowRight
+                                    className={cn(
+                                      'size-4',
+                                      lang === 'fa' ? 'mr-1.5 rtl-flip' : 'ml-1.5',
+                                    )}
+                                  />
+                                </>
+                              )}
+                            </span>
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
                   </motion.div>
                 )}
 
@@ -540,32 +662,96 @@ export function EstimateView() {
                     initial={{ opacity: 0, scale: 0.96 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex flex-col items-center py-12 text-center sm:py-16"
+                    className="relative flex flex-col items-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-accent/5 to-transparent px-6 py-12 text-center sm:py-16"
                   >
+                    {/* confetti dots */}
+                    {CONFETTI.map((c, i) => (
+                      <motion.span
+                        key={i}
+                        initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
+                        animate={{
+                          opacity: [0, 1, 1, 0],
+                          x: c.x,
+                          y: c.y,
+                          scale: [0, 1, 1, 0.5],
+                          rotate: c.rotate,
+                        }}
+                        transition={{ duration: 1.6, delay: 0.15 + i * 0.04, ease: 'easeOut' }}
+                        className={cn(
+                          'pointer-events-none absolute top-12 size-2 rounded-full',
+                          c.color,
+                        )}
+                        style={{ left: '50%' }}
+                      />
+                    ))}
+                    {/* gradient celebration glow */}
+                    <span className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_30%,color-mix(in_oklch,var(--accent)_22%,transparent),transparent_60%)]" />
+                    <div className="pointer-events-none absolute -top-10 left-1/2 -z-10 size-64 -translate-x-1/2 rounded-full bg-accent/15 blur-3xl" />
+
                     <motion.span
-                      initial={{ scale: 0, rotate: -20 }}
+                      initial={{ scale: 0, rotate: -30 }}
                       animate={{ scale: 1, rotate: 0 }}
-                      transition={{ delay: 0.1, type: 'spring', stiffness: 220, damping: 16 }}
-                      className="flex size-16 items-center justify-center rounded-full bg-accent/15 text-accent"
+                      transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 14 }}
+                      className="relative flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-glow"
                     >
-                      <PartyPopper className="size-9" />
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.25, type: 'spring', stiffness: 280, damping: 16 }}
+                      >
+                        <PartyPopper className="size-12" strokeWidth={2.25} />
+                      </motion.span>
+                      {/* pulse ring */}
+                      <motion.span
+                        initial={{ scale: 1, opacity: 0.6 }}
+                        animate={{ scale: 1.6, opacity: 0 }}
+                        transition={{
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: 'easeOut',
+                          delay: 0.3,
+                        }}
+                        className="absolute inset-0 rounded-full bg-accent/40"
+                      />
                     </motion.span>
-                    <h3 className="mt-6 text-2xl font-semibold tracking-tight sm:text-3xl">
-                      {t('estimate.savedTitle')}
-                    </h3>
-                    <p className="mt-2 max-w-md text-sm text-muted-foreground sm:text-base">
+                    <motion.h3
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="mt-6 text-2xl font-semibold tracking-tight sm:text-3xl"
+                    >
+                      <span className="text-gradient">{t('estimate.savedTitle')}</span>
+                    </motion.h3>
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      className="mt-2 max-w-md text-sm text-muted-foreground sm:text-base"
+                    >
                       {t('estimate.savedDesc')}
-                    </p>
-                    <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                      <Button onClick={() => setView('contact')}>
+                    </motion.p>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                      className="mt-8 flex flex-col gap-3 sm:flex-row"
+                    >
+                      <Button
+                        onClick={() => setView('contact')}
+                        className="shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-glow"
+                      >
                         <CalendarCheck className="size-4" />
                         {t('estimate.bookCall')}
                       </Button>
-                      <Button variant="outline" onClick={restart}>
+                      <Button
+                        variant="outline"
+                        onClick={restart}
+                        className="shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow"
+                      >
                         <RotateCcw className="size-4" />
                         {t('estimate.runAnother')}
                       </Button>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -598,12 +784,12 @@ function StepHeader({ index, question, hint }: { index: number; question: string
   return (
     <div>
       <div className="flex items-center gap-3">
-        <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground ltr-num">
+        <span className="flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-base font-bold text-primary-foreground shadow-soft ltr-num">
           {index}
         </span>
         <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">{question}</h3>
       </div>
-      <p className="mt-2 pl-12 text-sm text-muted-foreground">{hint}</p>
+      <p className="mt-2 pl-14 text-sm text-muted-foreground">{hint}</p>
     </div>
   )
 }
@@ -622,14 +808,12 @@ function RadioCard({
   return (
     <Label
       htmlFor={`rc-${value}`}
-      className="group relative flex cursor-pointer items-start gap-3 rounded-2xl border border-border/60 p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-glow"
+      className="group relative flex cursor-pointer items-start gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-soft transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow has-[:checked]:border-primary has-[:checked]:shadow-glow"
     >
-      <RadioGroupItem
-        id={`rc-${value}`}
-        value={value}
-        className="absolute right-3 top-3"
-      />
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-has-[:checked]:bg-primary group-has-[:checked]:text-primary-foreground">
+      {/* gradient border-on-hover overlay (decorative) */}
+      <span className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-has-[:checked]:opacity-100 group-has-[:checked]:from-primary/10 group-has-[:checked]:to-accent/10" />
+      <RadioGroupItem id={`rc-${value}`} value={value} className="absolute right-3 top-3" />
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 text-primary ring-1 ring-inset ring-primary/10 transition-all group-has-[:checked]:from-primary group-has-[:checked]:to-accent group-has-[:checked]:text-primary-foreground group-has-[:checked]:ring-transparent group-has-[:checked]:shadow-glow">
         {icon}
       </span>
       <span className="flex flex-col pr-6">
@@ -656,31 +840,36 @@ function YesNoCards({
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
       {YES_NO.map((opt) => {
         const active = value === opt.value
+        const yesTone = opt.value
         return (
           <button
             key={String(opt.value)}
             type="button"
             onClick={() => onChange(opt.value)}
             className={cn(
-              'flex flex-col items-start gap-1 rounded-2xl border p-5 text-left transition-all',
+              'group relative flex flex-col items-start gap-2 overflow-hidden rounded-2xl border p-5 text-left shadow-soft transition-all',
               active
-                ? opt.value
-                  ? 'border-accent bg-accent/5 shadow-glow'
-                  : 'border-primary bg-primary/5 shadow-glow'
-                : 'border-border/60 hover:-translate-y-0.5 hover:border-primary/40'
+                ? yesTone
+                  ? 'border-accent/60 bg-gradient-to-br from-accent/15 to-accent/5 shadow-glow'
+                  : 'border-rose-400/60 bg-gradient-to-br from-rose-500/10 to-rose-500/5 shadow-glow'
+                : 'border-border/60 bg-card hover:-translate-y-1 hover:border-primary/40 hover:shadow-glow',
             )}
           >
             <span
               className={cn(
-                'flex size-9 items-center justify-center rounded-xl',
+                'flex size-10 items-center justify-center rounded-xl transition-colors',
                 active
-                  ? opt.value
+                  ? yesTone
                     ? 'bg-accent text-accent-foreground'
-                    : 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
+                    : 'bg-rose-500 text-white'
+                  : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary',
               )}
             >
-              {opt.value ? <CheckCircle2 className="size-5" /> : <ArrowLeft className="size-5 rotate-45" />}
+              {yesTone ? (
+                <CheckCircle2 className="size-5" />
+              ) : (
+                <X className="size-5" />
+              )}
             </span>
             <span className="mt-1 text-base font-semibold text-foreground">{opt.label}</span>
             <span className="text-xs text-muted-foreground">{opt.desc}</span>

@@ -1,0 +1,726 @@
+     1→'use client'
+     2→
+     3→import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+     4→import { AnimatePresence, motion } from 'framer-motion'
+     5→import {
+     6→  ArrowLeft,
+     7→  ArrowRight,
+     8→  CheckCircle2,
+     9→  Loader2,
+    10→  Layout,
+    11→  Building2,
+    12→  ShoppingBag,
+    13→  AppWindow,
+    14→  Layers,
+    15→  CalendarClock,
+    16→  Boxes,
+    17→  ShieldCheck,
+    18→  CreditCard,
+    19→  Users,
+    20→  Smartphone,
+    21→  Sparkles,
+    22→  CalendarCheck,
+    23→  RotateCcw,
+    24→  Info,
+    25→  PartyPopper,
+    26→} from 'lucide-react'
+    27→import { toast } from 'sonner'
+    28→import { Button } from '@/components/ui/button'
+    29→import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+    30→import { Input } from '@/components/ui/input'
+    31→import { Label } from '@/components/ui/label'
+    32→import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+    33→import { Reveal } from '@/components/site/reveal'
+    34→import { SectionHeading } from '@/components/site/section-heading'
+    35→import { Counter } from '@/components/site/counter'
+    36→import { useNav } from '@/lib/store'
+    37→import { cn } from '@/lib/utils'
+    38→import { useT, useLang } from '@/lib/lang-store'
+    39→
+    40→/* ----------------------------- types & config ---------------------------- */
+    41→
+    42→type Answers = {
+    43→  projectType?: string
+    44→  pages?: number
+    45→  pagesLabel?: string
+    46→  adminPanel?: boolean
+    47→  payment?: boolean
+    48→  auth?: boolean
+    49→  mobileApp?: boolean
+    50→  ai?: boolean
+    51→}
+    52→
+    53→type ProjectType = {
+    54→  value: string
+    55→  label: string
+    56→  desc: string
+    57→  icon: typeof Layout
+    58→}
+    59→
+    60→type PageRange = {
+    61→  label: string
+    62→  value: number
+    63→  desc: string
+    64→}
+    65→
+    66→type StepDef = {
+    67→  key: keyof Answers
+    68→  hint: string
+    69→}
+    70→
+    71→const STEPS: StepDef[] = [
+    72→  { key: 'projectType', hint: 'Pick the option that best describes your project.' },
+    73→  { key: 'pages', hint: 'A rough estimate is fine — you can refine later.' },
+    74→  { key: 'adminPanel', hint: 'A dashboard to manage content, users or data.' },
+    75→  { key: 'payment', hint: 'Stripe, PayPal, or other online checkout.' },
+    76→  { key: 'auth', hint: 'Accounts, login, roles and permissions.' },
+    77→  { key: 'mobileApp', hint: 'A companion iOS / Android experience.' },
+    78→  { key: 'ai', hint: 'Chatbots, recommendations, computer vision, etc.' },
+    79→]
+    80→
+    81→const TOTAL_STEPS = STEPS.length
+    82→
+    83→/* --------------------------------- view ---------------------------------- */
+    84→
+    85→type Stage = 'wizard' | 'calculating' | 'result' | 'saved'
+    86→
+    87→export function EstimateView() {
+    88→  const t = useT()
+    89→  const lang = useLang((s) => s.lang)
+    90→  const { setView } = useNav()
+    91→  const [step, setStep] = useState(0)
+    92→  const [direction, setDirection] = useState(1)
+    93→  const [answers, setAnswers] = useState<Answers>({})
+    94→  const [stage, setStage] = useState<Stage>('wizard')
+    95→
+    96→  // estimate payload
+    97→  const [estimate, setEstimate] = useState<{ min: number; max: number; breakdown: { label: string; cost: number }[] } | null>(null)
+    98→
+    99→  // contact / lead capture
+   100→  const [contact, setContact] = useState({ name: '', email: '', phone: '', company: '' })
+   101→  const [contactErrors, setContactErrors] = useState<Partial<Record<keyof typeof contact, string>>>({})
+   102→  const [savingLead, setSavingLead] = useState(false)
+   103→
+   104→  const PROJECT_TYPES: ProjectType[] = [
+   105→    { value: 'landing-page', label: t('estimate.landingPage'), desc: t('estimate.landingDesc'), icon: Layout },
+   106→    { value: 'corporate-site', label: t('estimate.corporateSite'), desc: t('estimate.corporateDesc'), icon: Building2 },
+   107→    { value: 'ecommerce', label: t('estimate.ecommerce'), desc: t('estimate.ecommerceDesc'), icon: ShoppingBag },
+   108→    { value: 'web-app', label: t('estimate.webApp'), desc: t('estimate.webAppDesc'), icon: AppWindow },
+   109→    { value: 'saas', label: t('estimate.saas'), desc: t('estimate.saasDesc'), icon: Layers },
+   110→    { value: 'booking', label: t('estimate.booking'), desc: t('estimate.bookingDesc'), icon: CalendarClock },
+   111→    { value: 'custom', label: t('estimate.custom'), desc: t('estimate.customDesc'), icon: Boxes },
+   112→  ]
+   113→
+   114→  const PAGE_RANGES: PageRange[] = [
+   115→    { label: t('estimate.pages1'), value: 5, desc: t('estimate.pages1Desc') },
+   116→    { label: t('estimate.pages2'), value: 10, desc: t('estimate.pages2Desc') },
+   117→    { label: t('estimate.pages3'), value: 20, desc: t('estimate.pages3Desc') },
+   118→    { label: t('estimate.pages4'), value: 25, desc: t('estimate.pages4Desc') },
+   119→  ]
+   120→
+   121→  const YES_NO: { value: boolean; label: string; desc: string }[] = [
+   122→    { value: true, label: t('estimate.yes'), desc: "I'll need this" },
+   123→    { value: false, label: t('estimate.no'), desc: 'Not required' },
+   124→  ]
+   125→
+   126→  /* --------------------------- step navigation --------------------------- */
+   127→
+   128→  const currentDef = STEPS[step]
+   129→  const isAnswered = useMemo(() => {
+   130→    const v = answers[currentDef.key]
+   131→    if (typeof v === 'boolean') return true
+   132→    return v !== undefined && v !== null && v !== ''
+   133→  }, [answers, currentDef.key])
+   134→
+   135→  const goTo = (next: number) => {
+   136→    setDirection(next > step ? 1 : -1)
+   137→    setStep(Math.max(0, Math.min(TOTAL_STEPS - 1, next)))
+   138→  }
+   139→
+   140→  const setAnswer = <K extends keyof Answers>(key: K, value: Answers[K]) => {
+   141→    setAnswers((prev) => ({ ...prev, [key]: value }))
+   142→  }
+   143→
+   144→  const handleSeeEstimate = async () => {
+   145→    setStage('calculating')
+   146→    // small artificial delay for premium "calculating" feel
+   147→    await new Promise((r) => setTimeout(r, 700))
+   148→    try {
+   149→      const res = await fetch('/api/estimate', {
+   150→        method: 'POST',
+   151→        headers: { 'Content-Type': 'application/json' },
+   152→        body: JSON.stringify({ answers }),
+   153→      })
+   154→      if (!res.ok) throw new Error('Failed to compute estimate')
+   155→      const data = await res.json()
+   156→      setEstimate(data.estimate)
+   157→      setStage('result')
+   158→    } catch (err) {
+   159→      const message = err instanceof Error ? err.message : 'Something went wrong.'
+   160→      toast.error('Could not compute estimate', { description: message })
+   161→      setStage('wizard')
+   162→    }
+   163→  }
+   164→
+   165→  const restart = () => {
+   166→    setAnswers({})
+   167→    setStep(0)
+   168→    setStage('wizard')
+   169→    setEstimate(null)
+   170→    setContact({ name: '', email: '', phone: '', company: '' })
+   171→    setContactErrors({})
+   172→  }
+   173→
+   174→  /* ----------------------------- lead capture ---------------------------- */
+   175→
+   176→  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+   177→
+   178→  const submitLead = async (e: FormEvent) => {
+   179→    e.preventDefault()
+   180→    const errs: Partial<Record<keyof typeof contact, string>> = {}
+   181→    if (!contact.name.trim()) errs.name = t('contact.requiredField')
+   182→    if (!contact.email.trim()) errs.email = t('contact.requiredField')
+   183→    else if (!emailRegex.test(contact.email)) errs.email = t('contact.invalidEmail')
+   184→    setContactErrors(errs)
+   185→    if (Object.keys(errs).length) {
+   186→      toast.error('Please fix the highlighted fields.')
+   187→      return
+   188→    }
+   189→    setSavingLead(true)
+   190→    try {
+   191→      const res = await fetch('/api/estimate', {
+   192→        method: 'POST',
+   193→        headers: { 'Content-Type': 'application/json' },
+   194→        body: JSON.stringify({ answers, contact }),
+   195→      })
+   196→      if (!res.ok) throw new Error('Failed to save your estimate')
+   197→      setStage('saved')
+   198→      toast.success(t('estimate.savedTitle'), { description: t('estimate.savedDesc') })
+   199→    } catch (err) {
+   200→      const message = err instanceof Error ? err.message : 'Something went wrong.'
+   201→      toast.error('Could not save estimate', { description: message })
+   202→    } finally {
+   203→      setSavingLead(false)
+   204→    }
+   205→  }
+   206→
+   207→  const progress = ((step + (stage === 'wizard' ? 0 : 1)) / TOTAL_STEPS) * 100
+   208→
+   209→  /* -------------------------------- render -------------------------------- */
+   210→
+   211→  return (
+   212→    <section id="estimate-cta" className="relative overflow-hidden py-20 sm:py-28">
+   213→      <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40" />
+   214→      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-radial-fade" />
+   215→
+   216→      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+   217→        <SectionHeading
+   218→          eyebrow={t('estimate.eyebrow')}
+   219→          title={
+   220→            <span className="text-gradient">{t('estimate.title')}</span>
+   221→          }
+   222→          description={t('estimate.desc')}
+   223→        />
+   224→
+   225→        {/* progress + step indicator */}
+   226→        <Reveal delay={0.05} className="mt-12">
+   227→          <div className="mb-6 flex items-center justify-between text-sm">
+   228→            <span className="font-medium text-muted-foreground">
+   229→              {stage === 'wizard' ? (
+   230→                <>
+   231→                  {t('estimate.question')}{' '}
+   232→                  <span className="font-semibold text-foreground ltr-num">{step + 1}</span>{' '}
+   233→                  {t('estimate.of')}{' '}
+   234→                  <span className="font-semibold text-foreground ltr-num">{TOTAL_STEPS}</span>
+   235→                </>
+   236→              ) : stage === 'result' || stage === 'saved' ? (
+   237→                <span className="inline-flex items-center gap-1.5 font-semibold text-accent">
+   238→                  <CheckCircle2 className="size-4" /> Estimate ready
+   239→                </span>
+   240→              ) : (
+   241→                <>Crunching numbers…</>
+   242→              )}
+   243→            </span>
+   244→            <span className="text-xs text-muted-foreground">
+   245→              <span className="ltr-num">{Math.round(stage === 'wizard' ? progress : 100)}%</span> complete
+   246→            </span>
+   247→          </div>
+   248→          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+   249→            <motion.div
+   250→              className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
+   251→              animate={{ width: `${stage === 'wizard' ? progress : 100}%` }}
+   252→              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+   253→            />
+   254→          </div>
+   255→        </Reveal>
+   256→
+   257→        {/* main panel */}
+   258→        <Reveal delay={0.1} className="mt-8">
+   259→          <Card className="overflow-hidden border-border/60 shadow-soft">
+   260→            <CardContent className="p-0">
+   261→              <AnimatePresence mode="wait" custom={direction}>
+   262→                {/* WIZARD */}
+   263→                {stage === 'wizard' && (
+   264→                  <motion.div
+   265→                    key={`step-${step}`}
+   266→                    custom={direction}
+   267→                    initial={{ opacity: 0, x: direction * 40 }}
+   268→                    animate={{ opacity: 1, x: 0 }}
+   269→                    exit={{ opacity: 0, x: direction * -40 }}
+   270→                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+   271→                    className="p-6 sm:p-8"
+   272→                  >
+   273→                    <StepHeader
+   274→                      index={step + 1}
+   275→                      question={t(`estimate.q${step + 1}`)}
+   276→                      hint={currentDef.hint}
+   277→                    />
+   278→
+   279→                    <div className="mt-6">
+   280→                      {currentDef.key === 'projectType' && (
+   281→                        <RadioGroup
+   282→                          value={answers.projectType ?? ''}
+   283→                          onValueChange={(v) => setAnswer('projectType', v)}
+   284→                          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+   285→                        >
+   286→                          {PROJECT_TYPES.map((opt) => (
+   287→                            <RadioCard
+   288→                              key={opt.value}
+   289→                              value={opt.value}
+   290→                              icon={<opt.icon className="size-5" />}
+   291→                              label={opt.label}
+   292→                              desc={opt.desc}
+   293→                            />
+   294→                          ))}
+   295→                        </RadioGroup>
+   296→                      )}
+   297→
+   298→                      {currentDef.key === 'pages' && (
+   299→                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+   300→                          {PAGE_RANGES.map((opt) => {
+   301→                            const active = answers.pages === opt.value
+   302→                            return (
+   303→                              <button
+   304→                                key={opt.label}
+   305→                                type="button"
+   306→                                onClick={() => setAnswer('pages', opt.value)}
+   307→                                className={cn(
+   308→                                  'group flex flex-col items-center gap-1 rounded-2xl border p-4 text-center transition-all',
+   309→                                  active
+   310→                                    ? 'border-primary bg-primary/5 shadow-glow'
+   311→                                    : 'border-border/60 hover:-translate-y-0.5 hover:border-primary/40'
+   312→                                )}
+   313→                              >
+   314→                                <span
+   315→                                  className={cn(
+   316→                                    'text-xl font-bold tracking-tight ltr-num',
+   317→                                    active ? 'text-primary' : 'text-foreground'
+   318→                                  )}
+   319→                                >
+   320→                                  {opt.label}
+   321→                                </span>
+   322→                                <span className="text-xs text-muted-foreground">{opt.desc}</span>
+   323→                              </button>
+   324→                            )
+   325→                          })}
+   326→                        </div>
+   327→                      )}
+   328→
+   329→                      {['adminPanel', 'payment', 'auth', 'mobileApp', 'ai'].includes(currentDef.key) && (
+   330→                        <YesNoCards
+   331→                          value={answers[currentDef.key] as boolean | undefined}
+   332→                          onChange={(v) => setAnswer(currentDef.key, v)}
+   333→                        />
+   334→                      )}
+   335→                    </div>
+   336→
+   337→                    {/* nav */}
+   338→                    <div className="mt-8 flex items-center justify-between">
+   339→                      <Button
+   340→                        type="button"
+   341→                        variant="ghost"
+   342→                        onClick={() => goTo(step - 1)}
+   343→                        disabled={step === 0}
+   344→                      >
+   345→                        <ArrowLeft className={cn('size-4', lang === 'fa' ? 'ml-1.5 rtl-flip' : 'mr-1.5')} />
+   346→                        {t('estimate.back')}
+   347→                      </Button>
+   348→
+   349→                      {step < TOTAL_STEPS - 1 ? (
+   350→                        <Button
+   351→                          type="button"
+   352→                          onClick={() => goTo(step + 1)}
+   353→                          disabled={!isAnswered}
+   354→                        >
+   355→                          {t('estimate.next')}
+   356→                          <ArrowRight className={cn('size-4', lang === 'fa' ? 'mr-1.5 rtl-flip' : 'ml-1.5')} />
+   357→                        </Button>
+   358→                      ) : (
+   359→                        <Button
+   360→                          type="button"
+   361→                          onClick={handleSeeEstimate}
+   362→                          disabled={!isAnswered}
+   363→                        >
+   364→                          {t('estimate.seeEstimate')}
+   365→                          <Sparkles className="size-4" />
+   366→                        </Button>
+   367→                      )}
+   368→                    </div>
+   369→                  </motion.div>
+   370→                )}
+   371→
+   372→                {/* CALCULATING */}
+   373→                {stage === 'calculating' && (
+   374→                  <motion.div
+   375→                    key="calculating"
+   376→                    initial={{ opacity: 0 }}
+   377→                    animate={{ opacity: 1 }}
+   378→                    exit={{ opacity: 0 }}
+   379→                    className="flex flex-col items-center justify-center gap-4 py-20 text-center"
+   380→                  >
+   381→                    <span className="relative flex size-16 items-center justify-center">
+   382→                      <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+   383→                      <Loader2 className="size-9 animate-spin text-primary" />
+   384→                    </span>
+   385→                    <p className="text-base font-medium">{t('estimate.calculating')}</p>
+   386→                    <p className="text-sm text-muted-foreground">Matching your answers against our pricing model.</p>
+   387→                  </motion.div>
+   388→                )}
+   389→
+   390→                {/* RESULT */}
+   391→                {stage === 'result' && estimate && (
+   392→                  <motion.div
+   393→                    key="result"
+   394→                    initial={{ opacity: 0, y: 16 }}
+   395→                    animate={{ opacity: 1, y: 0 }}
+   396→                    exit={{ opacity: 0, y: -16 }}
+   397→                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+   398→                    className="p-6 sm:p-8"
+   399→                  >
+   400→                    <div className="text-center">
+   401→                      <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent">
+   402→                        <Sparkles className="size-3.5" />
+   403→                        Your estimate
+   404→                      </span>
+   405→                      <div className="mt-5 flex items-end justify-center gap-3">
+   406→                        <div className="flex flex-col">
+   407→                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Min</span>
+   408→                          <span className="text-4xl font-bold tracking-tight text-gradient ltr-num sm:text-5xl">
+   409→                            $<Counter to={estimate.min} duration={1.4} />
+   410→                          </span>
+   411→                        </div>
+   412→                        <span className="pb-2 text-2xl font-light text-muted-foreground">–</span>
+   413→                        <div className="flex flex-col">
+   414→                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Max</span>
+   415→                          <span className="text-4xl font-bold tracking-tight text-gradient ltr-num sm:text-5xl">
+   416→                            $<Counter to={estimate.max} duration={1.6} />
+   417→                          </span>
+   418→                        </div>
+   419→                      </div>
+   420→                      <p className="mt-3 text-sm text-muted-foreground">
+   421→                        {t('estimate.estimatedCost')} · typical timeline{' '}
+   422→                        <span className="ltr-num">4–12</span> weeks
+   423→                      </p>
+   424→                    </div>
+   425→
+   426→                    {/* breakdown */}
+   427→                    <div className="mt-8">
+   428→                      <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+   429→                        {t('estimate.breakdown')}
+   430→                      </h4>
+   431→                      <ul className="mt-3 space-y-2">
+   432→                        {estimate.breakdown.map((b, i) => (
+   433→                          <motion.li
+   434→                            key={b.label}
+   435→                            initial={{ opacity: 0, x: -10 }}
+   436→                            animate={{ opacity: 1, x: 0 }}
+   437→                            transition={{ delay: 0.2 + i * 0.07 }}
+   438→                            className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 px-4 py-3"
+   439→                          >
+   440→                            <span className="text-sm font-medium text-foreground">{b.label}</span>
+   441→                            <span className="text-sm font-semibold text-foreground ltr-num">
+   442→                              ${b.cost.toLocaleString()}
+   443→                            </span>
+   444→                          </motion.li>
+   445→                        ))}
+   446→                      </ul>
+   447→                    </div>
+   448→
+   449→                    {/* disclaimer */}
+   450→                    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/40 p-4">
+   451→                      <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+   452→                      <p className="text-xs leading-relaxed text-muted-foreground">
+   453→                        {t('estimate.disclaimer')}
+   454→                      </p>
+   455→                    </div>
+   456→
+   457→                    {/* lead capture */}
+   458→                    <form onSubmit={submitLead} className="mt-8 space-y-4">
+   459→                      <div className="flex items-center gap-2">
+   460→                        <span className="h-px flex-1 bg-border" />
+   461→                        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+   462→                          Save your estimate
+   463→                        </span>
+   464→                        <span className="h-px flex-1 bg-border" />
+   465→                      </div>
+   466→                      <p className="text-center text-sm text-muted-foreground">
+   467→                        Drop your details and we&apos;ll send a tailored proposal within 24 hours.
+   468→                      </p>
+   469→
+   470→                      <div className="grid gap-4 sm:grid-cols-2">
+   471→                        <LabeledField id="est-name" label={t('estimate.name')} required error={contactErrors.name}>
+   472→                          <Input
+   473→                            id="est-name"
+   474→                            value={contact.name}
+   475→                            onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))}
+   476→                            placeholder="Jane Doe"
+   477→                            autoComplete="name"
+   478→                            aria-invalid={!!contactErrors.name}
+   479→                          />
+   480→                        </LabeledField>
+   481→                        <LabeledField id="est-company" label={t('estimate.company')} error={undefined}>
+   482→                          <Input
+   483→                            id="est-company"
+   484→                            value={contact.company}
+   485→                            onChange={(e) => setContact((c) => ({ ...c, company: e.target.value }))}
+   486→                            placeholder="Acme Inc. (optional)"
+   487→                            autoComplete="organization"
+   488→                          />
+   489→                        </LabeledField>
+   490→                        <LabeledField id="est-email" label={t('estimate.email')} required error={contactErrors.email}>
+   491→                          <Input
+   492→                            id="est-email"
+   493→                            type="email"
+   494→                            value={contact.email}
+   495→                            onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
+   496→                            placeholder="jane@acme.com"
+   497→                            autoComplete="email"
+   498→                            aria-invalid={!!contactErrors.email}
+   499→                          />
+   500→                        </LabeledField>
+   501→                        <LabeledField id="est-phone" label={t('estimate.phone')} error={undefined}>
+   502→                          <Input
+   503→                            id="est-phone"
+   504→                            type="tel"
+   505→                            value={contact.phone}
+   506→                            onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))}
+   507→                            placeholder="+1 (415) 555-0192"
+   508→                            autoComplete="tel"
+   509→                          />
+   510→                        </LabeledField>
+   511→                      </div>
+   512→
+   513→                      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
+   514→                        <Button type="button" variant="ghost" onClick={restart}>
+   515→                          <RotateCcw className="size-4" />
+   516→                          Start over
+   517→                        </Button>
+   518→                        <Button type="submit" disabled={savingLead} className="sm:min-w-[200px]">
+   519→                          {savingLead ? (
+   520→                            <>
+   521→                              <Loader2 className="size-4 animate-spin" />
+   522→                              Saving…
+   523→                            </>
+   524→                          ) : (
+   525→                            <>
+   526→                              {t('estimate.saveEstimate')}
+   527→                              <ArrowRight className={cn('size-4', lang === 'fa' ? 'mr-1.5 rtl-flip' : 'ml-1.5')} />
+   528→                            </>
+   529→                          )}
+   530→                        </Button>
+   531→                      </div>
+   532→                    </form>
+   533→                  </motion.div>
+   534→                )}
+   535→
+   536→                {/* SAVED */}
+   537→                {stage === 'saved' && (
+   538→                  <motion.div
+   539→                    key="saved"
+   540→                    initial={{ opacity: 0, scale: 0.96 }}
+   541→                    animate={{ opacity: 1, scale: 1 }}
+   542→                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+   543→                    className="flex flex-col items-center py-12 text-center sm:py-16"
+   544→                  >
+   545→                    <motion.span
+   546→                      initial={{ scale: 0, rotate: -20 }}
+   547→                      animate={{ scale: 1, rotate: 0 }}
+   548→                      transition={{ delay: 0.1, type: 'spring', stiffness: 220, damping: 16 }}
+   549→                      className="flex size-16 items-center justify-center rounded-full bg-accent/15 text-accent"
+   550→                    >
+   551→                      <PartyPopper className="size-9" />
+   552→                    </motion.span>
+   553→                    <h3 className="mt-6 text-2xl font-semibold tracking-tight sm:text-3xl">
+   554→                      {t('estimate.savedTitle')}
+   555→                    </h3>
+   556→                    <p className="mt-2 max-w-md text-sm text-muted-foreground sm:text-base">
+   557→                      {t('estimate.savedDesc')}
+   558→                    </p>
+   559→                    <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+   560→                      <Button onClick={() => setView('contact')}>
+   561→                        <CalendarCheck className="size-4" />
+   562→                        {t('estimate.bookCall')}
+   563→                      </Button>
+   564→                      <Button variant="outline" onClick={restart}>
+   565→                        <RotateCcw className="size-4" />
+   566→                        {t('estimate.runAnother')}
+   567→                      </Button>
+   568→                    </div>
+   569→                  </motion.div>
+   570→                )}
+   571→              </AnimatePresence>
+   572→            </CardContent>
+   573→          </Card>
+   574→        </Reveal>
+   575→
+   576→        {/* trust strip */}
+   577→        <Reveal delay={0.15} className="mt-8">
+   578→          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+   579→            <span className="inline-flex items-center gap-1.5">
+   580→              <ShieldCheck className="size-3.5 text-accent" /> No spam, ever
+   581→            </span>
+   582→            <span className="inline-flex items-center gap-1.5">
+   583→              <CreditCard className="size-3.5 text-accent" /> No payment required
+   584→            </span>
+   585→            <span className="inline-flex items-center gap-1.5">
+   586→              <Users className="size-3.5 text-accent" /> Real humans review every request
+   587→            </span>
+   588→          </div>
+   589→        </Reveal>
+   590→      </div>
+   591→    </section>
+   592→  )
+   593→}
+   594→
+   595→/* ------------------------------ sub-components ---------------------------- */
+   596→
+   597→function StepHeader({ index, question, hint }: { index: number; question: string; hint: string }) {
+   598→  return (
+   599→    <div>
+   600→      <div className="flex items-center gap-3">
+   601→        <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground ltr-num">
+   602→          {index}
+   603→        </span>
+   604→        <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">{question}</h3>
+   605→      </div>
+   606→      <p className="mt-2 pl-12 text-sm text-muted-foreground">{hint}</p>
+   607→    </div>
+   608→  )
+   609→}
+   610→
+   611→function RadioCard({
+   612→  value,
+   613→  icon,
+   614→  label,
+   615→  desc,
+   616→}: {
+   617→  value: string
+   618→  icon: ReactNode
+   619→  label: string
+   620→  desc: string
+   621→}) {
+   622→  return (
+   623→    <Label
+   624→      htmlFor={`rc-${value}`}
+   625→      className="group relative flex cursor-pointer items-start gap-3 rounded-2xl border border-border/60 p-4 transition-all hover:-translate-y-0.5 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-glow"
+   626→    >
+   627→      <RadioGroupItem
+   628→        id={`rc-${value}`}
+   629→        value={value}
+   630→        className="absolute right-3 top-3"
+   631→      />
+   632→      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-has-[:checked]:bg-primary group-has-[:checked]:text-primary-foreground">
+   633→        {icon}
+   634→      </span>
+   635→      <span className="flex flex-col pr-6">
+   636→        <span className="text-sm font-semibold text-foreground">{label}</span>
+   637→        <span className="mt-0.5 text-xs text-muted-foreground">{desc}</span>
+   638→      </span>
+   639→    </Label>
+   640→  )
+   641→}
+   642→
+   643→function YesNoCards({
+   644→  value,
+   645→  onChange,
+   646→}: {
+   647→  value: boolean | undefined
+   648→  onChange: (v: boolean) => void
+   649→}) {
+   650→  const t = useT()
+   651→  const YES_NO: { value: boolean; label: string; desc: string }[] = [
+   652→    { value: true, label: t('estimate.yes'), desc: "I'll need this" },
+   653→    { value: false, label: t('estimate.no'), desc: 'Not required' },
+   654→  ]
+   655→  return (
+   656→    <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+   657→      {YES_NO.map((opt) => {
+   658→        const active = value === opt.value
+   659→        return (
+   660→          <button
+   661→            key={String(opt.value)}
+   662→            type="button"
+   663→            onClick={() => onChange(opt.value)}
+   664→            className={cn(
+   665→              'flex flex-col items-start gap-1 rounded-2xl border p-5 text-left transition-all',
+   666→              active
+   667→                ? opt.value
+   668→                  ? 'border-accent bg-accent/5 shadow-glow'
+   669→                  : 'border-primary bg-primary/5 shadow-glow'
+   670→                : 'border-border/60 hover:-translate-y-0.5 hover:border-primary/40'
+   671→            )}
+   672→          >
+   673→            <span
+   674→              className={cn(
+   675→                'flex size-9 items-center justify-center rounded-xl',
+   676→                active
+   677→                  ? opt.value
+   678→                    ? 'bg-accent text-accent-foreground'
+   679→                    : 'bg-primary text-primary-foreground'
+   680→                  : 'bg-muted text-muted-foreground'
+   681→              )}
+   682→            >
+   683→              {opt.value ? <CheckCircle2 className="size-5" /> : <ArrowLeft className="size-5 rotate-45" />}
+   684→            </span>
+   685→            <span className="mt-1 text-base font-semibold text-foreground">{opt.label}</span>
+   686→            <span className="text-xs text-muted-foreground">{opt.desc}</span>
+   687→          </button>
+   688→        )
+   689→      })}
+   690→    </div>
+   691→  )
+   692→}
+   693→
+   694→function LabeledField({
+   695→  id,
+   696→  label,
+   697→  required,
+   698→  error,
+   699→  children,
+   700→}: {
+   701→  id: string
+   702→  label: string
+   703→  required?: boolean
+   704→  error?: string
+   705→  children: ReactNode
+   706→}) {
+   707→  const lang = useLang((s) => s.lang)
+   708→  return (
+   709→    <div className="space-y-2">
+   710→      <Label htmlFor={id} className="text-sm font-medium">
+   711→        {label}
+   712→        {required && (
+   713→          <span
+   714→            className={cn('text-primary', lang === 'fa' ? 'mr-0.5' : 'ml-0.5')}
+   715→            aria-label={required ? 'required' : undefined}
+   716→          >
+   717→            *
+   718→          </span>
+   719→        )}
+   720→      </Label>
+   721→      {children}
+   722→      {error ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
+   723→    </div>
+   724→  )
+   725→}
+   726→

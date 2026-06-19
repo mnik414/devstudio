@@ -564,3 +564,99 @@ Stage Summary:
 - 3 detail views significantly enhanced with premium styling (portfolio, case study, blog)
 - All new features bilingual (en/fa) with RTL support
 - Platform continues to be stable, fully functional, and increasingly premium
+
+---
+Task ID: 9-a
+Agent: full-stack-developer (contact + estimate styling)
+Task: Add premium styling polish to ContactView and EstimateView without changing functionality or translations
+
+Work Log:
+- Read worklog.md and both target files in full to map current markup, design tokens (text-gradient, bg-grid, bg-radial-fade, shadow-soft, shadow-glow, animate-float), and existing RTL-aware class patterns (ltr-num, rtl-flip, conditional margins)
+- Enhanced `src/components/views/contact-view.tsx`:
+  * Hero backdrop: applied radial-gradient mask to bg-grid (fades to transparent at edges), added two animate-float blur blobs (primary top-left, accent top-right) for layered mesh
+  * Left column: wrapped contact-details grid in a relative container with a `from-primary/10 via-accent/5 to-transparent` gradient backdrop + two floating accent blobs behind
+  * Contact detail cards: bumped to p-5, enlarged icon container to size-12 rounded-full with gradient fill (primary→accent on hover), ring-1 ring-inset, group-hover:scale-110 on icon, hover:-translate-y-1 + hover:shadow-glow lift
+  * Response-time banner: now a from-accent/10 via-accent/5 to-transparent gradient panel with blurred accent glow blob and Clock icon in a bg-accent/15 ring-accent/20 circle
+  * "What happens next": added a vertical gradient connector line (from-primary/60 via-accent/40 to-transparent) running down the list, switched step icons to bg-gradient-to-br from-primary to-accent badges with ring-4 ring-background cut-out, refined numbered badge to hollow pill (bg-background text-primary ring-2 ring-primary/30); each step row lifts on hover
+  * Social links: enlarged to size-10 rounded-xl, shadow-soft base, hover fills with primary→accent gradient and shadow-glow
+  * Form card: wrapped in group; added h-1 gradient top accent (primary→accent→primary) that brightens on group-focus-within; card lifts + glows on focus-within; header bg-gradient-to-br from-muted/40 to-muted/10; title now text-gradient
+  * Budget select: enlarged trigger to h-12 text-base font-medium with hover:border-primary/40 hover:shadow-soft
+  * Submit button: bg-gradient-to-r from-primary to-primary base with hover:from-primary hover:to-accent hover:shadow-glow + animated white/20 shimmer sweep on group-hover
+  * Success state: re-skinned as celebration card with gradient bg, radial accent glow, 12 motion confetti dots radiating with rotation/fade, enlarged size-24 spring-popped gradient check badge with staggered spring icon scale-in, infinitely pulsing accent ring, gradient title text, staggered fade-up reveals
+  * Bottom CTA strip: overlaid bg-grid opacity-10 + blurred accent/primary blobs; "Get an estimate" link upgraded to from-accent to-primary gradient pill with shimmering arrow translate
+- Enhanced `src/components/views/estimate-view.tsx`:
+  * Hero backdrop: same radial mask on bg-grid + two animate-float blur blobs
+  * Step indicator: replaced muted span with gradient pill (from-primary/10 to-accent/10 + ring-1 ring-inset ring-primary/15); current step number renders as text-gradient font-bold
+  * Progress bar: thickened to h-2, kept from-primary to-accent gradient, added glowing leading-edge dot (size-3 bg-accent shadow-glow) with infinitely pulsing scale/opacity ring (visible only mid-wizard)
+  * StepHeader: enlarged index badge to size-11 rounded-2xl bg-gradient-to-br from-primary to-accent text-base font-bold shadow-soft
+  * RadioCard: shadow-soft base + hover:-translate-y-1 hover:shadow-glow; on selection gains bg-gradient-to-br from-primary/10 to-accent/5 overlay; icon container fills with full primary→accent gradient + shadow-glow on selection
+  * Page range buttons: shadow-soft base; selected state now from-primary/10 to-accent/10 shadow-glow with ring-2 ring-inset ring-primary/40 overlay; numeric label scales on hover (group-hover:scale-110) and turns text-gradient when active
+  * Yes/No cards: introduced distinct color theming — Yes = accent/teal (CheckCircle2), No = rose (X icon imported from lucide-react); active states use respective color gradients and badge fills
+  * Result screen cost number: ballooned from text-4xl/5xl to text-5xl sm:text-6xl lg:text-7xl; wrapped in motion.div with y-axis floating animation (y: [0, -6, 0], 4s infinite); added radial primary glow blur-2xl behind
+  * Breakdown: restyled as premium receipt — rounded-2xl card with shadow-soft, alternating row backgrounds (bg-card/60 even, bg-muted/30 odd), border-b dividers, font-mono costs, small gradient dot bullet before each label
+  * Lead capture form: wrapped in premium card (rounded-2xl border bg-gradient-to-br from-card to-muted/20 p-5 sm:p-6 shadow-soft) with h-1 gradient top border; submit button mirrors contact form's gradient hover + shimmer sweep
+  * Calculating state: enlarged spinner halo to size-20, layered static from-primary/15 to-accent/15 blur-md glow behind ping ring + spinner, "Calculating…" text now text-gradient
+  * Saved state: re-skinned as full celebration panel — gradient bg, 12 confetti dots, size-24 gradient party-popper badge with spring physics (stiffness: 200, damping: 14), staggered spring icon scale-in, infinitely pulsing accent ring, radial accent glow backdrop, blurred accent halo, gradient title text, staggered fade-up reveals; both action buttons got shadow-soft hover:-translate-y-0.5 hover:shadow-glow
+  * Main panel Card: added h-0.5 gradient top accent that brightens on hover
+  * Wizard nav buttons (Next / See Estimate): added shadow-soft hover:shadow-glow
+- Ran `bun run lint` → exit 1, but both reported errors are pre-existing (blog-detail-view.tsx:494 and portfolio-view.tsx:55, react-hooks/set-state-in-effect rule) — neither file was touched. Zero errors/warnings in either modified file
+- Ran `bunx tsc --noEmit` → zero TS errors in either modified file
+- dev.log shows clean `✓ Compiled in <200ms` after edits
+
+Stage Summary:
+- Two files enhanced: src/components/views/contact-view.tsx and src/components/views/estimate-view.tsx
+- Premium visual language applied consistently across both views: gradient backdrops + floating accent blobs in hero, gradient pills/badges with text-gradient accents, shadow-soft cards with hover:shadow-glow lift, gradient progress bar with glowing pulse, gradient-numbered step badges with vertical connector line, distinct color theming for Yes/No cards (accent vs rose), HUGE floating text-gradient cost numbers with radial glow, premium receipt-style breakdown with monospace + alternating rows, gradient-top-bordered lead capture form, spring-physics success celebrations with confetti + pulsing rings
+- All functionality preserved: form validation, API calls (/api/contact, /api/estimate), wizard flow, RTL-aware classes (ltr-num, rtl-flip, conditional margins), and every translation key wired exactly as before
+- Only new import added: `X` from lucide-react in estimate-view.tsx (for the No card icon)
+- Only new module-scope constant: `CONFETTI` (12-dot trajectory array) in both files
+- Lint-clean for both modified files; TypeScript-clean; dev server compiles successfully
+
+---
+Task ID: 9-b
+Agent: full-stack-developer (portfolio listing + blog features)
+Task: Apply premium styling enhancements to the Portfolio listing view and add a real-time "reading time remaining" indicator to the Blog detail view (no functional/translation/structure changes).
+Work Log:
+- Read worklog.md + both target views; confirmed design tokens (bg-radial-fade, bg-grid, shadow-soft, shadow-glow, text-gradient, ltr-num, rtl-flip, shimmer keyframe) in globals.css.
+- portfolio-view.tsx: added AnimatedCounter (RAF eased number animation) for the "Showing X projects" result count.
+- Hero: kept bg-radial-fade + bg-grid, added a radial mask-image so the grid fades at the edges, plus a soft blurred primary glow.
+- Filter bar: IntersectionObserver sentinel flips a `stuck` state; when stuck the bar gets a gradient background + shadow-soft, otherwise it stays light.
+- Search input: tracked searchFocused to apply ring-2 ring-primary/20 glow on focus and animate the Search icon (scale-110 + text-primary).
+- FilterChip: converted to motion.button with per-group layoutId (filter-chip-cat / filter-chip-tech) so the active background slides smoothly; active state uses a gradient bg.
+- Sort select: SelectTrigger styled with from-primary/10 to-accent/10 gradient + hover intensification.
+- Portfolio cards: cover zoom up to group-hover:scale-110; added hover-only dark gradient overlay (from-black/80 via-black/20 to-transparent); centered "Quick preview" pill that fades+lifts in; "View Project" button bar sliding up from the cover bottom; gradient border ring (-inset-px) fading in on hover; subtle shimmer sweep across the border on hover; tech-badge colored dots scale on hover (group-hover/tech:scale-150).
+- Result count row with AnimatedCounter + fading divider above the grid.
+- Empty state: enlarged icon container (size-20) with gradient bg + ring, text-gradient title, blurred backdrop glow.
+- Skeletons: added moving shimmer sweep overlay (animate-[shimmer_1.8s...]) over a gradient-tinted cover skeleton.
+- Bottom CTA: converted to full-width gradient band (bg-gradient-to-r from-primary to-accent) with bg-grid overlay + two blurred white glow blobs; text in text-primary-foreground.
+- blog-detail-view.tsx: added useMotionValueEvent to framer-motion import; added `remaining` + `prevReadingTime` state, reset via the React "adjust state during render" pattern (satisfies react-hooks/refs and react-hooks/set-state-in-effect); subscribed to existing scrollYProgress with useMotionValueEvent('change', …) computing Math.max(0, Math.ceil(readingTime * (1 - latest))).
+- Added a new badge in the article meta row (after views): bg-primary/10 pill with Clock icon showing "X min remaining" while reading and "Finished reading" when remaining === 0; numeric minutes wrapped in <span className="ltr-num"> for Persian RTL; each value change re-mounts a keyed motion.span with a subtle opacity/y enter transition.
+- Fixed two initial lint errors: removed setState-directly-in-effect in AnimatedCounter (now drives updates via the RAF tick callback) and replaced the ref-based article-change reset with the state-based render-time pattern.
+- Ran `bun run lint` → 0 errors / 0 warnings; dev server compiles cleanly and all routes return 200.
+Stage Summary:
+- Portfolio listing now feels significantly more premium: masked grid hero, sticky filter bar with stuck-state shadow, focus-glow search, animated sliding gradient filter chips, gradient sort trigger, hover-rich project cards (gradient overlay, quick-preview pill, slide-up CTA, gradient ring, shimmer sweep, scaling tech dots), animated result counter, shimmer skeletons, gradient empty state, and a full-width gradient CTA band.
+- Blog detail gained a real-time "X min remaining" reading indicator that derives from the existing scrollYProgress, transitions subtly on each change, switches to "Finished reading" at the end, respects Persian number direction, and resets when switching articles — all without touching existing functionality, translations, or structure.
+
+---
+Task ID: 9
+Agent: Main (orchestrator) — cron review round
+Task: QA testing (mobile + desktop), styling enhancements (contact, estimate, portfolio listing), blog reading time feature
+
+Work Log:
+- QA tested mobile (375px) and desktop (1280px) responsiveness across Home, Portfolio, Estimate wizard — all responsive, no overflow
+- Tested mobile menu, mobile portfolio cards, mobile estimate wizard flow — all working
+- Dispatched 2 parallel subagents:
+  * 9-a: Enhanced ContactView + EstimateView styling
+    - Contact: hero bg-radial-fade + grid, decorative gradient card behind contact details, enlarged icon circles with gradient hover, vertical gradient connector for "what happens next" steps, gradient form card top border, confetti animation on success state (12 motion dots + spring checkmark)
+    - Estimate: gradient progress bar with glowing pulse, gradient step indicator pill, radio cards with gradient selected state, Yes/No distinct colors (accent vs rose), HUGE gradient cost number with float animation, premium receipt-style breakdown, celebration confetti on saved state
+  * 9-b: Enhanced PortfolioView + added blog reading time remaining
+    - Portfolio: hero bg-radial-fade, sticky filter bar with stuck state, search focus glow, animated filter chips (framer-motion layoutId), card hover dark gradient overlay + "Quick preview" pill + "View Project" slide-up button + shimmer border, animated result counter, premium empty state, shimmer skeletons, gradient bottom CTA
+    - Blog detail: added real-time "X min remaining" indicator that updates on scroll using useMotionValueEvent on existing scrollYProgress, switches to "Finished reading" at end, ltr-num wrapped for Persian
+- Verified all enhancements work in English (LTR) and Persian (RTL) modes
+- Lint passes with 0 errors; all endpoints return 200
+
+Stage Summary:
+- 2 views significantly enhanced with premium styling (Contact, Estimate)
+- Portfolio listing cards enhanced with hover quick-preview, animated counters, shimmer effects
+- Blog detail gained a real-time reading time remaining indicator
+- All features bilingual (en/fa) with RTL support
+- Platform continues to be stable and increasingly premium
