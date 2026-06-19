@@ -119,9 +119,12 @@ export function Footer() {
             <p>{t('footer.crafted')}</p>
             <button
               onClick={() => setView('admin')}
-              className="text-secondary-foreground/40 transition hover:text-accent"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 font-medium text-secondary-foreground/70 transition hover:border-accent/40 hover:bg-accent/10 hover:text-accent"
               aria-label={t('nav.admin')}
             >
+              <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+                <path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+              </svg>
               {t('nav.admin')}
             </button>
           </div>

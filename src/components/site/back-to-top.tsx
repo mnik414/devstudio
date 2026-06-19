@@ -11,9 +11,27 @@ export function BackToTop() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 600)
+    const onScroll = () => {
+      const showButton = window.scrollY > 600
+      // Hide button when the footer is in view to avoid covering footer content
+      const footer = document.querySelector('footer')
+      if (footer && showButton) {
+        const footerRect = footer.getBoundingClientRect()
+        const viewportH = window.innerHeight
+        // If footer top is within the bottom 120px of viewport, hide the button
+        const footerInView = footerRect.top < viewportH - 60
+        setVisible(showButton && !footerInView)
+      } else {
+        setVisible(showButton)
+      }
+    }
+    onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
   }, [])
 
   return (
