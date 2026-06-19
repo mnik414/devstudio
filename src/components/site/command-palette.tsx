@@ -69,7 +69,12 @@ export function CommandPalette() {
         </kbd>
       </button>
 
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={t('cmd.placeholder')}
+        description={t('cmd.placeholder')}
+      >
         <CommandInput placeholder={t('cmd.placeholder')} />
         <CommandList>
           <CommandEmpty>{t('cmd.noResults')}</CommandEmpty>

@@ -38,7 +38,7 @@ import { useNav } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { useT, useLang } from '@/lib/lang-store'
 import { useFavorites } from '@/lib/favorites-store'
-import { tc } from '@/lib/content-i18n'
+import { tc, tcCategory, tcClient } from '@/lib/content-i18n'
 
 type SortKey = 'newest' | 'oldest' | 'title' | 'views'
 
@@ -262,7 +262,7 @@ export function PortfolioView() {
                   active={category === c.slug}
                   onClick={() => setCategory(c.slug)}
                 >
-                  {c.name}
+                  {tcCategory(c.slug, c.name, lang)}
                 </FilterChip>
               ))}
             </div>
@@ -480,7 +480,7 @@ function PortfolioCard({
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           {item.category && (
             <Badge className="absolute top-3 left-3 border-0 bg-white/90 text-foreground shadow-xs backdrop-blur">
-              {item.category.name}
+              {tcCategory(item.category.slug, item.category.name, lang)}
             </Badge>
           )}
           <div className="absolute top-3 right-3">
@@ -552,7 +552,7 @@ function PortfolioCard({
             {item.clientName && (
               <>
                 <span className="text-muted-foreground/40">•</span>
-                <span className="truncate">{item.clientName}</span>
+                <span className="truncate">{tcClient(item.clientName, lang)}</span>
               </>
             )}
           </div>

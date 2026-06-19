@@ -1184,3 +1184,36 @@ Stage Summary:
 - Custom 404 page with premium design, navigation options, and suggested pages
 - All features work in both English (LTR) and Persian (RTL) modes
 - Platform continues to be stable and increasingly premium
+
+---
+Task ID: 16
+Agent: Main (orchestrator)
+Task: اصلاح فارسی‌نویسی کل سایت + افزودن آپلود عکس در پنل ادمین
+
+Work Log:
+- اصلاح عنوان اصلی هیرو: "ما سریع، مقیاس‌پذیر و محصولات دیجیتال مدرن می‌سازیم" → "ما محصولات دیجیتال سریع، مقیاس‌پذیر و مدرن می‌سازیم" (اصلاح گرامری)
+- ترجمه متن‌های انگلیسی ماکت داشبورد هیرو: Weekly Activity → فعالیت هفتگی، Monthly Target → هدف ماهانه، Memory → حافظه، Uptime → زمان فعالیت، New signup +1 → ثبت‌نام جدید +۱، Revenue goal reached → هدف درآمد محقق شد، 2s ago → ۲ ثانیه پیش، Just now → همین حالا، Goal → هدف
+- ترجمه Command Palette: عنوان و توضیح حالا از i18n استفاده می‌کنند
+- ایجاد سیستم ترجمه محتوای پویا در content-i18n.ts:
+  * ترجمه ۷ دسته‌بندی نمونه‌کار (Corporate → شرکتی، E-Commerce → تجارت الکترونیک، Tourism → گردشگری، Healthcare → درمان و سلامت، SaaS → سرویس نرم‌افزاری، Education → آموزش، Custom Systems → سیستم‌های سفارشی)
+  * ترجمه ۵ دسته‌بندی وبلاگ
+  * ترجمه ۸ سرویس (عنوان، توضیح، ویژگی‌ها)
+  * ترجمه ۸ نام مشتری
+- اضافه کردن توابع: tcCategory, tcBlogCategory, tcServiceTitle, tcServiceDesc, tcServiceFeatures, tcClient
+- استفاده از توابع ترجمه در home-view (دسته‌بندی‌ها، سرویس‌ها، نظرات مشتریان) و portfolio-view (دسته‌بندی‌ها، نام مشتری، فیلترها)
+- ترجمه آدرس فوتر: "123 Innovation Drive, San Francisco, CA" → "۱۲۳ خیابان نوآوری، سان‌فرانسیسکو، کالیفرنیا"
+- اصلاح نیم‌فاصله‌ها: "دورهای‌پزشکی" → "دورپزشکی"، "بهموقع" → "به‌موقع"
+- افزودن قابلیت آپلود عکس در پنل ادمین:
+  * ایجاد API route /api/upload با اعتبارسنجی (نوع فایل، حجم حداکثر ۵ مگابایت، احراز هویت)
+  * ایجاد کامپوننت ImageUpload با دو حالت: آپلود فایل (drag & drop) و آدرس URL
+  * اضافه کردن نوع فیلد 'image' به DynamicForm ادمین
+  * تبدیل ۶ فیلد تصویر (coverImage, avatar, authorAvatar) از 'text' به 'image'
+  * فایل‌ها در public/uploads ذخیره می‌شوند
+  * کامپوننت کاملاً فارسی است (آپلود فایل، آدرس URL، فایل را اینجا بکشید، در حال آپلود)
+- تست آپلود: API با موفقیت فایل را ذخیره و URL برمی‌گرداند (200)
+- Lint passes with 0 errors; all endpoints return 200
+
+Stage Summary:
+- فارسی‌نویسی کل سایت اصلاح شد: عنوان هیرو، ماکت داشبورد، دسته‌بندی‌ها، سرویس‌ها، نام مشتریان، آدرس فوتر
+- قابلیت آپلود عکس در پنل ادمین اضافه شد: ۶ فیلد تصویر (کاور، آواتار) حالا از آپلود فایل پشتیبانی می‌کنند
+- تمام متن‌های انگلیسی باقی‌مانده در صفحه اصلی و نمونه‌کارها ترجمه شدند

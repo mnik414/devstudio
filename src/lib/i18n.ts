@@ -39,6 +39,15 @@ const en: Dict = {
   'hero.activeUsers': 'Active Users',
   'hero.revenue': 'Revenue',
   'hero.conversion': 'Conversion',
+  'hero.weeklyActivity': 'Weekly Activity',
+  'hero.monthlyTarget': 'Monthly Target',
+  'hero.memory': 'Memory',
+  'hero.uptime': 'Uptime',
+  'hero.newSignup': 'New signup +1',
+  'hero.revenueGoal': 'Revenue goal reached',
+  'hero.secondsAgo': '2s ago',
+  'hero.justNow': 'Just now',
+  'hero.goal': 'Goal',
 
   // ---------- Trusted by ----------
   'trusted.title': 'Trusted by teams at fast-growing companies',
@@ -131,6 +140,7 @@ const en: Dict = {
   'footer.faqs': 'FAQs',
   'footer.rights': 'All rights reserved.',
   'footer.crafted': 'Crafted with care · Built on Next.js, TypeScript & Prisma',
+  'footer.address': '123 Innovation Drive, San Francisco, CA',
 
   // ---------- Portfolio View ----------
   'portfolio.eyebrow': 'Our Work',
@@ -505,9 +515,9 @@ const fa: Dict = {
 
   // ---------- بخش اصلی ----------
   'hero.badge': 'پذیرش پروژه‌های سه‌ماهه سوم ۲۰۲۴',
-  'hero.title': 'ما',
+  'hero.title': 'ما محصولات دیجیتال',
   'hero.titleAccent': 'سریع، مقیاس‌پذیر',
-  'hero.titleEnd': 'و محصولات دیجیتال مدرن می‌سازیم',
+  'hero.titleEnd': 'و مدرن می‌سازیم',
   'hero.subtitle':
     'دِواستودیو یک آژانس حرفه‌ای توسعه وب است که وب‌سایت‌های پرسرعت، پلتفرم‌های SaaS و محصولات مبتنی بر هوش مصنوعی می‌سازد که بازدیدکنندگان را به مشتری تبدیل می‌کند.',
   'hero.viewPortfolio': 'مشاهده نمونه‌کارها',
@@ -520,6 +530,15 @@ const fa: Dict = {
   'hero.activeUsers': 'کاربران فعال',
   'hero.revenue': 'درآمد',
   'hero.conversion': 'نرخ تبدیل',
+  'hero.weeklyActivity': 'فعالیت هفتگی',
+  'hero.monthlyTarget': 'هدف ماهانه',
+  'hero.memory': 'حافظه',
+  'hero.uptime': 'زمان فعالیت',
+  'hero.newSignup': 'ثبت‌نام جدید +۱',
+  'hero.revenueGoal': 'هدف درآمد محقق شد',
+  'hero.secondsAgo': '۲ ثانیه پیش',
+  'hero.justNow': 'همین حالا',
+  'hero.goal': 'هدف',
 
   // ---------- اعتماد ----------
   'trusted.title': 'مورد اعتماد تیم‌های شرکت‌های رو به رشد',
@@ -612,6 +631,7 @@ const fa: Dict = {
   'footer.faqs': 'سؤالات متداول',
   'footer.rights': 'تمام حقوق محفوظ است.',
   'footer.crafted': 'با دقت ساخته شده · مبتنی بر Next.js، TypeScript و Prisma',
+  'footer.address': '۱۲۳ خیابان نوآوری، سان‌فرانسیسکو، کالیفرنیا',
 
   // ---------- صفحه نمونه‌کارها ----------
   'portfolio.eyebrow': 'کارهای ما',

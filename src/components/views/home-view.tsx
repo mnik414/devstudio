@@ -53,7 +53,7 @@ import {
 } from '@/lib/hooks'
 import { useNav } from '@/lib/store'
 import { useT, useLang } from '@/lib/lang-store'
-import { tc } from '@/lib/content-i18n'
+import { tc, tcCategory, tcServiceTitle, tcServiceDesc, tcServiceFeatures, tcClient } from '@/lib/content-i18n'
 import { cn } from '@/lib/utils'
 
 const iconMap: Record<string, typeof Code2> = {
@@ -126,9 +126,9 @@ export function HomeView() {
   // Compact system metrics row
   const dashboardMiniMetrics = [
     { label: 'CPU', value: '42%' },
-    { label: 'Memory', value: '68%' },
+    { label: t('hero.memory'), value: '68%' },
     { label: 'API', value: '12ms' },
-    { label: 'Uptime', value: '99.9%' },
+    { label: t('hero.uptime'), value: '99.9%' },
   ]
 
   return (
@@ -294,7 +294,7 @@ export function HomeView() {
                     {/* Bar chart with animated line overlay */}
                     <div className="relative sm:col-span-2">
                       <div className="mb-2 flex items-center justify-between">
-                        <p className="text-xs font-medium text-muted-foreground">Weekly Activity</p>
+                        <p className="text-xs font-medium text-muted-foreground">{t('hero.weeklyActivity')}</p>
                         <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary ltr-num">
                           <ArrowUpRight className="h-2.5 w-2.5" />
                           +18.2%
@@ -382,10 +382,10 @@ export function HomeView() {
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
                           <span className="text-xl font-bold ltr-num">87%</span>
-                          <span className="text-[9px] text-muted-foreground">Goal</span>
+                          <span className="text-[9px] text-muted-foreground">{t('hero.goal')}</span>
                         </div>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">Monthly Target</p>
+                      <p className="text-[10px] text-muted-foreground">{t('hero.monthlyTarget')}</p>
                     </div>
                   </div>
 
@@ -414,8 +414,8 @@ export function HomeView() {
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold">New signup +1</p>
-                  <p className="text-[8px] text-muted-foreground">2s ago</p>
+                  <p className="text-[10px] font-semibold">{t('hero.newSignup')}</p>
+                  <p className="text-[8px] text-muted-foreground">{t('hero.secondsAgo')}</p>
                 </div>
               </div>
             </motion.div>
@@ -432,8 +432,8 @@ export function HomeView() {
                   <CheckCircle2 className="h-3.5 w-3.5" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold">Revenue goal reached</p>
-                  <p className="text-[8px] text-muted-foreground">Just now</p>
+                  <p className="text-[10px] font-semibold">{t('hero.revenueGoal')}</p>
+                  <p className="text-[8px] text-muted-foreground">{t('hero.justNow')}</p>
                 </div>
               </div>
             </motion.div>
@@ -859,7 +859,7 @@ function FeaturedPortfolioCard({ portfolio, index, onClick }: { portfolio: Portf
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
           {portfolio.category && (
             <Badge className="absolute left-3 top-3 border-0 bg-background/90 text-foreground backdrop-blur">
-              {portfolio.category.name}
+              {tcCategory(portfolio.category.slug, portfolio.category.name, lang)}
             </Badge>
           )}
           <div className="absolute bottom-3 right-3 translate-y-2 rounded-full bg-primary p-2 text-primary-foreground opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
@@ -872,7 +872,7 @@ function FeaturedPortfolioCard({ portfolio, index, onClick }: { portfolio: Portf
             {portfolio.clientName && (
               <>
                 <span>•</span>
-                <span>{portfolio.clientName}</span>
+                <span>{tcClient(portfolio.clientName, lang)}</span>
               </>
             )}
           </div>
@@ -908,8 +908,12 @@ function FeaturedPortfolioCard({ portfolio, index, onClick }: { portfolio: Portf
 
 function ServiceCard({ service, index, onCta }: { service: Service; index: number; onCta: () => void }) {
   const t = useT()
+  const lang = useLang((s) => s.lang)
   const Icon = iconMap[service.icon] ?? Code2
-  const features = parseList<string>(service.features)
+  const rawFeatures = parseList<string>(service.features)
+  const features = tcServiceFeatures(service.slug, rawFeatures, lang)
+  const title = tcServiceTitle(service.slug, service.title, lang)
+  const description = tcServiceDesc(service.slug, service.description, lang)
   return (
     <Reveal delay={index * 0.06}>
       <Card className="group relative h-full overflow-hidden border-border/60 p-6 transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-soft">
@@ -968,8 +972,8 @@ function ServiceCard({ service, index, onCta }: { service: Service; index: numbe
               <Icon className="h-6 w-6" />
             </motion.div>
           </div>
-          <h3 className="mt-4 text-lg font-semibold">{service.title}</h3>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{service.description}</p>
+          <h3 className="mt-4 text-lg font-semibold">{title}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
           {features.length > 0 && (
             <ul className="mt-4 space-y-1.5">
               {features.slice(0, 3).map((f) => (
@@ -1111,11 +1115,11 @@ function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Te
                       )}
                     </div>
                     <div>
-                      <p className="font-semibold">{current.clientName}</p>
+                      <p className="font-semibold">{tcClient(current.clientName, lang)}</p>
                       <p className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{current.role}</span>
                         <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
-                        <span className="font-medium text-foreground/80">{current.company}</span>
+                        <span className="font-medium text-foreground/80">{tcClient(current.company, lang)}</span>
                       </p>
                     </div>
                   </div>

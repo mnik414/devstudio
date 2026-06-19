@@ -75,6 +75,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { ImageUpload } from '@/components/admin/image-upload'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -99,7 +100,7 @@ type ModelKey =
 
 type ActiveView = ModelKey | 'dashboard'
 
-type FieldType = 'text' | 'textarea' | 'number' | 'switch' | 'json' | 'select'
+type FieldType = 'text' | 'textarea' | 'number' | 'switch' | 'json' | 'select' | 'image'
 
 interface FieldConfig {
   key: string
@@ -144,7 +145,7 @@ const MODEL_CONFIGS: Record<ModelKey, ModelConfig> = {
       { key: 'slug', label: 'Slug', type: 'text', required: true },
       { key: 'summary', label: 'Summary', type: 'textarea' },
       { key: 'description', label: 'Description', type: 'textarea' },
-      { key: 'coverImage', label: 'Cover Image URL', type: 'text' },
+      { key: 'coverImage', label: 'Cover Image', type: 'image' },
       { key: 'gallery', label: 'Gallery (JSON array)', type: 'json', placeholder: '["/img/1.jpg", "/img/2.jpg"]' },
       { key: 'liveUrl', label: 'Live URL', type: 'text' },
       { key: 'repoUrl', label: 'Repo URL', type: 'text' },
@@ -209,10 +210,10 @@ const MODEL_CONFIGS: Record<ModelKey, ModelConfig> = {
       { key: 'slug', label: 'Slug', type: 'text', required: true },
       { key: 'excerpt', label: 'Excerpt', type: 'textarea' },
       { key: 'content', label: 'Content (Markdown)', type: 'textarea' },
-      { key: 'coverImage', label: 'Cover Image URL', type: 'text' },
+      { key: 'coverImage', label: 'Cover Image', type: 'image' },
       { key: 'readingTime', label: 'Reading Time (min)', type: 'number', default: 5 },
       { key: 'authorName', label: 'Author Name', type: 'text', default: 'Editorial Team' },
-      { key: 'authorAvatar', label: 'Author Avatar URL', type: 'text' },
+      { key: 'authorAvatar', label: 'Author Avatar', type: 'image' },
       { key: 'published', label: 'Published', type: 'switch', default: true },
       { key: 'featured', label: 'Featured', type: 'switch', default: false },
     ],
@@ -262,7 +263,7 @@ const MODEL_CONFIGS: Record<ModelKey, ModelConfig> = {
       { key: 'slug', label: 'Slug', type: 'text', required: true },
       { key: 'clientName', label: 'Client Name', type: 'text', required: true },
       { key: 'industry', label: 'Industry', type: 'text' },
-      { key: 'coverImage', label: 'Cover Image URL', type: 'text' },
+      { key: 'coverImage', label: 'Cover Image', type: 'image' },
       { key: 'summary', label: 'Summary', type: 'textarea' },
       { key: 'problem', label: 'Problem', type: 'textarea' },
       { key: 'analysis', label: 'Analysis', type: 'textarea' },
@@ -291,7 +292,7 @@ const MODEL_CONFIGS: Record<ModelKey, ModelConfig> = {
       { key: 'clientName', label: 'Client Name', type: 'text', required: true },
       { key: 'role', label: 'Role', type: 'text' },
       { key: 'company', label: 'Company', type: 'text' },
-      { key: 'avatar', label: 'Avatar URL', type: 'text' },
+      { key: 'avatar', label: 'Avatar', type: 'image' },
       { key: 'rating', label: 'Rating (1-5)', type: 'number', default: 5 },
       { key: 'quote', label: 'Quote', type: 'textarea' },
       { key: 'published', label: 'Published', type: 'switch', default: true },
@@ -312,7 +313,7 @@ const MODEL_CONFIGS: Record<ModelKey, ModelConfig> = {
       { key: 'name', label: 'Name', type: 'text', required: true },
       { key: 'role', label: 'Role', type: 'text' },
       { key: 'bio', label: 'Bio', type: 'textarea' },
-      { key: 'avatar', label: 'Avatar URL', type: 'text' },
+      { key: 'avatar', label: 'Avatar', type: 'image' },
       { key: 'linkedin', label: 'LinkedIn URL', type: 'text' },
       { key: 'github', label: 'GitHub URL', type: 'text' },
       { key: 'twitter', label: 'Twitter URL', type: 'text' },
@@ -727,16 +728,34 @@ function DynamicForm({
   model,
   values,
   onChange,
+  token,
 }: {
   model: ModelKey
   values: Record<string, unknown>
   onChange: (k: string, v: unknown) => void
+  token: string
 }) {
   const config = MODEL_CONFIGS[model]
   return (
     <div className="grid max-h-[60vh] gap-4 overflow-y-auto pr-1">
       {config.formFields.map((f) => {
         const val = values[f.key]
+        if (f.type === 'image') {
+          return (
+            <div key={f.key} className="space-y-1.5">
+              <Label className="text-sm font-medium">
+                {f.label}
+                {f.required && <span className="ml-1 text-destructive">*</span>}
+              </Label>
+              <ImageUpload
+                value={typeof val === 'string' ? val : ''}
+                onChange={(url) => onChange(f.key, url)}
+                token={token}
+                placeholder={f.placeholder}
+              />
+            </div>
+          )
+        }
         if (f.type === 'switch') {
           return (
             <div key={f.key} className="flex items-center justify-between rounded-lg border border-border/60 p-3">
@@ -1064,7 +1083,7 @@ function EditDialog({
           </DialogDescription>
         </DialogHeader>
         <Separator />
-        <DynamicForm model={model} values={values} onChange={handleChange} />
+        <DynamicForm model={model} values={values} onChange={handleChange} token={token} />
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel

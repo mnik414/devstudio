@@ -109,7 +109,7 @@ export function Footer() {
           </div>
           <div className="flex items-center gap-2 sm:justify-end">
             <MapPin className="h-4 w-4 shrink-0 text-accent" />
-            123 Innovation Drive, San Francisco, CA
+            {t('footer.address')}
           </div>
         </div>
 
