@@ -77,6 +77,9 @@ export function PortfolioDetailView() {
           {/* Hero */}
           <Hero item={item} lang={lang} />
 
+          {/* Sticky section nav (desktop only, floating) */}
+          <PortfolioSectionNav t={t} lang={lang} item={item} relatedCount={related.length} />
+
           {/* Overview (Problem / Solution / Result) */}
           <section id="overview" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
             <SectionHeading
@@ -1067,5 +1070,100 @@ function NotFoundState({ onBack }: { onBack: () => void }) {
         </Button>
       </div>
     </div>
+  )
+}
+
+/* ----------------- Portfolio Section Nav (sticky) ----------------- */
+
+function PortfolioSectionNav({
+  t,
+  lang,
+  item,
+  relatedCount,
+}: {
+  t: (key: string) => string
+  lang: 'en' | 'fa'
+  item: Portfolio
+  relatedCount: number
+}) {
+  const [activeId, setActiveId] = useState<string>('overview')
+
+  const sections: { id: string; label: string; show: boolean }[] = [
+    { id: 'overview', label: t('portfolioDetail.overview'), show: true },
+    { id: 'technologies', label: t('portfolioDetail.technologies'), show: (item.technologies?.length ?? 0) > 0 },
+    { id: 'features', label: t('portfolioDetail.features'), show: parseList(item.features).length > 0 },
+    { id: 'gallery', label: t('portfolioDetail.gallery'), show: parseList(item.gallery).length > 0 },
+    { id: 'case-study', label: t('portfolioDetail.caseStudy'), show: true },
+    { id: 'related', label: t('portfolioDetail.related'), show: relatedCount > 0 },
+  ].filter((s) => s.show)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id)
+          }
+        })
+      },
+      { rootMargin: '-30% 0px -60% 0px', threshold: 0 },
+    )
+
+    sections.forEach((s) => {
+      const el = document.getElementById(s.id)
+      if (el) observer.observe(el)
+    })
+
+    return () => observer.disconnect()
+  }, [item.id])
+
+  const handleClick = (e: React.MouseEvent, id: string) => {
+    e.preventDefault()
+    const el = document.getElementById(id)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  return (
+    <aside
+      className={cn(
+        'fixed top-1/2 z-30 hidden -translate-y-1/2 lg:block',
+        lang === 'fa' ? 'right-4' : 'left-4',
+      )}
+    >
+      <nav className="rounded-2xl border border-border/40 bg-card/80 p-3 shadow-soft backdrop-blur-md" aria-label="Section navigation">
+        <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          {lang === 'fa' ? 'در این صفحه' : 'On this page'}
+        </p>
+        <ul className="space-y-0.5">
+          {sections.map((s) => (
+            <li key={s.id}>
+              <a
+                href={`#${s.id}`}
+                onClick={(e) => handleClick(e, s.id)}
+                className={cn(
+                  'relative block rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
+                  activeId === s.id
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {activeId === s.id && (
+                  <motion.span
+                    layoutId="section-nav-active"
+                    className={cn(
+                      'absolute inset-y-1 w-0.5 rounded-full bg-gradient-to-b from-primary to-accent',
+                      lang === 'fa' ? 'right-0' : 'left-0',
+                    )}
+                  />
+                )}
+                <span className={cn('block truncate', lang === 'fa' ? 'pr-3' : 'pl-3')}>
+                  {s.label}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </aside>
   )
 }

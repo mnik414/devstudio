@@ -1013,3 +1013,60 @@ Stage Summary:
 - Blog detail has a mobile-friendly TOC bottom sheet with active section highlighting
 - All features bilingual (en/fa) with RTL support
 - Platform continues to be stable and increasingly premium
+
+---
+Task ID: 14-b
+Agent: full-stack-developer (services + blog author)
+Task: Enhance Home services section with animated icons and the Blog detail author card + related articles for a more premium feel.
+Work Log:
+- Read worklog.md to absorb the design system (blue #2563EB primary, teal #14B8A6 accent, Framer Motion, RTL via useT()/useLang()).
+- Located the ServiceCard component in home-view.tsx (around line 770) and the author footer + related articles section in blog-detail-view.tsx.
+- Home ServiceCard: wrapped the icon in a relative cluster containing (a) a soft blurred gradient glow ring + a crisp gradient ring that fade in and scale on hover, (b) four particle dots (top/right/bottom/left) that float outward on hover via -top-1 → -top-2 / -right-1 → -right-2 etc., (c) a motion.div floating icon with animate={{ y: [0, -6, 0] }} (3s infinite loop, easeInOut, delay = index * 0.2) and group-hover scale-110 + rotate-[5deg] + bg-primary + shadow-glow.
+- Upgraded the number badge to motion.span with whileHover scale 1.12 and group-hover text-primary/20 color change.
+- Added a gradient progress bar at the bottom of the card (absolute inset-x-0 bottom-0 h-0.5 w-0 → group-hover:w-full, from-primary to-accent, 500ms ease-out).
+- Blog author card: rebuilt as a premium rounded-3xl card with gradient mesh background (primary/10 → accent/5 → transparent), two large blurred accent blobs, bg-grid overlay at 4% opacity. Avatar now sits inside a double gradient ring (blurred + crisp from-primary to-accent) with a 4px ring-background offset and an emerald presence dot.
+- Added author bio paragraph ("Senior writer at DevStudio. Passionate about web development, performance, and developer experience.") and a social links row (Twitter, LinkedIn, GitHub) where each link transitions to a brand-appropriate gradient circle on hover (sky→blue, blue→blue-800, slate-700→slate-900).
+- Added a gradient "Follow" button (from-primary to-accent) and a "View all posts by this author" link (RTL-aware ArrowRight). Preserved the views/reading-time line.
+- Related articles: replaced the title with a gradient-text "More from our blog" heading (span.text-gradient inside SectionHeading), increased grid gap to gap-5, and redesigned CompactCard into a vertical card with a 16/10 cover image (gradient overlay + category chip on hover) plus a footer with separate reading-time and date badges (Clock + Calendar icons in muted pills). Added hover lift y:-6 and a gradient border ring.
+- Added a centered "View all articles" outline button (rounded-full, border-primary/30 → hover:border-primary + bg-primary/5, RTL-aware arrow) at the bottom of the related section that routes back to the blog list view.
+- Added `Github` to the lucide-react imports in blog-detail-view.tsx.
+- Ran `bun run lint` — clean, no errors. Checked dev.log — pages compile and render successfully.
+Stage Summary:
+- home-view.tsx ServiceCard now has a continuously floating icon (per-card delay), hover scale + 5deg rotate, gradient glow ring + crisp ring, four outward-floating particle dots, animated number badge, and a hover-fill gradient progress bar at the bottom.
+- blog-detail-view.tsx author card is now a premium gradient-mesh panel with ringed avatar, bio, social links, Follow button, and "View all posts" link. Related articles section has a gradient heading, premium 3-column vertical cards with cover image + reading-time/date badges, hover lift, gradient border, and a "View all articles" CTA.
+- All existing functionality (translations, data fetching, RTL, dark mode) preserved. No new i18n keys added; new strings are English-only as instructed. Lint passes cleanly.
+
+---
+Task ID: 14
+Agent: Main (orchestrator) — cron review round
+Task: QA testing, portfolio detail sticky section nav, home services animated icons, blog author card enhancement
+
+Work Log:
+- QA tested all views: Home, Portfolio (+detail), Blog (+detail), Case Studies, Contact, Estimate, About, Admin — all clean, no errors
+- Dispatched 2 parallel subagents (14-a failed with empty response, built manually):
+  * 14-a (manual): Added PortfolioSectionNav — sticky floating section navigation for portfolio detail
+    - Fixed-position sidebar on desktop (lg:block, hidden on mobile)
+    - Lists all visible sections: Overview, Technologies, Features, Gallery, Case Study, Related
+    - Active section highlighting via IntersectionObserver (rootMargin -30% 0px -60% 0px)
+    - Smooth scroll on click (scrollIntoView with behavior: smooth)
+    - Gradient active indicator (from-primary to-accent, layoutId animation)
+    - RTL-aware: positioned right-4 in Persian, left-4 in English; active indicator on right side in RTL
+    - "On this page" label (bilingual: "در این صفحه" in Persian)
+    - Backdrop-blur card with shadow-soft
+    - Only shows sections that exist (filters by data availability)
+  * 14-b (subagent): Enhanced home ServiceCard + blog detail author card
+    - ServiceCard: floating icon animation (y: [0,-6,0] 3s loop, staggered delay), gradient glow ring + crisp ring on hover, 4 particle dots that float outward on hover, icon scale-110 + rotate-5deg on hover, number badge whileHover scale, gradient progress bar at bottom (w-0→w-full on hover)
+    - Blog author card: premium panel with gradient mesh background + blurred accent blobs, double gradient ring avatar with presence dot, author bio paragraph, social links (Twitter/LinkedIn/GitHub) with brand gradients on hover, gradient "Follow" button, "View all posts by this author" link
+    - Blog related articles: "More from our blog" gradient heading, 3-column grid with hover lift + gradient border, reading-time + date badges on each card, "View all articles" button
+- Verified portfolio section nav: 6 links visible, clicking scrolls smoothly, IntersectionObserver active highlighting works
+- Verified blog author card: "Senior writer" bio visible, Follow button + social links present
+- Verified all features work in Persian RTL mode (no console errors)
+- Lint passes with 0 errors; all endpoints return 200
+
+Stage Summary:
+- Portfolio detail now has a sticky floating section nav with active highlighting and smooth scroll — improves navigation on long detail pages
+- Home services cards enhanced with floating icons, gradient rings, particle dots, progress bars — more premium and interactive
+- Blog detail author card rebuilt with gradient mesh, bio, social links, Follow button — builds author authority
+- Blog related articles enhanced with gradient heading, reading-time/date badges, View all button
+- All features work in both English (LTR) and Persian (RTL) modes
+- Platform continues to be stable and increasingly premium

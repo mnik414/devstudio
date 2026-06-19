@@ -1,0 +1,972 @@
+     1→'use client'
+     2→
+     3→import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+     4→import ReactMarkdown, { type Components } from 'react-markdown'
+     5→import { motion, AnimatePresence, useMotionValueEvent, useScroll, useSpring } from 'framer-motion'
+     6→import { format } from 'date-fns'
+     7→import {
+     8→  ArrowLeft,
+     9→  ArrowRight,
+    10→  ArrowUpRight,
+    11→  Clock,
+    12→  Calendar,
+    13→  Twitter,
+    14→  Linkedin,
+    15→  Facebook,
+    16→  Link2,
+    17→  Share2,
+    18→  Copy,
+    19→  FileText,
+    20→  AlertCircle,
+    21→  List,
+    22→  type LucideIcon,
+    23→} from 'lucide-react'
+    24→import { toast } from 'sonner'
+    25→import { Badge } from '@/components/ui/badge'
+    26→import { Button } from '@/components/ui/button'
+    27→import { Skeleton } from '@/components/ui/skeleton'
+    28→import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
+    29→import { Reveal } from '@/components/site/reveal'
+    30→import { SectionHeading } from '@/components/site/section-heading'
+    31→import { useNav } from '@/lib/store'
+    32→import { useBlogPost, type BlogPost } from '@/lib/hooks'
+    33→import { useT, useLang } from '@/lib/lang-store'
+    34→import { tc } from '@/lib/content-i18n'
+    35→import { cn } from '@/lib/utils'
+    36→
+    37→/* ------------------------------ helpers ------------------------------ */
+    38→
+    39→function getInitials(name: string): string {
+    40→  return name
+    41→    .split(' ')
+    42→    .filter(Boolean)
+    43→    .slice(0, 2)
+    44→    .map((n) => n[0]?.toUpperCase() ?? '')
+    45→    .join('')
+    46→}
+    47→
+    48→const AVATAR_PALETTE = [
+    49→  'bg-blue-500',
+    50→  'bg-emerald-500',
+    51→  'bg-amber-500',
+    52→  'bg-rose-500',
+    53→  'bg-violet-500',
+    54→  'bg-cyan-500',
+    55→  'bg-pink-500',
+    56→  'bg-teal-500',
+    57→]
+    58→
+    59→function colorFromString(str: string): string {
+    60→  let hash = 0
+    61→  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash)
+    62→  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length]
+    63→}
+    64→
+    65→function formatDate(iso: string): string {
+    66→  try {
+    67→    return format(new Date(iso), 'MMM d, yyyy')
+    68→  } catch {
+    69→    return ''
+    70→  }
+    71→}
+    72→
+    73→function slugify(text: string): string {
+    74→  return text
+    75→    .toLowerCase()
+    76→    .replace(/[^\w\s-]/g, '')
+    77→    .trim()
+    78→    .replace(/[\s_-]+/g, '-')
+    79→    .replace(/^-+|-+$/g, '')
+    80→}
+    81→
+    82→function extractText(node: ReactNode): string {
+    83→  if (typeof node === 'string') return node
+    84→  if (typeof node === 'number') return String(node)
+    85→  if (Array.isArray(node)) return node.map(extractText).join('')
+    86→  if (node && typeof node === 'object' && 'props' in node) {
+    87→    // @ts-expect-error - react element shape
+    88→    return extractText(node.props?.children)
+    89→  }
+    90→  return ''
+    91→}
+    92→
+    93→function extractTOC(markdown: string): { id: string; text: string }[] {
+    94→  const lines = markdown.split('\n')
+    95→  const toc: { id: string; text: string }[] = []
+    96→  let inCodeBlock = false
+    97→  for (const line of lines) {
+    98→    if (line.trim().startsWith('```')) {
+    99→      inCodeBlock = !inCodeBlock
+   100→      continue
+   101→    }
+   102→    if (inCodeBlock) continue
+   103→    const match = line.match(/^##\s+(.+?)\s*$/)
+   104→    if (match) {
+   105→      const text = match[1].replace(/[*_`~]/g, '').trim()
+   106→      toc.push({ id: slugify(text), text })
+   107→    }
+   108→  }
+   109→  return toc
+   110→}
+   111→
+   112→/* ------------------------------ avatar ------------------------------ */
+   113→
+   114→function AuthorAvatar({
+   115→  post,
+   116→  size = 'md',
+   117→}: {
+   118→  post: BlogPost
+   119→  size?: 'sm' | 'md' | 'lg'
+   120→}) {
+   121→  const sizeCls =
+   122→    size === 'lg'
+   123→      ? 'h-12 w-12 text-base'
+   124→      : size === 'md'
+   125→        ? 'h-10 w-10 text-sm'
+   126→        : 'h-8 w-8 text-xs'
+   127→
+   128→  if (post.authorAvatar) {
+   129→    return (
+   130→      <img
+   131→        src={post.authorAvatar}
+   132→        alt={post.authorName}
+   133→        className={cn('rounded-full object-cover ring-2 ring-background', sizeCls)}
+   134→      />
+   135→    )
+   136→  }
+   137→  return (
+   138→    <div
+   139→      className={cn(
+   140→        'grid place-items-center rounded-full font-semibold text-white ring-2 ring-background',
+   141→        sizeCls,
+   142→        colorFromString(post.authorName),
+   143→      )}
+   144→      aria-hidden
+   145→    >
+   146→      {getInitials(post.authorName) || 'A'}
+   147→    </div>
+   148→  )
+   149→}
+   150→
+   151→/* ------------------------------ share buttons ------------------------------ */
+   152→
+   153→type ShareBrand = {
+   154→  icon: LucideIcon
+   155→  label: string
+   156→  onClick: () => void
+   157→  /** Tailwind gradient + brand text color classes applied on hover */
+   158→  hoverRing: string
+   159→  hoverBg: string
+   160→  hoverText: string
+   161→  glow: string
+   162→}
+   163→
+   164→function ShareButtons({ title }: { title: string }) {
+   165→  const t = useT()
+   166→  const getUrl = () => (typeof window !== 'undefined' ? window.location.href : '')
+   167→
+   168→  const shareText = encodeURIComponent(title)
+   169→
+   170→  const onTwitter = () => {
+   171→    const url = encodeURIComponent(getUrl())
+   172→    window.open(
+   173→      `https://twitter.com/intent/tweet?text=${shareText}&url=${url}`,
+   174→      '_blank',
+   175→      'noopener,noreferrer',
+   176→    )
+   177→  }
+   178→  const onLinkedIn = () => {
+   179→    const url = encodeURIComponent(getUrl())
+   180→    window.open(
+   181→      `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
+   182→      '_blank',
+   183→      'noopener,noreferrer',
+   184→    )
+   185→  }
+   186→  const onFacebook = () => {
+   187→    const url = encodeURIComponent(getUrl())
+   188→    window.open(
+   189→      `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+   190→      '_blank',
+   191→      'noopener,noreferrer',
+   192→    )
+   193→  }
+   194→  const onCopy = async () => {
+   195→    try {
+   196→      await navigator.clipboard.writeText(getUrl())
+   197→      toast.success(t('blogDetail.linkCopied'))
+   198→    } catch {
+   199→      toast.error('Failed to copy link')
+   200→    }
+   201→  }
+   202→
+   203→  const brands: ShareBrand[] = [
+   204→    {
+   205→      icon: Twitter,
+   206→      label: 'Share on Twitter/X',
+   207→      onClick: onTwitter,
+   208→      hoverRing: 'group-hover:border-sky-400/60',
+   209→      hoverBg: 'group-hover:bg-gradient-to-br group-hover:from-sky-500 group-hover:to-blue-600',
+   210→      hoverText: 'group-hover:text-white',
+   211→      glow: 'group-hover:shadow-[0_8px_24px_-6px_rgba(2,132,199,0.55)]',
+   212→    },
+   213→    {
+   214→      icon: Linkedin,
+   215→      label: 'Share on LinkedIn',
+   216→      onClick: onLinkedIn,
+   217→      hoverRing: 'group-hover:border-blue-500/60',
+   218→      hoverBg: 'group-hover:bg-gradient-to-br group-hover:from-blue-600 group-hover:to-blue-800',
+   219→      hoverText: 'group-hover:text-white',
+   220→      glow: 'group-hover:shadow-[0_8px_24px_-6px_rgba(29,78,216,0.55)]',
+   221→    },
+   222→    {
+   223→      icon: Facebook,
+   224→      label: 'Share on Facebook',
+   225→      onClick: onFacebook,
+   226→      hoverRing: 'group-hover:border-blue-600/60',
+   227→      hoverBg: 'group-hover:bg-gradient-to-br group-hover:from-blue-700 group-hover:to-indigo-700',
+   228→      hoverText: 'group-hover:text-white',
+   229→      glow: 'group-hover:shadow-[0_8px_24px_-6px_rgba(37,99,235,0.55)]',
+   230→    },
+   231→    {
+   232→      icon: Link2,
+   233→      label: t('blogDetail.copyLink'),
+   234→      onClick: onCopy,
+   235→      hoverRing: 'group-hover:border-primary/60',
+   236→      hoverBg: 'group-hover:bg-gradient-to-br group-hover:from-primary group-hover:to-accent',
+   237→      hoverText: 'group-hover:text-white',
+   238→      glow: 'group-hover:shadow-[0_8px_24px_-6px_rgba(20,184,166,0.55)]',
+   239→    },
+   240→  ]
+   241→
+   242→  return (
+   243→    <div className="flex flex-col gap-3" aria-label={t('blogDetail.share')}>
+   244→      <div className="flex items-center justify-between gap-3">
+   245→        <div className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
+   246→          <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-primary">
+   247→            <Share2 className="h-4 w-4" />
+   248→          </span>
+   249→          {t('blogDetail.share')}
+   250→        </div>
+   251→        <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+   252→          <span className="size-1.5 rounded-full bg-accent" aria-hidden />
+   253→          <span className="ltr-num">0</span>
+   254→          <span>shares</span>
+   255→        </span>
+   256→      </div>
+   257→
+   258→      <div className="flex items-center gap-2.5">
+   259→        {brands.map(({ icon: Icon, label, onClick, hoverRing, hoverBg, hoverText, glow }) => (
+   260→          <button
+   261→            key={label}
+   262→            type="button"
+   263→            onClick={onClick}
+   264→            aria-label={label}
+   265→            title={label}
+   266→            className={cn(
+   267→              'group relative grid size-11 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all duration-300',
+   268→              'hover:-translate-y-0.5 hover:border-transparent hover:shadow-soft',
+   269→              hoverRing,
+   270→              hoverBg,
+   271→              hoverText,
+   272→              glow,
+   273→            )}
+   274→          >
+   275→            <AnimatePresence mode="wait">
+   276→              <motion.span
+   277→                key="icon"
+   278→                initial={false}
+   279→                whileHover={{ scale: 1.15 }}
+   280→                whileTap={{ scale: 0.9 }}
+   281→                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+   282→                className="grid place-items-center"
+   283→              >
+   284→                <Icon className="h-[18px] w-[18px]" />
+   285→              </motion.span>
+   286→            </AnimatePresence>
+   287→            {/* sheen on hover */}
+   288→            <span
+   289→              aria-hidden
+   290→              className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-tr from-white/30 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+   291→            />
+   292→          </button>
+   293→        ))}
+   294→        <button
+   295→          type="button"
+   296→          onClick={onCopy}
+   297→          className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:text-primary hover:shadow-soft"
+   298→        >
+   299→          <Copy className="h-3.5 w-3.5" />
+   300→          {t('blogDetail.copyLink')}
+   301→        </button>
+   302→      </div>
+   303→    </div>
+   304→  )
+   305→}
+   306→
+   307→/* ------------------------------ markdown components ------------------------------ */
+   308→
+   309→const markdownComponents: Components = {
+   310→  h1: ({ children }) => (
+   311→    <h1 className="mt-10 scroll-mt-24 text-3xl font-bold tracking-tight first:mt-0 md:text-4xl">
+   312→      {children}
+   313→    </h1>
+   314→  ),
+   315→  h2: ({ children }) => {
+   316→    const id = slugify(extractText(children))
+   317→    return (
+   318→      <h2
+   319→        id={id}
+   320→        className="mt-12 scroll-mt-24 border-l-2 border-primary/30 pl-4 text-2xl font-bold tracking-tight md:text-3xl"
+   321→      >
+   322→        {children}
+   323→      </h2>
+   324→    )
+   325→  },
+   326→  h3: ({ children }) => (
+   327→    <h3 className="mt-8 scroll-mt-24 text-xl font-semibold tracking-tight md:text-2xl">
+   328→      {children}
+   329→    </h3>
+   330→  ),
+   331→  h4: ({ children }) => (
+   332→    <h4 className="mt-6 scroll-mt-24 text-lg font-semibold tracking-tight">{children}</h4>
+   333→  ),
+   334→  p: ({ children }) => (
+   335→    <p className="text-[1.02rem] leading-[1.75] text-muted-foreground">{children}</p>
+   336→  ),
+   337→  a: ({ children, href }) => (
+   338→    <a
+   339→      href={href}
+   340→      target="_blank"
+   341→      rel="noopener noreferrer"
+   342→      className="font-medium text-primary underline underline-offset-4 decoration-primary/40 transition-colors hover:decoration-primary"
+   343→    >
+   344→      {children}
+   345→    </a>
+   346→  ),
+   347→  ul: ({ children }) => (
+   348→    <ul className="list-disc space-y-2 pl-6 text-muted-foreground marker:text-primary">
+   349→      {children}
+   350→    </ul>
+   351→  ),
+   352→  ol: ({ children }) => (
+   353→    <ol className="list-decimal space-y-2 pl-6 text-muted-foreground marker:font-semibold marker:text-primary">
+   354→      {children}
+   355→    </ol>
+   356→  ),
+   357→  li: ({ children }) => <li className="leading-[1.7]">{children}</li>,
+   358→  blockquote: ({ children }) => (
+   359→    <blockquote className="border-l-4 border-primary/50 bg-muted/40 px-5 py-3 italic text-foreground/90">
+   360→      {children}
+   361→    </blockquote>
+   362→  ),
+   363→  hr: () => <hr className="border-border/60" />,
+   364→  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+   365→  em: ({ children }) => <em className="italic">{children}</em>,
+   366→  code: ({ className, children }) => {
+   367→    const isBlock = !!className && className.includes('language-')
+   368→    if (isBlock) {
+   369→      return <code className={cn(className, 'font-mono')}>{children}</code>
+   370→    }
+   371→    return (
+   372→      <code className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[0.85em] text-primary">
+   373→        {children}
+   374→      </code>
+   375→    )
+   376→  },
+   377→  pre: ({ children }) => (
+   378→    <pre className="overflow-x-auto rounded-xl border border-border/60 bg-gradient-to-br from-secondary to-secondary/80 p-4 text-sm text-secondary-foreground shadow-soft">
+   379→      {children}
+   380→    </pre>
+   381→  ),
+   382→  table: ({ children }) => (
+   383→    <div className="overflow-x-auto rounded-xl border border-border/60">
+   384→      <table className="w-full border-collapse text-sm">{children}</table>
+   385→    </div>
+   386→  ),
+   387→  thead: ({ children }) => <thead className="bg-muted/60">{children}</thead>,
+   388→  th: ({ children }) => (
+   389→    <th className="border-b border-border/60 px-4 py-2 text-left font-semibold">{children}</th>
+   390→  ),
+   391→  td: ({ children }) => (
+   392→    <td className="border-b border-border/40 px-4 py-2 text-muted-foreground">{children}</td>
+   393→  ),
+   394→}
+   395→
+   396→/* ------------------------------ TOC ------------------------------ */
+   397→
+   398→function TableOfContents({
+   399→  items,
+   400→  activeId,
+   401→  onNavigate,
+   402→}: {
+   403→  items: { id: string; text: string }[]
+   404→  activeId: string
+   405→  /** Optional callback fired after a link is clicked (e.g. to close a mobile sheet). */
+   406→  onNavigate?: () => void
+   407→}) {
+   408→  const t = useT()
+   409→  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+   410→    e.preventDefault()
+   411→    const doScroll = () => {
+   412→      const el = document.getElementById(id)
+   413→      if (el) {
+   414→        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+   415→        // update hash without jumping
+   416→        if (typeof history !== 'undefined') history.replaceState(null, '', `#${id}`)
+   417→      }
+   418→    }
+   419→    if (onNavigate) {
+   420→      // Close the sheet first, then scroll (after its exit animation releases the body)
+   421→      onNavigate()
+   422→      window.setTimeout(doScroll, 280)
+   423→    } else {
+   424→      doScroll()
+   425→    }
+   426→  }
+   427→
+   428→  if (items.length === 0) return null
+   429→
+   430→  return (
+   431→    <nav aria-label={t('blogDetail.contents')} className="text-sm">
+   432→      <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+   433→        <List className="h-3.5 w-3.5" />
+   434→        {t('blogDetail.contents')}
+   435→      </p>
+   436→      <ul className="space-y-1 border-l border-border/60">
+   437→        {items.map((item) => {
+   438→          const isActive = activeId === item.id
+   439→          return (
+   440→            <li key={item.id} className="relative">
+   441→              {isActive && (
+   442→                <span
+   443→                  className="absolute -left-px top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-gradient-to-b from-primary to-accent"
+   444→                  aria-hidden
+   445→                />
+   446→              )}
+   447→              <a
+   448→                href={`#${item.id}`}
+   449→                onClick={(e) => handleClick(e, item.id)}
+   450→                className={cn(
+   451→                  '-ml-px block border-l-2 py-1 pl-4 transition-all duration-200',
+   452→                  isActive
+   453→                    ? 'border-transparent font-semibold text-foreground'
+   454→                    : 'border-transparent text-muted-foreground hover:translate-x-0.5 hover:border-primary hover:text-primary',
+   455→                )}
+   456→              >
+   457→                {item.text}
+   458→              </a>
+   459→            </li>
+   460→          )
+   461→        })}
+   462→      </ul>
+   463→    </nav>
+   464→  )
+   465→}
+   466→
+   467→/* ------------------------------ related compact card ------------------------------ */
+   468→
+   469→function CompactCard({ post }: { post: BlogPost }) {
+   470→  const openDetail = useNav((s) => s.openDetail)
+   471→  const t = useT()
+   472→  const lang = useLang((s) => s.lang)
+   473→  const title = tc('blogPost', post.slug, 'title', post.title, lang)
+   474→  return (
+   475→    <motion.article
+   476→      onClick={() => openDetail('blog', post.slug)}
+   477→      whileHover={{ y: -4 }}
+   478→      transition={{ duration: 0.25, ease: 'easeOut' }}
+   479→      className="group relative cursor-pointer rounded-2xl p-px"
+   480→    >
+   481→      {/* Gradient border on hover */}
+   482→      <span
+   483→        className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-primary to-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+   484→        aria-hidden
+   485→      />
+   486→      <div className="relative flex gap-4 rounded-2xl border border-border/60 bg-card p-3 shadow-xs transition-shadow duration-300 group-hover:shadow-soft">
+   487→        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl">
+   488→          <img
+   489→            src={post.coverImage}
+   490→            alt={title}
+   491→            loading="lazy"
+   492→            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+   493→          />
+   494→        </div>
+   495→        <div className="flex min-w-0 flex-1 flex-col py-0.5">
+   496→          {post.category && (
+   497→            <span className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary">
+   498→              {post.category.name}
+   499→            </span>
+   500→          )}
+   501→          <h4 className="line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
+   502→            {title}
+   503→          </h4>
+   504→          <p className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
+   505→            <Clock className="h-3 w-3" />
+   506→            <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
+   507→          </p>
+   508→        </div>
+   509→      </div>
+   510→    </motion.article>
+   511→  )
+   512→}
+   513→
+   514→/* ------------------------------ skeletons ------------------------------ */
+   515→
+   516→function ArticleSkeleton() {
+   517→  return (
+   518→    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+   519→      <Skeleton className="mt-8 h-4 w-32" />
+   520→      <div className="mt-6 space-y-4">
+   521→        <Skeleton className="h-10 w-3/4" />
+   522→        <Skeleton className="h-10 w-1/2" />
+   523→        <Skeleton className="h-5 w-full" />
+   524→        <Skeleton className="h-5 w-5/6" />
+   525→      </div>
+   526→      <div className="mt-8 flex items-center gap-4">
+   527→        <Skeleton className="h-12 w-12 rounded-full" />
+   528→        <div className="space-y-2">
+   529→          <Skeleton className="h-4 w-32" />
+   530→          <Skeleton className="h-3 w-48" />
+   531→        </div>
+   532→      </div>
+   533→      <Skeleton className="mt-10 aspect-[16/8] w-full rounded-2xl" />
+   534→      <div className="mt-10 grid gap-10 lg:grid-cols-3">
+   535→        <div className="space-y-4 lg:col-span-2">
+   536→          {Array.from({ length: 10 }).map((_, i) => (
+   537→            <Skeleton key={i} className="h-4 w-full" />
+   538→          ))}
+   539→        </div>
+   540→        <Skeleton className="hidden h-64 lg:block" />
+   541→      </div>
+   542→    </div>
+   543→  )
+   544→}
+   545→
+   546→/* ------------------------------ not found ------------------------------ */
+   547→
+   548→function NotFound({ onBack }: { onBack: () => void }) {
+   549→  const t = useT()
+   550→  const lang = useLang((s) => s.lang)
+   551→  return (
+   552→    <div className="mx-auto flex max-w-2xl flex-col items-center justify-center gap-4 px-4 py-32 text-center">
+   553→      <div className="grid h-16 w-16 place-items-center rounded-full bg-destructive/10 text-destructive">
+   554→        <AlertCircle className="h-7 w-7" />
+   555→      </div>
+   556→      <div>
+   557→        <h1 className="text-2xl font-bold tracking-tight">{t('blogDetail.notFound')}</h1>
+   558→        <p className="mt-2 text-muted-foreground">
+   559→          The article you&apos;re looking for may have been moved or doesn&apos;t exist.
+   560→        </p>
+   561→      </div>
+   562→      <Button onClick={onBack} variant="outline" className="mt-2 rounded-full">
+   563→        <ArrowLeft className={cn('mr-1.5 h-4 w-4', lang === 'fa' && 'rtl-flip mr-0 ml-1.5')} />
+   564→        {t('blogDetail.back')}
+   565→      </Button>
+   566→    </div>
+   567→  )
+   568→}
+   569→
+   570→/* ------------------------------ view ------------------------------ */
+   571→
+   572→export function BlogDetailView() {
+   573→  const slug = useNav((s) => s.detailSlug)
+   574→  const closeDetail = useNav((s) => s.closeDetail)
+   575→  const setView = useNav((s) => s.setView)
+   576→  const { data, isLoading, isError } = useBlogPost(slug)
+   577→  const t = useT()
+   578→  const lang = useLang((s) => s.lang)
+   579→
+   580→  const articleRef = useRef<HTMLElement>(null)
+   581→  const item = data?.item
+   582→  // Only track scroll when the article is actually rendered (avoids
+   583→  // framer-motion "Target ref is defined but not hydrated" crash during loading)
+   584→  const { scrollYProgress } = useScroll({
+   585→    target: item ? articleRef : undefined,
+   586→    offset: ['start start', 'end end'],
+   587→  })
+   588→  const scaleX = useSpring(scrollYProgress, {
+   589→    stiffness: 100,
+   590→    damping: 30,
+   591→    restDelta: 0.001,
+   592→  })
+   593→
+   594→  // Dynamic "reading time remaining" indicator — updates in real time
+   595→  // as the user scrolls through the article. The reset-on-article-change
+   596→  // uses the recommended "adjust state during render" pattern (storing the
+   597→  // previous value in state rather than a ref or effect).
+   598→  const [remaining, setRemaining] = useState<number>(item?.readingTime ?? 0)
+   599→  const [prevReadingTime, setPrevReadingTime] = useState<number | undefined>(
+   600→    item?.readingTime,
+   601→  )
+   602→  if (item && item.readingTime !== prevReadingTime) {
+   603→    setPrevReadingTime(item.readingTime)
+   604→    setRemaining(item.readingTime)
+   605→  }
+   606→  const isFinished = remaining === 0
+   607→  useMotionValueEvent(scrollYProgress, 'change', (latest) => {
+   608→    if (!item) return
+   609→    const next = Math.max(0, Math.ceil(item.readingTime * (1 - latest)))
+   610→    setRemaining(next)
+   611→  })
+   612→
+   613→  const related = data?.related ?? []
+   614→  const content = item?.content ?? ''
+   615→  const toc = useMemo(() => extractTOC(content), [content])
+   616→  const [activeTocId, setActiveTocId] = useState<string>('')
+   617→  // Mobile TOC sheet state (desktop keeps its sticky sidebar)
+   618→  const [tocSheetOpen, setTocSheetOpen] = useState(false)
+   619→
+   620→  // Track active section for TOC highlighting (only when there is content to track)
+   621→  useEffect(() => {
+   622→    if (toc.length === 0) return
+   623→    const observer = new IntersectionObserver(
+   624→      (entries) => {
+   625→        const visible = entries
+   626→          .filter((e) => e.isIntersecting)
+   627→          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
+   628→        if (visible[0]?.target.id) {
+   629→          setActiveTocId(visible[0].target.id)
+   630→        }
+   631→      },
+   632→      { rootMargin: '-20% 0px -65% 0px', threshold: [0, 0.25, 0.5, 1] },
+   633→    )
+   634→    toc.forEach((entry) => {
+   635→      const el = document.getElementById(entry.id)
+   636→      if (el) observer.observe(el)
+   637→    })
+   638→    return () => observer.disconnect()
+   639→  }, [toc])
+   640→
+   641→  const handleBack = () => {
+   642→    closeDetail()
+   643→    setView('blog')
+   644→  }
+   645→
+   646→  if (isLoading) {
+   647→    return (
+   648→      <div className="pt-8">
+   649→        {/* progress placeholder */}
+   650→        <div className="fixed left-0 right-0 top-16 z-40 h-1 bg-border/60" />
+   651→        <ArticleSkeleton />
+   652→      </div>
+   653→    )
+   654→  }
+   655→
+   656→  if (!item || isError) {
+   657→    return (
+   658→      <div className="pt-8">
+   659→        <div className="fixed left-0 right-0 top-16 z-40 h-1 bg-border/60" />
+   660→        <NotFound onBack={handleBack} />
+   661→      </div>
+   662→    )
+   663→  }
+   664→
+   665→  return (
+   666→    <>
+   667→      {/* reading progress */}
+   668→      <motion.div
+   669→        style={{ scaleX }}
+   670→        className="fixed left-0 right-0 top-16 z-50 h-1 origin-left bg-gradient-to-r from-primary to-accent"
+   671→        aria-hidden
+   672→      />
+   673→
+   674→      <article ref={articleRef} className="relative mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+   675→        {/* back button */}
+   676→        <Reveal>
+   677→          <button
+   678→            type="button"
+   679→            onClick={handleBack}
+   680→            className="group mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+   681→          >
+   682→            <ArrowLeft className={cn('h-4 w-4 transition-transform group-hover:-translate-x-0.5', lang === 'fa' && 'rtl-flip group-hover:translate-x-0.5')} />
+   683→            {t('blogDetail.back')}
+   684→          </button>
+   685→        </Reveal>
+   686→
+   687→        {/* hero */}
+   688→        <Reveal>
+   689→          <header className="mx-auto max-w-4xl">
+   690→            {item.category && (
+   691→              <Badge
+   692→                variant="secondary"
+   693→                className="mb-5 border-0 bg-primary/10"
+   694→              >
+   695→                <span className="text-gradient">{item.category.name}</span>
+   696→              </Badge>
+   697→            )}
+   698→            <h1 className="text-balance text-3xl font-bold leading-[1.1] tracking-tight sm:text-4xl md:text-5xl lg:text-[3.4rem] lg:leading-[1.05]">
+   699→              {tc('blogPost', item.slug, 'title', item.title, lang)}
+   700→            </h1>
+   701→            <p className="mt-6 text-balance text-lg leading-relaxed text-muted-foreground sm:text-xl">
+   702→              {tc('blogPost', item.slug, 'excerpt', item.excerpt, lang)}
+   703→            </p>
+   704→
+   705→            {/* meta row */}
+   706→            <div className="mt-8 flex flex-col gap-4 border-y border-border/60 py-5 sm:flex-row sm:items-center sm:justify-between">
+   707→              <div className="flex items-center gap-3">
+   708→                <AuthorAvatar post={item} size="md" />
+   709→                <div className="min-w-0">
+   710→                  <p className="text-sm font-semibold">{item.authorName}</p>
+   711→                  <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+   712→                    <span className="inline-flex items-center gap-1.5">
+   713→                      <Calendar className="h-3 w-3" />
+   714→                      <span className="ltr-num">{formatDate(item.createdAt)}</span>
+   715→                    </span>
+   716→                    <span className="inline-flex items-center gap-1.5">
+   717→                      <Clock className="h-3 w-3" />
+   718→                      <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
+   719→                    </span>
+   720→                    <span className="inline-flex items-center gap-1.5">
+   721→                      <FileText className="h-3 w-3" />
+   722→                      <span className="ltr-num">{item.views}</span> {t('blogDetail.views')}
+   723→                    </span>
+   724→                    {/* Dynamic reading time remaining badge */}
+   725→                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+   726→                      <Clock className="h-3 w-3" />
+   727→                      {isFinished ? (
+   728→                        <motion.span
+   729→                          key="finished"
+   730→                          initial={{ opacity: 0, y: -3 }}
+   731→                          animate={{ opacity: 1, y: 0 }}
+   732→                          transition={{ duration: 0.25 }}
+   733→                        >
+   734→                          Finished reading
+   735→                        </motion.span>
+   736→                      ) : (
+   737→                        <span className="inline-flex items-center gap-1">
+   738→                          <motion.span
+   739→                            key={remaining}
+   740→                            initial={{ opacity: 0, y: -3 }}
+   741→                            animate={{ opacity: 1, y: 0 }}
+   742→                            transition={{ duration: 0.2 }}
+   743→                            className="ltr-num"
+   744→                          >
+   745→                            {remaining}
+   746→                          </motion.span>
+   747→                          <span>min remaining</span>
+   748→                        </span>
+   749→                      )}
+   750→                    </span>
+   751→                  </div>
+   752→                </div>
+   753→              </div>
+   754→              <ShareButtons title={tc('blogPost', item.slug, 'title', item.title, lang)} />
+   755→            </div>
+   756→          </header>
+   757→        </Reveal>
+   758→
+   759→        {/* cover image */}
+   760→        <Reveal delay={0.1}>
+   761→          <div className="mt-10 overflow-hidden rounded-2xl border border-border/60 shadow-soft">
+   762→            <img
+   763→              src={item.coverImage}
+   764→              alt={tc('blogPost', item.slug, 'title', item.title, lang)}
+   765→              className="aspect-[16/8] w-full object-cover"
+   766→            />
+   767→          </div>
+   768→        </Reveal>
+   769→
+   770→        {/* content + TOC */}
+   771→        <div className="mt-12 grid gap-10 lg:grid-cols-3 lg:gap-12">
+   772→          {/* main content */}
+   773→          <div className="lg:col-span-2">
+   774→            <div className="space-y-6">
+   775→              <ReactMarkdown components={markdownComponents}>{item.content}</ReactMarkdown>
+   776→            </div>
+   777→
+   778→            {/* tags */}
+   779→            {item.tags && item.tags.length > 0 && (
+   780→              <div className="mt-10 flex flex-wrap items-center gap-2 border-t border-border/60 pt-6">
+   781→                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+   782→                  {t('blog.tags')}
+   783→                </span>
+   784→                {item.tags.map((tg) => (
+   785→                  <span
+   786→                    key={tg.id}
+   787→                    className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
+   788→                  >
+   789→                    #{tg.name}
+   790→                  </span>
+   791→                ))}
+   792→              </div>
+   793→            )}
+   794→
+   795→            {/* author footer */}
+   796→            <div className="relative mt-10 flex items-center gap-4 overflow-hidden rounded-2xl border border-border/60 p-5 shadow-soft">
+   797→              <div
+   798→                className="pointer-events-none absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-transparent"
+   799→                aria-hidden
+   800→              />
+   801→              <div className="relative">
+   802→                <AuthorAvatar post={item} size="lg" />
+   803→              </div>
+   804→              <div className="relative">
+   805→                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+   806→                  Written by
+   807→                </p>
+   808→                <p className="text-base font-semibold">{item.authorName}</p>
+   809→                <p className="mt-0.5 text-sm text-muted-foreground">
+   810→                  <span className="ltr-num">{item.views + 1}</span> {t('blogDetail.views')} ·{' '}
+   811→                  <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
+   812→                </p>
+   813→              </div>
+   814→            </div>
+   815→          </div>
+   816→
+   817→          {/* sticky TOC */}
+   818→          <aside className="lg:col-span-1">
+   819→            <div className="lg:sticky lg:top-24">
+   820→              <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft">
+   821→                <TableOfContents items={toc} activeId={activeTocId} />
+   822→                {toc.length === 0 && (
+   823→                  <p className="text-sm text-muted-foreground">
+   824→                    Use the headings above to navigate this article.
+   825→                  </p>
+   826→                )}
+   827→              </div>
+   828→
+   829→              {/* mini CTA in sidebar */}
+   830→              <div className="mt-4 rounded-2xl border border-border/60 bg-secondary p-5 text-secondary-foreground">
+   831→                <p className="text-sm font-semibold">{t('blogDetail.likeCta')}</p>
+   832→                <p className="mt-1 text-xs text-secondary-foreground/70">
+   833→                  We craft digital products that ship fast and scale gracefully.
+   834→                </p>
+   835→                <button
+   836→                  type="button"
+   837→                  onClick={() => setView('contact')}
+   838→                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
+   839→                >
+   840→                  {t('blogDetail.startProject')}
+   841→                  <ArrowRight className={cn('h-3.5 w-3.5', lang === 'fa' && 'rtl-flip')} />
+   842→                </button>
+   843→              </div>
+   844→            </div>
+   845→          </aside>
+   846→        </div>
+   847→
+   848→        {/* related articles */}
+   849→        {related.length > 0 && (
+   850→          <section className="mt-20">
+   851→            <SectionHeading
+   852→              align="left"
+   853→              eyebrow="Keep reading"
+   854→              title={t('blogDetail.related')}
+   855→              description="More perspectives from our team."
+   856→            />
+   857→            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   858→              {related.map((post, i) => (
+   859→                <Reveal key={post.id} delay={Math.min(i * 0.06, 0.24)}>
+   860→                  <CompactCard post={post} />
+   861→                </Reveal>
+   862→              ))}
+   863→            </div>
+   864→          </section>
+   865→        )}
+   866→
+   867→        {/* final CTA */}
+   868→        <section className="mt-20">
+   869→          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-accent px-6 py-14 text-center text-primary-foreground shadow-soft md:px-12 md:py-16">
+   870→            <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+   871→            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+   872→            <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+   873→            <div className="relative mx-auto max-w-2xl">
+   874→              <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur">
+   875→                <span className="h-1.5 w-1.5 rounded-full bg-white" />
+   876→                Let&apos;s build
+   877→              </span>
+   878→              <h2 className="text-balance text-2xl font-bold tracking-tight md:text-3xl">
+   879→                {t('blogDetail.ctaTitle')}
+   880→              </h2>
+   881→              <p className="mt-3 text-base text-primary-foreground/80">
+   882→                {t('blogDetail.ctaDesc')}
+   883→              </p>
+   884→              <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+   885→                <Button
+   886→                  size="lg"
+   887→                  variant="secondary"
+   888→                  onClick={() => setView('contact')}
+   889→                  className="rounded-full"
+   890→                >
+   891→                  {t('blogDetail.startProject')}
+   892→                  <ArrowRight className={cn('ml-1.5 h-4 w-4', lang === 'fa' && 'rtl-flip ml-0 mr-1.5')} />
+   893→                </Button>
+   894→                <Button
+   895→                  size="lg"
+   896→                  variant="outline"
+   897→                  onClick={() => setView('estimate')}
+   898→                  className="rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+   899→                >
+   900→                  {t('cta.getEstimate')}
+   901→                </Button>
+   902→              </div>
+   903→              <a
+   904→                href="#"
+   905→                onClick={(e) => {
+   906→                  e.preventDefault()
+   907→                  setView('contact')
+   908→                }}
+   909→                className="mt-6 inline-flex items-center gap-1 text-sm text-primary-foreground/70 transition-colors hover:text-white"
+   910→              >
+   911→                or subscribe to our newsletter
+   912→                <ArrowUpRight className={cn('h-3.5 w-3.5', lang === 'fa' && 'rtl-flip')} />
+   913→              </a>
+   914→            </div>
+   915→          </div>
+   916→        </section>
+   917→      </article>
+   918→
+   919→      {/* Mobile TOC: floating button + bottom sheet (desktop keeps its sticky sidebar) */}
+   920→      {toc.length > 0 && (
+   921→        <motion.button
+   922→          type="button"
+   923→          onClick={() => setTocSheetOpen(true)}
+   924→          initial={{ opacity: 0, scale: 0.5, y: 24 }}
+   925→          animate={{ opacity: 1, scale: 1, y: 0 }}
+   926→          whileTap={{ scale: 0.92 }}
+   927→          transition={{ type: 'spring', stiffness: 320, damping: 22, delay: 0.4 }}
+   928→          aria-label={t('blogDetail.contents')}
+   929→          className={cn(
+   930→            'fixed bottom-6 z-40 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground shadow-glow transition-shadow hover:shadow-soft lg:hidden',
+   931→            'ltr:right-6 rtl:left-6',
+   932→          )}
+   933→        >
+   934→          <List className="size-5" />
+   935→          <span>{t('blogDetail.contents')}</span>
+   936→        </motion.button>
+   937→      )}
+   938→
+   939→      <Sheet open={tocSheetOpen} onOpenChange={setTocSheetOpen}>
+   940→        <SheetContent
+   941→          side="bottom"
+   942→          className="max-h-[80vh] gap-0 p-0 [&>button:last-child]:top-3.5 [&>button:last-child]:right-3.5"
+   943→        >
+   944→          <SheetHeader className="border-b border-border/60 pb-3">
+   945→            <SheetTitle className="flex items-center gap-2 text-base font-semibold">
+   946→              <span className="grid size-7 place-items-center rounded-full bg-primary/10 text-primary">
+   947→                <List className="h-4 w-4" />
+   948→              </span>
+   949→              {t('blogDetail.contents')}
+   950→            </SheetTitle>
+   951→            <SheetDescription className="sr-only">
+   952→              Navigate to sections within this article
+   953→            </SheetDescription>
+   954→          </SheetHeader>
+   955→          <div className="max-h-[60vh] overflow-y-auto px-4 py-5">
+   956→            <TableOfContents
+   957→              items={toc}
+   958→              activeId={activeTocId}
+   959→              onNavigate={() => setTocSheetOpen(false)}
+   960→            />
+   961→            {toc.length === 0 && (
+   962→              <p className="py-6 text-center text-sm text-muted-foreground">
+   963→                Use the headings above to navigate this article.
+   964→              </p>
+   965→            )}
+   966→          </div>
+   967→        </SheetContent>
+   968→      </Sheet>
+   969→    </>
+   970→  )
+   971→}
+   972→

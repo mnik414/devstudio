@@ -778,13 +778,56 @@ function ServiceCard({ service, index, onCta }: { service: Service; index: numbe
         <div className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-primary to-accent transition-transform duration-300 group-hover:scale-x-100" />
         {/* Decorative blob */}
         <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/5 transition duration-500 group-hover:scale-150" />
-        {/* Number badge */}
-        <span className="absolute right-4 top-4 text-3xl font-bold text-muted-foreground/8 transition group-hover:text-primary/15 ltr-num">
+        {/* Number badge — animates on hover */}
+        <motion.span
+          initial={false}
+          whileHover={{ scale: 1.12 }}
+          className="absolute right-4 top-4 text-3xl font-bold text-muted-foreground/8 transition-colors duration-300 group-hover:scale-110 group-hover:text-primary/20 ltr-num"
+        >
           {String(index + 1).padStart(2, '0')}
-        </span>
+        </motion.span>
         <div className="relative">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary transition duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-glow">
-            <Icon className="h-6 w-6" />
+          {/* Icon cluster: ring + particles + floating icon */}
+          <div className="relative inline-block">
+            {/* Gradient glow ring — fades in & scales on hover */}
+            <span
+              className="pointer-events-none absolute -inset-2 rounded-2xl bg-gradient-to-br from-primary/50 to-accent/50 opacity-0 blur-md transition-all duration-300 group-hover:scale-110 group-hover:opacity-100"
+              aria-hidden
+            />
+            <span
+              className="pointer-events-none absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-primary to-accent opacity-0 transition-all duration-300 group-hover:scale-105 group-hover:opacity-100"
+              aria-hidden
+            />
+            {/* Particle dots — float outward on hover (top, right, bottom, left) */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -top-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-accent opacity-0 transition-all duration-500 group-hover:-top-2 group-hover:opacity-100"
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -right-1 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-primary opacity-0 transition-all duration-500 group-hover:-right-2 group-hover:opacity-100"
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-accent opacity-0 transition-all duration-500 group-hover:-bottom-2 group-hover:opacity-100"
+            />
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -left-1 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-primary opacity-0 transition-all duration-500 group-hover:-left-2 group-hover:opacity-100"
+            />
+            {/* Floating icon — gentle y-axis oscillation, scale + rotate on hover */}
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: index * 0.2,
+              }}
+              className="relative grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[5deg] group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-glow"
+            >
+              <Icon className="h-6 w-6" />
+            </motion.div>
           </div>
           <h3 className="mt-4 text-lg font-semibold">{service.title}</h3>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{service.description}</p>
@@ -806,6 +849,8 @@ function ServiceCard({ service, index, onCta }: { service: Service; index: numbe
             <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 rtl-flip" />
           </button>
         </div>
+        {/* Gradient progress bar at bottom — fills on hover */}
+        <div className="absolute inset-x-0 bottom-0 h-0.5 w-0 bg-gradient-to-r from-primary to-accent transition-all duration-500 ease-out group-hover:w-full" />
       </Card>
     </Reveal>
   )

@@ -1,0 +1,1011 @@
+     1→'use client'
+     2→
+     3→import { motion, AnimatePresence } from 'framer-motion'
+     4→import {
+     5→  ArrowRight,
+     6→  ArrowUpRight,
+     7→  ChevronLeft,
+     8→  ChevronRight,
+     9→  Code2,
+    10→  ShoppingCart,
+    11→  Calendar,
+    12→  CalendarCheck,
+    13→  Cloud,
+    14→  LayoutDashboard,
+    15→  Webhook,
+    16→  Search,
+    17→  Sparkles,
+    18→  Star,
+    19→  Quote,
+    20→  Lightbulb,
+    21→  Rocket,
+    22→  ClipboardCheck,
+    23→  TestTube,
+    24→  Hammer,
+    25→  LifeBuoy,
+    26→  Compass,
+    27→  CheckCircle2,
+    28→  HelpCircle,
+    29→  MessageCircleQuestion,
+    30→} from 'lucide-react'
+    31→import { useState } from 'react'
+    32→import { Button } from '@/components/ui/button'
+    33→import { Card } from '@/components/ui/card'
+    34→import { Badge } from '@/components/ui/badge'
+    35→import { Skeleton } from '@/components/ui/skeleton'
+    36→import {
+    37→  Accordion,
+    38→  AccordionContent,
+    39→  AccordionItem,
+    40→  AccordionTrigger,
+    41→} from '@/components/ui/accordion'
+    42→import { Reveal } from '@/components/site/reveal'
+    43→import { SectionHeading } from '@/components/site/section-heading'
+    44→import { Counter } from '@/components/site/counter'
+    45→import { TrustBadges } from '@/components/site/trust-badges'
+    46→import {
+    47→  useSite,
+    48→  usePortfolios,
+    49→  parseList,
+    50→  type Service,
+    51→  type Portfolio,
+    52→  type Testimonial,
+    53→} from '@/lib/hooks'
+    54→import { useNav } from '@/lib/store'
+    55→import { useT, useLang } from '@/lib/lang-store'
+    56→import { tc } from '@/lib/content-i18n'
+    57→import { cn } from '@/lib/utils'
+    58→
+    59→const iconMap: Record<string, typeof Code2> = {
+    60→  Code2,
+    61→  ShoppingCart,
+    62→  CalendarCheck,
+    63→  Cloud,
+    64→  LayoutDashboard,
+    65→  Webhook,
+    66→  Search,
+    67→  Sparkles,
+    68→}
+    69→
+    70→const PROCESS_STEPS = [
+    71→  { icon: Compass, titleKey: 'process.discovery', descKey: 'process.discoveryDesc' },
+    72→  { icon: ClipboardCheck, titleKey: 'process.planning', descKey: 'process.planningDesc' },
+    73→  { icon: Lightbulb, titleKey: 'process.design', descKey: 'process.designDesc' },
+    74→  { icon: Hammer, titleKey: 'process.development', descKey: 'process.developmentDesc' },
+    75→  { icon: TestTube, titleKey: 'process.testing', descKey: 'process.testingDesc' },
+    76→  { icon: Rocket, titleKey: 'process.launch', descKey: 'process.launchDesc' },
+    77→  { icon: LifeBuoy, titleKey: 'process.support', descKey: 'process.supportDesc' },
+    78→]
+    79→
+    80→const TECH_LOGOS = [
+    81→  'Laravel', 'PHP', 'React', 'Vue', 'Next.js',
+    82→  'PostgreSQL', 'MySQL', 'TailwindCSS', 'TypeScript',
+    83→  'Node.js', 'Docker', 'Linux',
+    84→]
+    85→
+    86→export function HomeView() {
+    87→  const { setView, scrollTo, openDetail } = useNav()
+    88→  const { data: siteData, isLoading: siteLoading } = useSite()
+    89→  const { data: portfolioData, isLoading: portfolioLoading } = usePortfolios({ featured: 'true', limit: '6' })
+    90→  const t = useT()
+    91→  const lang = useLang((s) => s.lang)
+    92→
+    93→  const featuredPortfolios = portfolioData?.items ?? []
+    94→  const services = siteData?.services ?? []
+    95→  const testimonials = siteData?.testimonials ?? []
+    96→  const faqs = siteData?.faqs ?? []
+    97→  const settings = siteData?.settings ?? {}
+    98→
+    99→  const heroBadges = [
+   100→    t('hero.badgeProjects'),
+   101→    t('hero.badgeSatisfaction'),
+   102→    t('hero.badgeExperience'),
+   103→  ]
+   104→
+   105→  const dashboardStats = [
+   106→    { label: t('hero.activeUsers'), value: '48,920', trend: '+12.4%' },
+   107→    { label: t('hero.revenue'), value: '$92,310', trend: '+8.1%' },
+   108→    { label: t('hero.conversion'), value: '4.8%', trend: '+0.6pt' },
+   109→  ]
+   110→
+   111→  // Sparkline mini-charts for each stat card (viewBox 0 0 80 24)
+   112→  const dashboardSparkPaths = [
+   113→    'M2,18 L12,16 L22,17 L32,13 L42,12 L52,9 L62,7 L72,5 L78,3',
+   114→    'M2,14 L12,17 L22,13 L32,15 L42,11 L52,12 L62,8 L72,6 L78,4',
+   115→    'M2,16 L12,15 L22,16 L32,12 L42,13 L52,10 L62,11 L72,7 L78,6',
+   116→  ]
+   117→
+   118→  // Bar chart heights (% of container)
+   119→  const dashboardBars = [40, 65, 50, 80, 55, 90, 70, 95, 60, 85, 75, 100]
+   120→
+   121→  // Compact system metrics row
+   122→  const dashboardMiniMetrics = [
+   123→    { label: 'CPU', value: '42%' },
+   124→    { label: 'Memory', value: '68%' },
+   125→    { label: 'API', value: '12ms' },
+   126→    { label: 'Uptime', value: '99.9%' },
+   127→  ]
+   128→
+   129→  return (
+   130→    <div className="overflow-hidden">
+   131→      {/* ===== HERO ===== */}
+   132→      <section className="relative isolate overflow-hidden bg-radial-fade pb-24 pt-20 sm:pt-28">
+   133→        {/* Premium layered gradient mesh background */}
+   134→        <div className="absolute inset-0 -z-10 bg-grid opacity-60 [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)]" />
+   135→        <div className="absolute -top-24 left-1/2 -z-10 h-72 w-[40rem] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+   136→        <div className="absolute -top-10 right-1/4 -z-10 h-48 w-96 rounded-full bg-accent/15 blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+   137→        <div className="absolute top-40 left-1/4 -z-10 h-40 w-80 rounded-full bg-primary/10 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+   138→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   139→          <div className="mx-auto max-w-4xl text-center">
+   140→            <motion.div
+   141→              initial={{ opacity: 0, y: 20 }}
+   142→              animate={{ opacity: 1, y: 0 }}
+   143→              transition={{ duration: 0.6 }}
+   144→              className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary"
+   145→            >
+   146→              <span className="relative flex h-2 w-2">
+   147→                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75" />
+   148→                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
+   149→              </span>
+   150→              {t('hero.badge')}
+   151→            </motion.div>
+   152→
+   153→            <motion.h1
+   154→              initial={{ opacity: 0, y: 24 }}
+   155→              animate={{ opacity: 1, y: 0 }}
+   156→              transition={{ duration: 0.7, delay: 0.05 }}
+   157→              className="text-4xl font-bold tracking-tight text-balance sm:text-6xl md:text-7xl md:leading-[1.05]"
+   158→            >
+   159→              {t('hero.title')} <span className="text-gradient">{t('hero.titleAccent')}</span> {t('hero.titleEnd')}
+   160→            </motion.h1>
+   161→
+   162→            <motion.p
+   163→              initial={{ opacity: 0, y: 24 }}
+   164→              animate={{ opacity: 1, y: 0 }}
+   165→              transition={{ duration: 0.7, delay: 0.15 }}
+   166→              className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl"
+   167→            >
+   168→              {t('hero.subtitle')}
+   169→            </motion.p>
+   170→
+   171→            <motion.div
+   172→              initial={{ opacity: 0, y: 24 }}
+   173→              animate={{ opacity: 1, y: 0 }}
+   174→              transition={{ duration: 0.7, delay: 0.25 }}
+   175→              className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
+   176→            >
+   177→              <Button size="lg" className="h-12 rounded-full px-7 text-base" onClick={() => setView('portfolio')}>
+   178→                {t('hero.viewPortfolio')}
+   179→                <ArrowRight className={cn('ml-2 h-4 w-4 rtl-flip')} />
+   180→              </Button>
+   181→              <Button size="lg" variant="outline" className="h-12 rounded-full px-7 text-base" onClick={() => setView('contact')}>
+   182→                {t('hero.requestConsultation')}
+   183→              </Button>
+   184→            </motion.div>
+   185→
+   186→            <motion.div
+   187→              initial={{ opacity: 0 }}
+   188→              animate={{ opacity: 1 }}
+   189→              transition={{ duration: 0.7, delay: 0.4 }}
+   190→              className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground"
+   191→            >
+   192→              {heroBadges.map((badge) => (
+   193→                <span key={badge} className="inline-flex items-center gap-1.5">
+   194→                  <CheckCircle2 className="h-4 w-4 text-accent" />
+   195→                  {badge}
+   196→                </span>
+   197→              ))}
+   198→            </motion.div>
+   199→          </div>
+   200→
+   201→          {/* Floating dashboard mockup */}
+   202→          <motion.div
+   203→            initial={{ opacity: 0, y: 60 }}
+   204→            animate={{ opacity: 1, y: 0 }}
+   205→            transition={{ duration: 0.9, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
+   206→            className="relative mx-auto mt-16 max-w-5xl"
+   207→          >
+   208→            {/* Pulsing gradient glow behind the entire dashboard */}
+   209→            <motion.div
+   210→              aria-hidden
+   211→              initial={{ opacity: 0.5 }}
+   212→              animate={{
+   213→                opacity: [0.5, 0.85, 0.5],
+   214→                background: [
+   215→                  'radial-gradient(circle at 30% 30%, rgba(37,99,235,0.30), rgba(20,184,166,0.06) 60%, transparent 80%)',
+   216→                  'radial-gradient(circle at 70% 55%, rgba(20,184,166,0.30), rgba(37,99,235,0.06) 60%, transparent 80%)',
+   217→                  'radial-gradient(circle at 30% 30%, rgba(37,99,235,0.30), rgba(20,184,166,0.06) 60%, transparent 80%)',
+   218→                ],
+   219→              }}
+   220→              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+   221→              className="absolute -inset-6 -z-10 rounded-[2rem] blur-2xl"
+   222→            />
+   223→
+   224→            <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-soft">
+   225→              {/* Browser chrome bar */}
+   226→              <div className="flex items-center gap-1.5 border-b border-border/60 bg-muted/40 px-4 py-3">
+   227→                <span className="h-3 w-3 rounded-full bg-red-400/80" />
+   228→                <span className="h-3 w-3 rounded-full bg-yellow-400/80" />
+   229→                <span className="h-3 w-3 rounded-full bg-green-400/80" />
+   230→                <span className="ml-3 text-xs text-muted-foreground">devstudio.com/dashboard</span>
+   231→
+   232→                {/* Live activity indicator */}
+   233→                <div className="ml-auto flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/5 px-2 py-0.5">
+   234→                  <span className="relative flex h-1.5 w-1.5">
+   235→                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
+   236→                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
+   237→                  </span>
+   238→                  <span className="text-[10px] font-semibold text-accent">{t('hero.live')}</span>
+   239→                </div>
+   240→              </div>
+   241→
+   242→              {/* Dashboard body */}
+   243→              <div className="grid gap-4 p-5 sm:grid-cols-3">
+   244→                {/* Enhanced stat cards with sparklines */}
+   245→                {dashboardStats.map((stat, idx) => (
+   246→                  <div
+   247→                    key={stat.label}
+   248→                    className="group relative overflow-hidden rounded-xl border border-border/60 bg-background p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft"
+   249→                  >
+   250→                    {/* Subtle gradient background on hover */}
+   251→                    <div className="absolute inset-0 -z-0 bg-gradient-to-br from-primary/0 via-transparent to-accent/0 opacity-0 transition-opacity duration-300 group-hover:from-primary/5 group-hover:to-accent/10 group-hover:opacity-100" />
+   252→                    <div className="relative">
+   253→                      <div className="flex items-start justify-between gap-2">
+   254→                        <p className="text-xs text-muted-foreground">{stat.label}</p>
+   255→                        <span className="inline-flex items-center gap-0.5 rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent ltr-num">
+   256→                          <ArrowUpRight className="h-2.5 w-2.5" />
+   257→                          {stat.trend}
+   258→                        </span>
+   259→                      </div>
+   260→                      <p className="mt-1 text-2xl font-bold ltr-num">{stat.value}</p>
+   261→                      {/* Sparkline mini-chart */}
+   262→                      <svg viewBox="0 0 80 24" className="mt-2 h-6 w-full" preserveAspectRatio="none">
+   263→                        <defs>
+   264→                          <linearGradient id={`spark-${idx}`} x1="0" y1="0" x2="1" y2="0">
+   265→                            <stop offset="0%" stopColor="#2563EB" />
+   266→                            <stop offset="100%" stopColor="#14B8A6" />
+   267→                          </linearGradient>
+   268→                        </defs>
+   269→                        <motion.path
+   270→                          d={dashboardSparkPaths[idx]}
+   271→                          fill="none"
+   272→                          stroke={`url(#spark-${idx})`}
+   273→                          strokeWidth="1.5"
+   274→                          strokeLinecap="round"
+   275→                          strokeLinejoin="round"
+   276→                          vectorEffect="non-scaling-stroke"
+   277→                          initial={{ pathLength: 0, opacity: 0 }}
+   278→                          animate={{ pathLength: 1, opacity: 1 }}
+   279→                          transition={{ duration: 1, delay: 0.9 + idx * 0.12, ease: 'easeInOut' }}
+   280→                        />
+   281→                      </svg>
+   282→                    </div>
+   283→                  </div>
+   284→                ))}
+   285→
+   286→                {/* Chart area: bar chart + line overlay + donut ring */}
+   287→                <div className="sm:col-span-3">
+   288→                  <div className="grid grid-cols-1 gap-4 rounded-xl border border-border/60 bg-background p-4 sm:grid-cols-3">
+   289→                    {/* Bar chart with animated line overlay */}
+   290→                    <div className="relative sm:col-span-2">
+   291→                      <div className="mb-2 flex items-center justify-between">
+   292→                        <p className="text-xs font-medium text-muted-foreground">Weekly Activity</p>
+   293→                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-2 py-0.5 text-[10px] font-medium text-primary ltr-num">
+   294→                          <ArrowUpRight className="h-2.5 w-2.5" />
+   295→                          +18.2%
+   296→                        </span>
+   297→                      </div>
+   298→                      <div className="relative h-32 w-full">
+   299→                        {/* Bars */}
+   300→                        <div className="absolute inset-0 flex items-end gap-2">
+   301→                          {dashboardBars.map((h, i) => (
+   302→                            <div key={i} className="group/bar relative flex-1">
+   303→                              <motion.div
+   304→                                initial={{ height: 0 }}
+   305→                                animate={{ height: `${h}%` }}
+   306→                                transition={{ duration: 0.6, delay: 0.6 + i * 0.05 }}
+   307→                                className="rounded-t-md bg-gradient-to-t from-primary/40 to-accent"
+   308→                              />
+   309→                              {/* Hover tooltip (visual only) */}
+   310→                              <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 rounded bg-foreground px-1.5 py-0.5 text-[9px] font-medium text-background opacity-0 shadow-soft transition-opacity duration-200 group-hover/bar:opacity-100">
+   311→                                <span className="ltr-num">{h}</span>
+   312→                              </div>
+   313→                            </div>
+   314→                          ))}
+   315→                        </div>
+   316→                        {/* Trending line chart overlay */}
+   317→                        <svg
+   318→                          className="absolute inset-0 h-full w-full"
+   319→                          viewBox="0 0 100 100"
+   320→                          preserveAspectRatio="none"
+   321→                          aria-hidden
+   322→                        >
+   323→                          <defs>
+   324→                            <linearGradient id="trend-line" x1="0" y1="0" x2="1" y2="0">
+   325→                              <stop offset="0%" stopColor="#2563EB" />
+   326→                              <stop offset="100%" stopColor="#14B8A6" />
+   327→                            </linearGradient>
+   328→                          </defs>
+   329→                          <motion.path
+   330→                            d="M2,75 Q15,65 22,58 T42,42 T62,32 T98,15"
+   331→                            fill="none"
+   332→                            stroke="url(#trend-line)"
+   333→                            strokeWidth="2"
+   334→                            strokeLinecap="round"
+   335→                            strokeLinejoin="round"
+   336→                            vectorEffect="non-scaling-stroke"
+   337→                            initial={{ pathLength: 0 }}
+   338→                            animate={{ pathLength: 1 }}
+   339→                            transition={{ duration: 1.2, delay: 1.1, ease: 'easeInOut' }}
+   340→                          />
+   341→                        </svg>
+   342→                      </div>
+   343→                    </div>
+   344→
+   345→                    {/* Donut / circular progress indicator */}
+   346→                    <div className="flex flex-col items-center justify-center gap-2 sm:border-l sm:border-border/60 sm:pl-4">
+   347→                      <div className="relative h-24 w-24">
+   348→                        <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100" aria-hidden>
+   349→                          <defs>
+   350→                            <linearGradient id="donut-grad" x1="0" y1="0" x2="1" y2="1">
+   351→                              <stop offset="0%" stopColor="#2563EB" />
+   352→                              <stop offset="100%" stopColor="#14B8A6" />
+   353→                            </linearGradient>
+   354→                          </defs>
+   355→                          <circle
+   356→                            cx="50"
+   357→                            cy="50"
+   358→                            r="40"
+   359→                            fill="none"
+   360→                            stroke="currentColor"
+   361→                            strokeWidth="10"
+   362→                            className="text-muted/40"
+   363→                          />
+   364→                          <motion.circle
+   365→                            cx="50"
+   366→                            cy="50"
+   367→                            r="40"
+   368→                            fill="none"
+   369→                            stroke="url(#donut-grad)"
+   370→                            strokeWidth="10"
+   371→                            strokeLinecap="round"
+   372→                            strokeDasharray="251.2"
+   373→                            initial={{ strokeDashoffset: 251.2 }}
+   374→                            animate={{ strokeDashoffset: 251.2 * (1 - 0.87) }}
+   375→                            transition={{ duration: 1.4, delay: 0.8, ease: 'easeOut' }}
+   376→                          />
+   377→                        </svg>
+   378→                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+   379→                          <span className="text-xl font-bold ltr-num">87%</span>
+   380→                          <span className="text-[9px] text-muted-foreground">Goal</span>
+   381→                        </div>
+   382→                      </div>
+   383→                      <p className="text-[10px] text-muted-foreground">Monthly Target</p>
+   384→                    </div>
+   385→                  </div>
+   386→
+   387→                  {/* Mini metrics row */}
+   388→                  <div className="mt-4 grid grid-cols-4 gap-2 rounded-xl border border-border/60 bg-background p-3">
+   389→                    {dashboardMiniMetrics.map((m) => (
+   390→                      <div key={m.label} className="text-center">
+   391→                        <p className="text-[9px] uppercase tracking-wide text-muted-foreground">{m.label}</p>
+   392→                        <p className="mt-0.5 text-xs font-semibold ltr-num">{m.value}</p>
+   393→                      </div>
+   394→                    ))}
+   395→                  </div>
+   396→                </div>
+   397→              </div>
+   398→            </div>
+   399→
+   400→            {/* Floating notification card — left edge */}
+   401→            <motion.div
+   402→              initial={{ opacity: 0, scale: 0.8, x: -20 }}
+   403→              animate={{ opacity: 1, scale: 1, x: 0 }}
+   404→              transition={{ type: 'spring', stiffness: 200, damping: 18, delay: 1.2 }}
+   405→              className="pointer-events-none absolute -left-4 top-1/3 hidden rounded-xl border border-border/60 bg-card/80 p-2.5 shadow-glow backdrop-blur-md sm:block"
+   406→            >
+   407→              <div className="flex items-center gap-2">
+   408→                <div className="grid h-7 w-7 place-items-center rounded-lg bg-green-500/15 text-green-600">
+   409→                  <ArrowUpRight className="h-3.5 w-3.5" />
+   410→                </div>
+   411→                <div>
+   412→                  <p className="text-[10px] font-semibold">New signup +1</p>
+   413→                  <p className="text-[8px] text-muted-foreground">2s ago</p>
+   414→                </div>
+   415→              </div>
+   416→            </motion.div>
+   417→
+   418→            {/* Floating notification card — right edge */}
+   419→            <motion.div
+   420→              initial={{ opacity: 0, scale: 0.8, x: 20 }}
+   421→              animate={{ opacity: 1, scale: 1, x: 0 }}
+   422→              transition={{ type: 'spring', stiffness: 200, damping: 18, delay: 1.5 }}
+   423→              className="pointer-events-none absolute -right-4 bottom-1/4 hidden rounded-xl border border-border/60 bg-card/80 p-2.5 shadow-glow backdrop-blur-md sm:block"
+   424→            >
+   425→              <div className="flex items-center gap-2">
+   426→                <div className="grid h-7 w-7 place-items-center rounded-lg bg-accent/15 text-accent">
+   427→                  <CheckCircle2 className="h-3.5 w-3.5" />
+   428→                </div>
+   429→                <div>
+   430→                  <p className="text-[10px] font-semibold">Revenue goal reached</p>
+   431→                  <p className="text-[8px] text-muted-foreground">Just now</p>
+   432→                </div>
+   433→              </div>
+   434→            </motion.div>
+   435→
+   436→            {/* AI insights floating card — top right */}
+   437→            <div className="pointer-events-none absolute -right-6 -top-6 hidden animate-float rounded-xl border border-border/60 bg-card p-3 shadow-soft sm:block">
+   438→              <div className="flex items-center gap-2">
+   439→                <div className="grid h-8 w-8 place-items-center rounded-lg bg-accent/15 text-accent">
+   440→                  <Sparkles className="h-4 w-4" />
+   441→                </div>
+   442→                <div>
+   443→                  <p className="text-xs font-semibold">{t('hero.aiInsights')}</p>
+   444→                  <p className="text-[10px] text-muted-foreground">{t('hero.live')}</p>
+   445→                </div>
+   446→              </div>
+   447→            </div>
+   448→          </motion.div>
+   449→        </div>
+   450→      </section>
+   451→
+   452→      {/* ===== TRUSTED BY MARQUEE ===== */}
+   453→      <section className="border-y border-border/60 bg-muted/30 py-10">
+   454→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   455→          <p className="mb-6 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+   456→            {t('trusted.title')}
+   457→          </p>
+   458→          <div className="mask-fade-x overflow-hidden">
+   459→            <div className="flex w-max animate-marquee items-center gap-12 pr-12">
+   460→              {[...TECH_LOGOS, ...TECH_LOGOS].map((name, i) => (
+   461→                <span key={i} className="text-xl font-bold text-muted-foreground/50 transition hover:text-foreground">
+   462→                  {name}
+   463→                </span>
+   464→              ))}
+   465→            </div>
+   466→          </div>
+   467→        </div>
+   468→      </section>
+   469→
+   470→      {/* ===== TRUST BADGES ===== */}
+   471→      <TrustBadges />
+   472→
+   473→      {/* ===== STATISTICS ===== */}
+   474→      <section className="py-20 sm:py-28">
+   475→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   476→          <SectionHeading
+   477→            eyebrow={t('stats.eyebrow')}
+   478→            title={t('stats.title')}
+   479→            description={t('stats.desc')}
+   480→          />
+   481→          <div className="mt-14 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+   482→            {[
+   483→              { label: t('stats.projects'), value: Number(settings.stats_projects || 180), suffix: '+', icon: Rocket },
+   484→              { label: t('stats.experience'), value: Number(settings.stats_experience || 12), suffix: '+', icon: Calendar },
+   485→              { label: t('stats.satisfaction'), value: Number(settings.stats_satisfaction || 98), suffix: '%', icon: Star },
+   486→              { label: t('stats.technologies'), value: Number(settings.stats_technologies || 25), suffix: '+', icon: Sparkles },
+   487→            ].map((stat, i) => (
+   488→              <Reveal key={stat.label} delay={i * 0.1}>
+   489→                <Card className="group relative overflow-hidden border-border/60 p-6 text-center transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-soft sm:p-8">
+   490→                  {/* Gradient glow on hover */}
+   491→                  <div className="absolute -inset-px -z-10 rounded-2xl bg-gradient-to-br from-primary/0 via-primary/0 to-accent/0 opacity-0 blur transition duration-300 group-hover:from-primary/5 group-hover:to-accent/5 group-hover:opacity-100" />
+   492→                  <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 transition group-hover:opacity-100" />
+   493→                  {/* Icon */}
+   494→                  <div className="mx-auto mb-3 grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground">
+   495→                    <stat.icon className="h-5 w-5" />
+   496→                  </div>
+   497→                  <div className="text-4xl font-bold tracking-tight text-gradient sm:text-5xl ltr-num">
+   498→                    <Counter to={stat.value} suffix={stat.suffix} />
+   499→                  </div>
+   500→                  <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">{stat.label}</p>
+   501→                </Card>
+   502→              </Reveal>
+   503→            ))}
+   504→          </div>
+   505→        </div>
+   506→      </section>
+   507→
+   508→      {/* ===== FEATURED PORTFOLIO ===== */}
+   509→      <section id="featured-work" className="scroll-mt-24 bg-muted/30 py-20 sm:py-28">
+   510→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   511→          <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
+   512→            <SectionHeading
+   513→              align="left"
+   514→              eyebrow={t('featured.eyebrow')}
+   515→              title={t('featured.title')}
+   516→              description={t('featured.desc')}
+   517→            />
+   518→            <Button variant="outline" className="shrink-0 rounded-full" onClick={() => setView('portfolio')}>
+   519→              {t('featured.viewAll')}
+   520→              <ArrowRight className="ml-2 h-4 w-4 rtl-flip" />
+   521→            </Button>
+   522→          </div>
+   523→
+   524→          <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+   525→            {portfolioLoading
+   526→              ? Array.from({ length: 6 }).map((_, i) => (
+   527→                  <Card key={i} className="overflow-hidden border-border/60 p-0">
+   528→                    <Skeleton className="aspect-video w-full rounded-none" />
+   529→                    <div className="space-y-3 p-5">
+   530→                      <Skeleton className="h-4 w-1/3" />
+   531→                      <Skeleton className="h-5 w-3/4" />
+   532→                      <Skeleton className="h-4 w-full" />
+   533→                      <Skeleton className="h-4 w-2/3" />
+   534→                    </div>
+   535→                  </Card>
+   536→                ))
+   537→              : featuredPortfolios.map((p, i) => (
+   538→                  <FeaturedPortfolioCard key={p.id} portfolio={p} index={i} onClick={() => openDetail('portfolio', p.slug)} />
+   539→                ))}
+   540→          </div>
+   541→        </div>
+   542→      </section>
+   543→
+   544→      {/* ===== SERVICES ===== */}
+   545→      <section id="services" className="scroll-mt-24 py-20 sm:py-28">
+   546→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   547→          <SectionHeading
+   548→            eyebrow={t('services.eyebrow')}
+   549→            title={t('services.title')}
+   550→            description={t('services.desc')}
+   551→          />
+   552→          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+   553→            {services.map((service, i) => (
+   554→              <ServiceCard key={service.id} service={service} index={i} onCta={() => setView('contact')} />
+   555→            ))}
+   556→          </div>
+   557→        </div>
+   558→      </section>
+   559→
+   560→      {/* ===== DEVELOPMENT PROCESS ===== */}
+   561→      <section id="process" className="scroll-mt-24 bg-secondary py-20 text-secondary-foreground sm:py-28">
+   562→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   563→          <div className="max-w-2xl">
+   564→            <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent">
+   565→              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+   566→              {t('process.eyebrow')}
+   567→            </span>
+   568→            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-[2.6rem] md:leading-[1.1]">
+   569→              {t('process.title')}
+   570→            </h2>
+   571→            <p className="mt-4 text-base leading-relaxed text-secondary-foreground/70 sm:text-lg">
+   572→              {t('process.desc')}
+   573→            </p>
+   574→          </div>
+   575→
+   576→          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+   577→            {PROCESS_STEPS.map((step, i) => (
+   578→              <Reveal key={step.titleKey} delay={i * 0.06}>
+   579→                <div className="group relative h-full rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:bg-white/[0.08]">
+   580→                  <div className="mb-4 flex items-center justify-between">
+   581→                    <div className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground">
+   582→                      <step.icon className="h-5 w-5" />
+   583→                    </div>
+   584→                    <span className="text-3xl font-bold text-white/10 transition group-hover:text-white/20 ltr-num">
+   585→                      {String(i + 1).padStart(2, '0')}
+   586→                    </span>
+   587→                  </div>
+   588→                  <h3 className="text-lg font-semibold">{t(step.titleKey)}</h3>
+   589→                  <p className="mt-2 text-sm leading-relaxed text-secondary-foreground/70">{t(step.descKey)}</p>
+   590→                </div>
+   591→              </Reveal>
+   592→            ))}
+   593→            <Reveal delay={0.42}>
+   594→              <button
+   595→                onClick={() => setView('contact')}
+   596→                className="group flex h-full w-full flex-col items-start justify-center rounded-2xl border border-accent/30 bg-accent/10 p-6 text-left transition hover:bg-accent/20"
+   597→              >
+   598→                <ArrowUpRight className="mb-3 h-6 w-6 text-accent transition group-hover:translate-x-1 group-hover:-translate-y-1 rtl-flip" />
+   599→                <h3 className="text-lg font-semibold">{t('process.ready')}</h3>
+   600→                <p className="mt-2 text-sm text-secondary-foreground/70">{t('process.readyDesc')}</p>
+   601→              </button>
+   602→            </Reveal>
+   603→          </div>
+   604→        </div>
+   605→      </section>
+   606→
+   607→      {/* ===== TESTIMONIALS ===== */}
+   608→      <TestimonialsSlider testimonials={testimonials} loading={siteLoading} onCta={() => setView('portfolio')} />
+   609→
+   610→      {/* ===== TECHNOLOGIES ===== */}
+   611→      <section className="py-20 sm:py-28">
+   612→        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+   613→          <SectionHeading
+   614→            eyebrow={t('tech.eyebrow')}
+   615→            title={t('tech.title')}
+   616→            description={t('tech.desc')}
+   617→          />
+   618→          <div className="mt-14 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+   619→            {TECH_LOGOS.map((tech, i) => (
+   620→              <Reveal key={tech} delay={i * 0.04}>
+   621→                <div className="group flex h-20 items-center justify-center rounded-xl border border-border/60 bg-card transition hover:border-primary/40 hover:shadow-soft">
+   622→                  <span className="text-sm font-semibold text-muted-foreground transition group-hover:text-foreground sm:text-base">
+   623→                    {tech}
+   624→                  </span>
+   625→                </div>
+   626→              </Reveal>
+   627→            ))}
+   628→          </div>
+   629→        </div>
+   630→      </section>
+   631→
+   632→      {/* ===== FAQ ===== */}
+   633→      <section id="faq" className="scroll-mt-24 relative overflow-hidden py-20 sm:py-28">
+   634→        <div className="absolute inset-0 bg-radial-fade" />
+   635→        <div className="absolute inset-0 bg-grid opacity-[0.04]" />
+   636→        {/* Decorative floating question mark */}
+   637→        <HelpCircle className="pointer-events-none absolute -left-10 top-24 h-40 w-40 text-primary/[0.04] animate-float" />
+   638→        <HelpCircle className="pointer-events-none absolute right-0 bottom-16 h-32 w-32 text-accent/[0.05] animate-float [animation-delay:1.5s]" />
+   639→
+   640→        <div className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+   641→          <SectionHeading
+   642→            eyebrow={t('faq.eyebrow')}
+   643→            title={t('faq.title')}
+   644→            description={t('faq.desc')}
+   645→          />
+   646→          {siteLoading ? (
+   647→            <div className="mt-10 space-y-3">
+   648→              {Array.from({ length: 6 }).map((_, i) => (
+   649→                <Skeleton key={i} className="h-14 w-full rounded-xl" />
+   650→              ))}
+   651→            </div>
+   652→          ) : (
+   653→            <Accordion type="single" collapsible className="mt-10 space-y-3">
+   654→              {faqs.map((faq) => (
+   655→                <AccordionItem
+   656→                  key={faq.id}
+   657→                  value={faq.id}
+   658→                  className={cn(
+   659→                    'group relative overflow-hidden rounded-2xl border border-border/60 bg-card px-5 py-1 transition-all duration-300',
+   660→                    'hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-soft',
+   661→                    'data-[state=open]:border-primary/30 data-[state=open]:bg-gradient-to-r data-[state=open]:from-primary/[0.04] data-[state=open]:to-accent/[0.04] data-[state=open]:shadow-soft'
+   662→                  )}
+   663→                >
+   664→                  {/* Gradient left border on open */}
+   665→                  <span className="pointer-events-none absolute inset-y-0 left-0 w-1 origin-top scale-y-0 bg-gradient-to-b from-primary to-accent transition-transform duration-300 group-data-[state=open]:scale-y-100" />
+   666→                  <AccordionTrigger className="hover:no-underline">
+   667→                    <span className="flex items-center gap-3 text-left text-base font-semibold">
+   668→                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 text-primary ring-1 ring-inset ring-primary/10 transition group-data-[state=open]:from-primary group-data-[state=open]:to-accent group-data-[state=open]:text-primary-foreground">
+   669→                        <HelpCircle className="h-4 w-4" />
+   670→                      </span>
+   671→                      {faq.question}
+   672→                    </span>
+   673→                  </AccordionTrigger>
+   674→                  <AccordionContent className="pl-12 text-sm leading-relaxed text-muted-foreground">
+   675→                    {faq.answer}
+   676→                  </AccordionContent>
+   677→                </AccordionItem>
+   678→              ))}
+   679→            </Accordion>
+   680→          )}
+   681→          <div className="mt-12 flex flex-col items-center justify-center gap-4 text-center">
+   682→            <p className="text-base text-muted-foreground">{t('faq.stillQuestions')}</p>
+   683→            <Button
+   684→              onClick={() => setView('contact')}
+   685→              className="h-12 rounded-full bg-gradient-to-r from-primary to-accent px-7 text-base text-primary-foreground shadow-glow transition hover:opacity-90 hover:shadow-glow"
+   686→            >
+   687→              <MessageCircleQuestion className="mr-2 h-5 w-5" />
+   688→              {t('faq.talkToTeam')}
+   689→            </Button>
+   690→          </div>
+   691→        </div>
+   692→      </section>
+   693→
+   694→      {/* ===== FINAL CTA ===== */}
+   695→      <FinalCta onPrimary={() => setView('contact')} onSecondary={() => setView('estimate')} />
+   696→    </div>
+   697→  )
+   698→}
+   699→
+   700→/* ---------- Sub-components ---------- */
+   701→
+   702→function FeaturedPortfolioCard({ portfolio, index, onClick }: { portfolio: Portfolio; index: number; onClick: () => void }) {
+   703→  const t = useT()
+   704→  const lang = useLang((s) => s.lang)
+   705→  const title = tc('portfolio', portfolio.slug, 'title', portfolio.title, lang)
+   706→  const summary = tc('portfolio', portfolio.slug, 'summary', portfolio.summary, lang)
+   707→  return (
+   708→    <Reveal delay={index * 0.08}>
+   709→      <Card
+   710→        onClick={onClick}
+   711→        className="group cursor-pointer overflow-hidden border-border/60 p-0 transition duration-300 hover:-translate-y-1 hover:shadow-soft"
+   712→      >
+   713→        <div className="relative aspect-video overflow-hidden">
+   714→          <img
+   715→            src={portfolio.coverImage}
+   716→            alt={title}
+   717→            loading="lazy"
+   718→            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+   719→          />
+   720→          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
+   721→          {portfolio.category && (
+   722→            <Badge className="absolute left-3 top-3 border-0 bg-background/90 text-foreground backdrop-blur">
+   723→              {portfolio.category.name}
+   724→            </Badge>
+   725→          )}
+   726→          <div className="absolute bottom-3 right-3 translate-y-2 rounded-full bg-primary p-2 text-primary-foreground opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+   727→            <ArrowUpRight className="h-4 w-4 rtl-flip" />
+   728→          </div>
+   729→        </div>
+   730→        <div className="p-5">
+   731→          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+   732→            <span className="ltr-num">{portfolio.year}</span>
+   733→            {portfolio.clientName && (
+   734→              <>
+   735→                <span>•</span>
+   736→                <span>{portfolio.clientName}</span>
+   737→              </>
+   738→            )}
+   739→          </div>
+   740→          <h3 className="mt-1.5 text-lg font-semibold leading-snug">{title}</h3>
+   741→          <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{summary}</p>
+   742→          {portfolio.technologies && portfolio.technologies.length > 0 && (
+   743→            <div className="mt-3 flex flex-wrap gap-1.5">
+   744→              {portfolio.technologies.slice(0, 3).map((tech) => (
+   745→                <span
+   746→                  key={tech.id}
+   747→                  className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+   748→                >
+   749→                  {tech.color && <span className="h-1.5 w-1.5 rounded-full" style={{ background: tech.color }} />}
+   750→                  {tech.name}
+   751→                </span>
+   752→              ))}
+   753→              {portfolio.technologies.length > 3 && (
+   754→                <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground ltr-num">
+   755→                  +{portfolio.technologies.length - 3}
+   756→                </span>
+   757→              )}
+   758→            </div>
+   759→          )}
+   760→          <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-primary">
+   761→            {t('featured.viewProject')}
+   762→            <ArrowUpRight className="h-3.5 w-3.5 rtl-flip" />
+   763→          </div>
+   764→        </div>
+   765→      </Card>
+   766→    </Reveal>
+   767→  )
+   768→}
+   769→
+   770→function ServiceCard({ service, index, onCta }: { service: Service; index: number; onCta: () => void }) {
+   771→  const t = useT()
+   772→  const Icon = iconMap[service.icon] ?? Code2
+   773→  const features = parseList<string>(service.features)
+   774→  return (
+   775→    <Reveal delay={index * 0.06}>
+   776→      <Card className="group relative h-full overflow-hidden border-border/60 p-6 transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-soft">
+   777→        {/* Gradient top border on hover */}
+   778→        <div className="absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 bg-gradient-to-r from-primary to-accent transition-transform duration-300 group-hover:scale-x-100" />
+   779→        {/* Decorative blob */}
+   780→        <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/5 transition duration-500 group-hover:scale-150" />
+   781→        {/* Number badge */}
+   782→        <span className="absolute right-4 top-4 text-3xl font-bold text-muted-foreground/8 transition group-hover:text-primary/15 ltr-num">
+   783→          {String(index + 1).padStart(2, '0')}
+   784→        </span>
+   785→        <div className="relative">
+   786→          <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/10 text-primary transition duration-300 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-glow">
+   787→            <Icon className="h-6 w-6" />
+   788→          </div>
+   789→          <h3 className="mt-4 text-lg font-semibold">{service.title}</h3>
+   790→          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{service.description}</p>
+   791→          {features.length > 0 && (
+   792→            <ul className="mt-4 space-y-1.5">
+   793→              {features.slice(0, 3).map((f) => (
+   794→                <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
+   795→                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-accent" />
+   796→                  {f}
+   797→                </li>
+   798→              ))}
+   799→            </ul>
+   800→          )}
+   801→          <button
+   802→            onClick={onCta}
+   803→            className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary opacity-0 transition group-hover:opacity-100"
+   804→          >
+   805→            {t('services.learnMore')}
+   806→            <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 rtl-flip" />
+   807→          </button>
+   808→        </div>
+   809→      </Card>
+   810→    </Reveal>
+   811→  )
+   812→}
+   813→
+   814→function TestimonialsSlider({ testimonials, loading, onCta }: { testimonials: Testimonial[]; loading: boolean; onCta: () => void }) {
+   815→  const t = useT()
+   816→  const lang = useLang((s) => s.lang)
+   817→  const [active, setActive] = useState(0)
+   818→  const isRtl = lang === 'fa'
+   819→
+   820→  if (loading) {
+   821→    return (
+   822→      <section className="py-20 sm:py-28">
+   823→        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+   824→          <Skeleton className="h-64 w-full rounded-2xl" />
+   825→        </div>
+   826→      </section>
+   827→    )
+   828→  }
+   829→
+   830→  if (testimonials.length === 0) return null
+   831→  const current = testimonials[active]
+   832→  const initials = current.clientName.split(' ').map((n) => n[0]).join('').slice(0, 2)
+   833→
+   834→  const go = (dir: 1 | -1) => setActive((a) => (a + dir + testimonials.length) % testimonials.length)
+   835→
+   836→  return (
+   837→    <section className="relative overflow-hidden py-20 sm:py-28">
+   838→      {/* Section ambient background */}
+   839→      <div className="absolute inset-0 bg-radial-fade" />
+   840→      <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.04]" />
+   841→
+   842→      <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+   843→        <SectionHeading
+   844→          eyebrow={t('testimonials.eyebrow')}
+   845→          title={t('testimonials.title')}
+   846→          description={t('testimonials.desc')}
+   847→        />
+   848→        <Reveal className="mt-14">
+   849→          <Card className="group relative overflow-hidden rounded-3xl border-border/60 p-8 transition-all duration-300 hover:border-primary/30 hover:shadow-glow sm:p-14">
+   850→            {/* Gradient border on hover */}
+   851→            <span className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/20 via-transparent to-accent/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+   852→            {/* Grid + radial fade background */}
+   853→            <div className="pointer-events-none absolute inset-0 bg-radial-fade" />
+   854→            <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.05]" />
+   855→            {/* Floating accent blobs */}
+   856→            <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-accent/15 blur-3xl animate-float" />
+   857→            <div className="pointer-events-none absolute -bottom-10 -left-10 h-44 w-44 rounded-full bg-primary/15 blur-3xl animate-float [animation-delay:2s]" />
+   858→            {/* Large decorative quote icon */}
+   859→            <Quote className={cn(
+   860→              'pointer-events-none absolute h-32 w-32 text-primary opacity-5 sm:h-40 sm:w-40',
+   861→              isRtl ? 'left-6 top-6 sm:left-10 sm:top-10' : 'right-6 top-6 sm:right-10 sm:top-10'
+   862→            )} />
+   863→
+   864→            <div className="relative">
+   865→              <AnimatePresence mode="wait">
+   866→                <motion.div
+   867→                  key={current.id}
+   868→                  initial={{ opacity: 0, x: isRtl ? -40 : 40 }}
+   869→                  animate={{ opacity: 1, x: 0 }}
+   870→                  exit={{ opacity: 0, x: isRtl ? 40 : -40 }}
+   871→                  transition={{ duration: 0.35, ease: 'easeOut' }}
+   872→                >
+   873→                  {/* Star rating with animated fill */}
+   874→                  <div className="flex gap-1">
+   875→                    {Array.from({ length: 5 }).map((_, i) => (
+   876→                      <motion.span
+   877→                        key={i}
+   878→                        initial={{ opacity: 0, scale: 0.5 }}
+   879→                        animate={{ opacity: 1, scale: 1 }}
+   880→                        transition={{ delay: 0.1 + i * 0.08, duration: 0.3 }}
+   881→                      >
+   882→                        <Star
+   883→                          className={cn(
+   884→                            'h-5 w-5 transition-colors',
+   885→                            i < current.rating ? 'fill-accent text-accent' : 'fill-muted text-muted-foreground/30'
+   886→                          )}
+   887→                        />
+   888→                      </motion.span>
+   889→                    ))}
+   890→                  </div>
+   891→
+   892→                  <blockquote className="mt-6 text-xl font-medium leading-relaxed text-foreground sm:text-2xl">
+   893→                    &ldquo;{current.quote}&rdquo;
+   894→                  </blockquote>
+   895→
+   896→                  <div className="mt-8 flex items-center gap-4">
+   897→                    <div className="relative grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-primary-foreground ring-2 ring-accent/20 ring-offset-2 ring-offset-background">
+   898→                      {current.avatar ? (
+   899→                        <img src={current.avatar} alt={current.clientName} className="h-full w-full rounded-full object-cover" />
+   900→                      ) : (
+   901→                        initials
+   902→                      )}
+   903→                    </div>
+   904→                    <div>
+   905→                      <p className="font-semibold">{current.clientName}</p>
+   906→                      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+   907→                        <span>{current.role}</span>
+   908→                        <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+   909→                        <span className="font-medium text-foreground/80">{current.company}</span>
+   910→                      </p>
+   911→                    </div>
+   912→                  </div>
+   913→                </motion.div>
+   914→              </AnimatePresence>
+   915→            </div>
+   916→          </Card>
+   917→        </Reveal>
+   918→
+   919→        {/* Pagination dots + progress indicator */}
+   920→        <div className="mt-8 flex items-center justify-center gap-2">
+   921→          {testimonials.map((item, i) => (
+   922→            <button
+   923→              key={item.id}
+   924→              onClick={() => setActive(i)}
+   925→              aria-label={t('about.testimonialN', { n: i + 1 })}
+   926→              className="group/dot relative h-2 rounded-full transition-all"
+   927→              style={{ width: i === active ? 32 : 8 }}
+   928→            >
+   929→              <span className={cn(
+   930→                'absolute inset-0 rounded-full transition-colors',
+   931→                i === active ? 'bg-gradient-to-r from-primary to-accent' : 'bg-muted-foreground/30 group-hover/dot:bg-muted-foreground/50'
+   932→              )} />
+   933→              {i === active && (
+   934→                <motion.span
+   935→                  layoutId="testimonial-progress"
+   936→                  className="absolute inset-0 rounded-full bg-primary-foreground/40"
+   937→                  initial={{ scaleX: 0, originX: isRtl ? 1 : 0 }}
+   938→                  animate={{ scaleX: 1 }}
+   939→                  transition={{ duration: 0.5, ease: 'easeOut' }}
+   940→                />
+   941→              )}
+   942→            </button>
+   943→          ))}
+   944→        </div>
+   945→
+   946→        {/* Navigation + CTA */}
+   947→        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+   948→          <button
+   949→            onClick={() => go(-1)}
+   950→            aria-label={t('testimonials.previous')}
+   951→            className="grid h-11 w-11 place-items-center rounded-full border border-border/60 bg-card text-foreground transition hover:border-primary/40 hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-primary-foreground hover:shadow-glow"
+   952→          >
+   953→            <ChevronLeft className={cn('h-5 w-5', isRtl && 'rtl-flip')} />
+   954→          </button>
+   955→          <button
+   956→            onClick={() => go(1)}
+   957→            aria-label={t('testimonials.next')}
+   958→            className="grid h-11 w-11 place-items-center rounded-full border border-border/60 bg-card text-foreground transition hover:border-primary/40 hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-primary-foreground hover:shadow-glow"
+   959→          >
+   960→            <ChevronRight className={cn('h-5 w-5', isRtl && 'rtl-flip')} />
+   961→          </button>
+   962→          <Button
+   963→            size="sm"
+   964→            onClick={onCta}
+   965→            className="ml-2 h-11 rounded-full bg-gradient-to-r from-primary to-accent px-6 text-primary-foreground shadow-glow transition hover:opacity-90 hover:shadow-glow"
+   966→          >
+   967→            {t('testimonials.seeMore')}
+   968→            <ArrowRight className={cn('ml-1.5 h-4 w-4', isRtl && 'mr-1.5 ml-0', 'rtl-flip')} />
+   969→          </Button>
+   970→        </div>
+   971→      </div>
+   972→    </section>
+   973→  )
+   974→}
+   975→
+   976→function FinalCta({ onPrimary, onSecondary }: { onPrimary: () => void; onSecondary: () => void }) {
+   977→  const t = useT()
+   978→  const lang = useLang((s) => s.lang)
+   979→  return (
+   980→    <section id="estimate-cta" className="scroll-mt-24 px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+   981→      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-accent p-10 text-primary-foreground shadow-glow sm:p-16">
+   982→        <div className="absolute inset-0 bg-grid opacity-20" />
+   983→        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+   984→        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-accent/30 blur-3xl" />
+   985→        <div className="relative mx-auto max-w-2xl text-center">
+   986→          <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-5xl">
+   987→            {t('cta.title')}
+   988→          </h2>
+   989→          <p className="mx-auto mt-4 max-w-xl text-base text-primary-foreground/80 sm:text-lg">
+   990→            {t('cta.desc')}
+   991→          </p>
+   992→          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+   993→            <Button size="lg" variant="secondary" className="h-12 rounded-full px-7 text-base" onClick={onPrimary}>
+   994→              {t('cta.startProject')}
+   995→              <ArrowRight className={cn('ml-2 h-4 w-4', lang === 'fa' && 'mr-2 ml-0', 'rtl-flip')} />
+   996→            </Button>
+   997→            <Button
+   998→              size="lg"
+   999→              variant="outline"
+  1000→              className="h-12 rounded-full border-primary-foreground/30 bg-transparent px-7 text-base text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+  1001→              onClick={onSecondary}
+  1002→            >
+  1003→              {t('cta.getEstimate')}
+  1004→            </Button>
+  1005→          </div>
+  1006→        </div>
+  1007→      </div>
+  1008→    </section>
+  1009→  )
+  1010→}
+  1011→

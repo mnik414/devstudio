@@ -1,0 +1,1072 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useRef, useCallback } from 'react'
+     4→import { motion, AnimatePresence } from 'framer-motion'
+     5→import {
+     6→  ArrowLeft,
+     7→  ArrowRight,
+     8→  ArrowUpRight,
+     9→  Github,
+    10→  ExternalLink,
+    11→  ChevronLeft,
+    12→  ChevronRight,
+    13→  AlertCircle,
+    14→  Lightbulb,
+    15→  TrendingUp,
+    16→  Check,
+    17→  Flag,
+    18→  Layers,
+    19→  Code2,
+    20→  Trophy,
+    21→  Calendar,
+    22→  Building2,
+    23→  Eye,
+    24→  FileQuestion,
+    25→} from 'lucide-react'
+    26→import { Button } from '@/components/ui/button'
+    27→import { Card } from '@/components/ui/card'
+    28→import { Badge } from '@/components/ui/badge'
+    29→import { Skeleton } from '@/components/ui/skeleton'
+    30→import {
+    31→  Dialog,
+    32→  DialogContent,
+    33→  DialogTitle,
+    34→  DialogDescription,
+    35→} from '@/components/ui/dialog'
+    36→import { Reveal } from '@/components/site/reveal'
+    37→import { SectionHeading } from '@/components/site/section-heading'
+    38→import { usePortfolio, parseList, type Portfolio } from '@/lib/hooks'
+    39→import { useNav } from '@/lib/store'
+    40→import { cn } from '@/lib/utils'
+    41→import { useT, useLang } from '@/lib/lang-store'
+    42→import { tc } from '@/lib/content-i18n'
+    43→
+    44→export function PortfolioDetailView() {
+    45→  const t = useT()
+    46→  const lang = useLang((s) => s.lang)
+    47→  const slug = useNav((s) => s.detailSlug)
+    48→  const closeDetail = useNav((s) => s.closeDetail)
+    49→  const setView = useNav((s) => s.setView)
+    50→  const openDetail = useNav((s) => s.openDetail)
+    51→
+    52→  const { data, isLoading, isError } = usePortfolio(slug)
+    53→  const item = data?.item
+    54→  const related = data?.related ?? []
+    55→
+    56→  return (
+    57→    <div className="relative">
+    58→      {/* Back button */}
+    59→      <div className="mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:px-8">
+    60→        <Button
+    61→          variant="ghost"
+    62→          size="sm"
+    63→          onClick={closeDetail}
+    64→          className="text-muted-foreground hover:text-foreground"
+    65→        >
+    66→          <ArrowLeft className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
+    67→          {t('portfolioDetail.back')}
+    68→        </Button>
+    69→      </div>
+    70→
+    71→      {isLoading ? (
+    72→        <DetailSkeleton />
+    73→      ) : isError || !item ? (
+    74→        <NotFoundState onBack={closeDetail} />
+    75→      ) : (
+    76→        <>
+    77→          {/* Hero */}
+    78→          <Hero item={item} lang={lang} />
+    79→
+    80→          {/* Overview (Problem / Solution / Result) */}
+    81→          <section id="overview" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+    82→            <SectionHeading
+    83→              eyebrow="Overview"
+    84→              title={t('portfolioDetail.overview')}
+    85→              align="left"
+    86→            />
+    87→            <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+    88→              <OverviewCard
+    89→                icon={AlertCircle}
+    90→                tone="primary"
+    91→                title={t('portfolioDetail.problem')}
+    92→                text={item.problem}
+    93→              />
+    94→              <OverviewCard
+    95→                icon={Lightbulb}
+    96→                tone="accent"
+    97→                title={t('portfolioDetail.solution')}
+    98→                text={item.solution}
+    99→              />
+   100→              <OverviewCard
+   101→                icon={TrendingUp}
+   102→                tone="emerald"
+   103→                title={t('portfolioDetail.result')}
+   104→                text={item.result}
+   105→              />
+   106→            </div>
+   107→          </section>
+   108→
+   109→          {/* Technologies Used */}
+   110→          {item.technologies && item.technologies.length > 0 && (
+   111→            <section id="technologies" className="scroll-mt-24 border-y bg-muted/30">
+   112→              <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   113→                <SectionHeading
+   114→                  eyebrow="Tech Stack"
+   115→                  title={t('portfolioDetail.technologies')}
+   116→                  align="left"
+   117→                />
+   118→                <Reveal delay={0.1} className="mt-8 flex flex-wrap gap-3">
+   119→                  {item.technologies.map((techItem) => (
+   120→                    <div
+   121→                      key={techItem.id}
+   122→                      title={techItem.name}
+   123→                      className="group inline-flex items-center gap-2.5 rounded-full border bg-background px-4 py-2 text-sm font-medium shadow-xs transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:shadow-soft"
+   124→                    >
+   125→                      <span
+   126→                        className="inline-block size-2.5 rounded-full ring-2 ring-transparent transition-all group-hover:ring-primary/20"
+   127→                        style={{ background: techItem.color ?? 'var(--accent)' }}
+   128→                      />
+   129→                      {techItem.name}
+   130→                    </div>
+   131→                  ))}
+   132→                </Reveal>
+   133→              </div>
+   134→            </section>
+   135→          )}
+   136→
+   137→          {/* Features */}
+   138→          {parseList<string>(item.features).length > 0 && (
+   139→            <section id="features" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   140→              <SectionHeading
+   141→                eyebrow="Capabilities"
+   142→                title={t('portfolioDetail.features')}
+   143→                align="left"
+   144→              />
+   145→              <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   146→                {parseList<string>(item.features).map((feature, i) => (
+   147→                  <Reveal key={`${feature}-${i}`} delay={Math.min(i * 0.04, 0.3)}>
+   148→                    <div className="group flex items-start gap-3 rounded-xl border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-soft">
+   149→                      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent ring-1 ring-accent/20 transition-all group-hover:bg-accent group-hover:text-accent-foreground">
+   150→                        <Check className="size-4" />
+   151→                      </span>
+   152→                      <span className="text-sm font-medium leading-relaxed">
+   153→                        {feature}
+   154→                      </span>
+   155→                    </div>
+   156→                  </Reveal>
+   157→                ))}
+   158→              </div>
+   159→            </section>
+   160→          )}
+   161→
+   162→          {/* Gallery */}
+   163→          {parseList<string>(item.gallery).length > 0 && (
+   164→            <GallerySection raw={item.gallery} />
+   165→          )}
+   166→
+   167→          {/* Case Study */}
+   168→          <CaseStudySection item={item} />
+   169→
+   170→          {/* Related Projects */}
+   171→          {related.length > 0 && (
+   172→            <section id="related" className="scroll-mt-24 border-t bg-muted/30">
+   173→              <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   174→                <SectionHeading
+   175→                  eyebrow="Keep exploring"
+   176→                  title={t('portfolioDetail.related')}
+   177→                  align="left"
+   178→                />
+   179→                <div className="relative mt-2">
+   180→                  <span className="absolute -bottom-1 left-0 h-1 w-32 rounded-full bg-gradient-to-r from-primary to-accent" aria-hidden />
+   181→                </div>
+   182→                <RelatedProjects
+   183→                  items={related}
+   184→                  lang={lang}
+   185→                  onOpen={(slug) => openDetail('portfolio', slug)}
+   186→                />
+   187→              </div>
+   188→            </section>
+   189→          )}
+   190→
+   191→          {/* Final CTA */}
+   192→          <section id="cta" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   193→            <Reveal>
+   194→              <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-accent px-6 py-12 text-primary-foreground shadow-soft sm:px-12 sm:py-16">
+   195→                <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+   196→                <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+   197→                <div className="pointer-events-none absolute -bottom-20 -left-20 size-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+   198→                <div className="relative flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+   199→                  <div className="max-w-xl">
+   200→                    <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">
+   201→                      {t('portfolioDetail.ctaTitle')}
+   202→                    </h3>
+   203→                    <p className="mt-2 text-sm text-primary-foreground/80 sm:text-base">
+   204→                      Inspired by what you see? Let's build something tailored to
+   205→                      your goals — start with a free discovery call.
+   206→                    </p>
+   207→                  </div>
+   208→                  <Button
+   209→                    size="lg"
+   210→                    variant="secondary"
+   211→                    className="group shrink-0"
+   212→                    onClick={() => setView('contact')}
+   213→                  >
+   214→                    {t('portfolioDetail.ctaButton')}
+   215→                    <ArrowRight className={cn('size-4 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
+   216→                  </Button>
+   217→                </div>
+   218→              </div>
+   219→            </Reveal>
+   220→          </section>
+   221→        </>
+   222→      )}
+   223→    </div>
+   224→  )
+   225→}
+   226→
+   227→/* ------------------------- Hero ------------------------- */
+   228→
+   229→function Hero({ item, lang }: { item: Portfolio; lang: 'en' | 'fa' }) {
+   230→  const t = useT()
+   231→  const title = tc('portfolio', item.slug, 'title', item.title, lang)
+   232→  const summary = tc('portfolio', item.slug, 'summary', item.summary, lang)
+   233→  return (
+   234→    <section className="relative overflow-hidden">
+   235→      <div className="bg-grid pointer-events-none absolute inset-0 opacity-40" />
+   236→      <div className="relative mx-auto max-w-7xl px-4 pt-6 pb-12 sm:px-6 sm:pt-10 sm:pb-16 lg:px-8">
+   237→        <motion.div
+   238→          initial={{ opacity: 0, y: 12 }}
+   239→          animate={{ opacity: 1, y: 0 }}
+   240→          transition={{ duration: 0.5, ease: 'easeOut' }}
+   241→        >
+   242→          {/* Meta row */}
+   243→          <div className="flex flex-wrap items-center gap-3">
+   244→            {item.category && (
+   245→              <Badge className="border-0 bg-primary/10 text-primary">
+   246→                {item.category.name}
+   247→              </Badge>
+   248→            )}
+   249→            {item.featured && (
+   250→              <Badge variant="outline" className="border-accent/40 text-accent">
+   251→                Featured
+   252→              </Badge>
+   253→            )}
+   254→          </div>
+   255→
+   256→          <h1 className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-balance sm:text-5xl md:text-6xl lg:text-[4rem] lg:leading-[1.05]">
+   257→            {title}
+   258→          </h1>
+   259→
+   260→          <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+   261→            {summary}
+   262→          </p>
+   263→
+   264→          {/* Meta details */}
+   265→          <div className="mt-6 flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
+   266→            {item.clientName && (
+   267→              <span className="inline-flex items-center gap-2">
+   268→                <Building2 className="size-4 text-accent" />
+   269→                {item.clientName}
+   270→              </span>
+   271→            )}
+   272→            <span className="inline-flex items-center gap-2">
+   273→              <Calendar className="size-4 text-accent" />
+   274→              <span className="ltr-num">{item.year}</span>
+   275→            </span>
+   276→            <span className="inline-flex items-center gap-2">
+   277→              <Eye className="size-4 text-accent" />
+   278→              <span className="ltr-num">{item.views}</span>{' '}
+   279→              {t('portfolioDetail.views')}
+   280→            </span>
+   281→          </div>
+   282→
+   283→          {/* Action buttons */}
+   284→          {(item.liveUrl || item.repoUrl) && (
+   285→            <div className="mt-7 flex flex-wrap gap-3">
+   286→              {item.liveUrl && (
+   287→                <Button asChild size="lg" className="group">
+   288→                  <a
+   289→                    href={item.liveUrl}
+   290→                    target="_blank"
+   291→                    rel="noopener noreferrer"
+   292→                  >
+   293→                    <ExternalLink className="size-4" />
+   294→                    {t('portfolioDetail.visitLive')}
+   295→                    <ArrowUpRight className={cn('size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5', lang === 'fa' && 'rtl-flip')} />
+   296→                  </a>
+   297→                </Button>
+   298→              )}
+   299→              {item.repoUrl && (
+   300→                <Button asChild size="lg" variant="outline" className="group">
+   301→                  <a
+   302→                    href={item.repoUrl}
+   303→                    target="_blank"
+   304→                    rel="noopener noreferrer"
+   305→                  >
+   306→                    <Github className="size-4" />
+   307→                    {t('portfolioDetail.viewCode')}
+   308→                  </a>
+   309→                </Button>
+   310→              )}
+   311→            </div>
+   312→          )}
+   313→        </motion.div>
+   314→
+   315→        {/* Cover image */}
+   316→        <motion.div
+   317→          initial={{ opacity: 0, y: 16 }}
+   318→          animate={{ opacity: 1, y: 0 }}
+   319→          transition={{ duration: 0.6, delay: 0.15, ease: 'easeOut' }}
+   320→          className="mt-10 overflow-hidden rounded-2xl border shadow-soft"
+   321→        >
+   322→          <div className="relative aspect-[16/9]">
+   323→            <img
+   324→              src={item.coverImage}
+   325→              alt={`${title} main cover`}
+   326→              className="size-full object-cover"
+   327→            />
+   328→            {/* Subtle gradient overlay for depth */}
+   329→            <div
+   330→              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"
+   331→              aria-hidden
+   332→            />
+   333→            <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-wrap items-center gap-2">
+   334→              {item.category && (
+   335→                <Badge className="border-0 bg-white/90 text-foreground backdrop-blur">
+   336→                  {item.category.name}
+   337→                </Badge>
+   338→              )}
+   339→            </div>
+   340→          </div>
+   341→        </motion.div>
+   342→      </div>
+   343→    </section>
+   344→  )
+   345→}
+   346→
+   347→/* ------------------------- Overview cards ------------------------- */
+   348→
+   349→const TONE_STYLES: Record<
+   350→  string,
+   351→  { bg: string; ring: string; text: string; border: string }
+   352→> = {
+   353→  rose: {
+   354→    bg: 'bg-rose-500/10',
+   355→    ring: 'ring-rose-500/20',
+   356→    text: 'text-rose-600 dark:text-rose-400',
+   357→    border: 'border-l-rose-500',
+   358→  },
+   359→  amber: {
+   360→    bg: 'bg-amber-500/10',
+   361→    ring: 'ring-amber-500/20',
+   362→    text: 'text-amber-600 dark:text-amber-400',
+   363→    border: 'border-l-amber-500',
+   364→  },
+   365→  emerald: {
+   366→    bg: 'bg-emerald-500/10',
+   367→    ring: 'ring-emerald-500/20',
+   368→    text: 'text-emerald-600 dark:text-emerald-400',
+   369→    border: 'border-l-emerald-500',
+   370→  },
+   371→  primary: {
+   372→    bg: 'bg-primary/10',
+   373→    ring: 'ring-primary/20',
+   374→    text: 'text-primary',
+   375→    border: 'border-l-primary',
+   376→  },
+   377→  accent: {
+   378→    bg: 'bg-accent/10',
+   379→    ring: 'ring-accent/20',
+   380→    text: 'text-accent',
+   381→    border: 'border-l-accent',
+   382→  },
+   383→}
+   384→
+   385→function OverviewCard({
+   386→  icon: Icon,
+   387→  tone,
+   388→  title,
+   389→  text,
+   390→}: {
+   391→  icon: React.ComponentType<{ className?: string }>
+   392→  tone: keyof typeof TONE_STYLES | string
+   393→  title: string
+   394→  text: string | null
+   395→}) {
+   396→  const styles = TONE_STYLES[tone] ?? TONE_STYLES.amber
+   397→  return (
+   398→    <Reveal delay={0.05}>
+   399→      <Card
+   400→        className={cn(
+   401→          'h-full gap-4 border-l-4 p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow',
+   402→          styles.border,
+   403→        )}
+   404→      >
+   405→        <div className="flex items-center gap-3">
+   406→          <span
+   407→            className={cn(
+   408→              'flex size-10 items-center justify-center rounded-xl ring-1',
+   409→              styles.bg,
+   410→              styles.ring,
+   411→              styles.text,
+   412→            )}
+   413→          >
+   414→            <Icon className="size-5" />
+   415→          </span>
+   416→          <h3 className="text-base font-semibold">{title}</h3>
+   417→        </div>
+   418→        <p className="text-sm leading-relaxed text-muted-foreground">
+   419→          {text || `No ${title.toLowerCase()} documented for this project.`}
+   420→        </p>
+   421→      </Card>
+   422→    </Reveal>
+   423→  )
+   424→}
+   425→
+   426→/* ------------------------- Gallery ------------------------- */
+   427→
+   428→function GallerySection({ raw }: { raw: string }) {
+   429→  const t = useT()
+   430→  const lang = useLang((s) => s.lang)
+   431→  const images = parseList<string>(raw)
+   432→  const [active, setActive] = useState<number | null>(null)
+   433→  const [direction, setDirection] = useState(0)
+   434→
+   435→  const isRTL = lang === 'fa'
+   436→  const total = images.length
+   437→
+   438→  const goPrev = () => {
+   439→    setActive((cur) => {
+   440→      if (cur === null || cur <= 0) return cur
+   441→      setDirection(-1)
+   442→      return cur - 1
+   443→    })
+   444→  }
+   445→  const goNext = () => {
+   446→    setActive((cur) => {
+   447→      if (cur === null || cur >= total - 1) return cur
+   448→      setDirection(1)
+   449→      return cur + 1
+   450→    })
+   451→  }
+   452→
+   453→  // Keyboard navigation with RTL awareness
+   454→  // In LTR: ArrowLeft → prev, ArrowRight → next
+   455→  // In RTL: ArrowLeft → next, ArrowRight → prev (mirrored)
+   456→  useEffect(() => {
+   457→    if (active === null) return
+   458→    const handler = (e: KeyboardEvent) => {
+   459→      if (e.key === 'ArrowLeft') {
+   460→        if (isRTL) goNext()
+   461→        else goPrev()
+   462→      } else if (e.key === 'ArrowRight') {
+   463→        if (isRTL) goPrev()
+   464→        else goNext()
+   465→      }
+   466→    }
+   467→    window.addEventListener('keydown', handler)
+   468→    return () => window.removeEventListener('keydown', handler)
+   469→  }, [active, isRTL, total])
+   470→
+   471→  if (images.length === 0) return null
+   472→
+   473→  // Framer-motion variants — fade + slight horizontal slide driven by direction
+   474→  const variants = {
+   475→    enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 40 : -40 }),
+   476→    center: { opacity: 1, x: 0 },
+   477→    exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -40 : 40 }),
+   478→  }
+   479→
+   480→  return (
+   481→    <section className="border-y bg-muted/30">
+   482→      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   483→        <SectionHeading
+   484→          eyebrow="Gallery"
+   485→          title={t('portfolioDetail.gallery')}
+   486→          align="left"
+   487→        />
+   488→        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   489→          {images.map((src, i) => (
+   490→            <Reveal
+   491→              key={`${src}-${i}`}
+   492→              delay={Math.min(i * 0.05, 0.3)}
+   493→              className={cn(
+   494→                'group cursor-pointer overflow-hidden rounded-xl border shadow-xs transition-shadow hover:shadow-soft',
+   495→                i % 5 === 0 ? 'sm:col-span-2 sm:row-span-1' : '',
+   496→              )}
+   497→            >
+   498→              <button
+   499→                type="button"
+   500→                onClick={() => {
+   501→                  setDirection(0)
+   502→                  setActive(i)
+   503→                }}
+   504→                className="block w-full"
+   505→                aria-label={`Open image ${i + 1} in lightbox`}
+   506→              >
+   507→                <div className="relative aspect-video overflow-hidden">
+   508→                  <img
+   509→                    src={src}
+   510→                    alt={`Project screenshot ${i + 1}`}
+   511→                    loading="lazy"
+   512→                    className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+   513→                  />
+   514→                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/30 group-hover:opacity-100">
+   515→                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-foreground">
+   516→                      <ExternalLink className="size-3.5" />
+   517→                      View
+   518→                    </span>
+   519→                  </div>
+   520→                </div>
+   521→              </button>
+   522→            </Reveal>
+   523→          ))}
+   524→        </div>
+   525→      </div>
+   526→
+   527→      {/* Lightbox */}
+   528→      <Dialog open={active !== null} onOpenChange={(o) => !o && setActive(null)}>
+   529→        <DialogContent
+   530→          className="max-w-5xl border-0 bg-black/95 p-0 sm:rounded-2xl"
+   531→          showCloseButton
+   532→        >
+   533→          <DialogTitle className="sr-only">Screenshot preview</DialogTitle>
+   534→          <DialogDescription className="sr-only">
+   535→            Full-size project screenshot in a lightbox viewer
+   536→          </DialogDescription>
+   537→          {active !== null && images[active] && (
+   538→            <div className="relative flex max-h-[85vh] items-center justify-center">
+   539→              {/* Prev button — in RTL it visually sits on the right and points to next */}
+   540→              <button
+   541→                type="button"
+   542→                onClick={(e) => {
+   543→                  e.stopPropagation()
+   544→                  if (isRTL) goNext()
+   545→                  else goPrev()
+   546→                }}
+   547→                disabled={isRTL ? active >= total - 1 : active <= 0}
+   548→                aria-label={isRTL ? 'Next image' : 'Previous image'}
+   549→                className={cn(
+   550→                  'absolute z-20 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur transition-all duration-200',
+   551→                  'hover:border-white/30 hover:bg-gradient-to-br hover:from-white/25 hover:to-white/5',
+   552→                  'disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-white/15 disabled:hover:from-transparent disabled:hover:to-transparent',
+   553→                  isRTL ? 'right-3' : 'left-3',
+   554→                )}
+   555→              >
+   556→                <ChevronLeft className="size-6" />
+   557→              </button>
+   558→              {/* Next button — in RTL it visually sits on the left and points to prev */}
+   559→              <button
+   560→                type="button"
+   561→                onClick={(e) => {
+   562→                  e.stopPropagation()
+   563→                  if (isRTL) goPrev()
+   564→                  else goNext()
+   565→                }}
+   566→                disabled={isRTL ? active <= 0 : active >= total - 1}
+   567→                aria-label={isRTL ? 'Previous image' : 'Next image'}
+   568→                className={cn(
+   569→                  'absolute z-20 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur transition-all duration-200',
+   570→                  'hover:border-white/30 hover:bg-gradient-to-br hover:from-white/25 hover:to-white/5',
+   571→                  'disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-white/15 disabled:hover:from-transparent disabled:hover:to-transparent',
+   572→                  isRTL ? 'left-3' : 'right-3',
+   573→                )}
+   574→              >
+   575→                <ChevronRight className="size-6" />
+   576→              </button>
+   577→
+   578→              {/* Image with framer-motion fade + slide transition */}
+   579→              <AnimatePresence mode="wait" custom={direction}>
+   580→                <motion.img
+   581→                  key={active}
+   582→                  src={images[active]}
+   583→                  alt={`Project screenshot ${active + 1} of ${total}`}
+   584→                  custom={direction}
+   585→                  variants={variants}
+   586→                  initial="enter"
+   587→                  animate="center"
+   588→                  exit="exit"
+   589→                  transition={{ duration: 0.25, ease: 'easeOut' }}
+   590→                  className="mx-auto h-auto w-full max-h-[85vh] object-contain"
+   591→                />
+   592→              </AnimatePresence>
+   593→
+   594→              {/* Image counter badge — bottom center */}
+   595→              {total > 1 && (
+   596→                <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/15 bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+   597→                  <span className="ltr-num">{active + 1}</span>
+   598→                  <span className="opacity-60">/</span>
+   599→                  <span className="ltr-num">{total}</span>
+   600→                </div>
+   601→              )}
+   602→            </div>
+   603→          )}
+   604→        </DialogContent>
+   605→      </Dialog>
+   606→    </section>
+   607→  )
+   608→}
+   609→
+   610→/* ------------------------- Case study ------------------------- */
+   611→
+   612→const CASE_STUDY = [
+   613→  {
+   614→    key: 'challenge' as const,
+   615→    icon: Flag,
+   616→    titleKey: 'portfolioDetail.challenge',
+   617→    tone: 'rose',
+   618→  },
+   619→  {
+   620→    key: 'architecture' as const,
+   621→    icon: Layers,
+   622→    titleKey: 'portfolioDetail.architecture',
+   623→    tone: 'amber',
+   624→  },
+   625→  {
+   626→    key: 'implementation' as const,
+   627→    icon: Code2,
+   628→    titleKey: 'portfolioDetail.implementation',
+   629→    tone: 'primary',
+   630→  },
+   631→  {
+   632→    key: 'outcome' as const,
+   633→    icon: Trophy,
+   634→    titleKey: 'portfolioDetail.outcome',
+   635→    tone: 'emerald',
+   636→  },
+   637→]
+   638→
+   639→function CaseStudySection({ item }: { item: Portfolio }) {
+   640→  const t = useT()
+   641→  const hasAny = CASE_STUDY.some((s) => item[s.key])
+   642→  if (!hasAny) return null
+   643→
+   644→  return (
+   645→    <section id="case-study" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+   646→      <SectionHeading
+   647→        eyebrow="Case Study"
+   648→        title={t('portfolioDetail.caseStudy')}
+   649→        description="A deeper look at the journey from problem to outcome."
+   650→        align="left"
+   651→      />
+   652→      <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+   653→        {CASE_STUDY.map((s, i) => {
+   654→          const text = item[s.key]
+   655→          if (!text) return null
+   656→          const Icon = s.icon
+   657→          const styles = TONE_STYLES[s.tone] ?? TONE_STYLES.amber
+   658→          return (
+   659→            <Reveal key={s.key} delay={Math.min(i * 0.08, 0.3)}>
+   660→              <Card
+   661→                className={cn(
+   662→                  'relative h-full gap-4 border-l-4 p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow',
+   663→                  styles.border,
+   664→                )}
+   665→              >
+   666→                {/* Timeline connector dot */}
+   667→                <span
+   668→                  className={cn(
+   669→                    'absolute -left-2.5 top-7 size-5 rounded-full border-4 border-background ring-1',
+   670→                    styles.bg,
+   671→                    styles.ring,
+   672→                  )}
+   673→                  aria-hidden
+   674→                />
+   675→                <div className="flex items-center gap-3">
+   676→                  <span
+   677→                    className={cn(
+   678→                      'flex size-11 items-center justify-center rounded-xl ring-1',
+   679→                      styles.bg,
+   680→                      styles.ring,
+   681→                      styles.text,
+   682→                    )}
+   683→                  >
+   684→                    <Icon className="size-5" />
+   685→                  </span>
+   686→                  <div>
+   687→                    <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+   688→                      Step <span className="ltr-num">{i + 1}</span>
+   689→                    </span>
+   690→                    <h3 className="text-base font-semibold">{t(s.titleKey)}</h3>
+   691→                  </div>
+   692→                </div>
+   693→                <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+   694→                  {text}
+   695→                </p>
+   696→              </Card>
+   697→            </Reveal>
+   698→          )
+   699→        })}
+   700→      </div>
+   701→    </section>
+   702→  )
+   703→}
+   704→
+   705→/* ------------------------- Related projects carousel ------------------------- */
+   706→
+   707→function RelatedProjects({
+   708→  items,
+   709→  lang,
+   710→  onOpen,
+   711→}: {
+   712→  items: Portfolio[]
+   713→  lang: 'en' | 'fa'
+   714→  onOpen: (slug: string) => void
+   715→}) {
+   716→  const isRtl = lang === 'fa'
+   717→  const scrollerRef = useRef<HTMLDivElement>(null)
+   718→  const [activeIndex, setActiveIndex] = useState(0)
+   719→  const [canPrev, setCanPrev] = useState(false)
+   720→  const [canNext, setCanNext] = useState(true)
+   721→
+   722→  /** Distance to advance when an arrow is clicked — uses the first card width. */
+   723→  const getStep = useCallback(() => {
+   724→    const el = scrollerRef.current
+   725→    if (!el) return 320
+   726→    const first = el.querySelector<HTMLElement>('[data-card]')
+   727→    if (!first) return 320
+   728→    const style = getComputedStyle(el)
+   729→    const gap = parseFloat(style.columnGap || style.gap || '24') || 24
+   730→    return first.offsetWidth + gap
+   731→  }, [])
+   732→
+   733→  const updateState = useCallback(() => {
+   734→    const el = scrollerRef.current
+   735→    if (!el) return
+   736→    const cards = el.querySelectorAll<HTMLElement>('[data-card]')
+   737→    if (cards.length === 0) return
+   738→
+   739→    // In RTL, scrollLeft is reported as a non-positive number in most browsers.
+   740→    // Normalize to a 0..maxScroll positive distance from the visual start.
+   741→    const maxScroll = el.scrollWidth - el.clientWidth
+   742→    const raw = el.scrollLeft
+   743→    const pos = isRtl ? Math.min(Math.abs(raw), maxScroll) : Math.min(Math.max(raw, 0), maxScroll)
+   744→
+   745→    setCanPrev(isRtl ? raw > -1 : pos > 1)
+   746→    setCanNext(pos < maxScroll - 1)
+   747→
+   748→    // Determine the closest card to the visual start
+   749→    const containerLeft = el.getBoundingClientRect().left
+   750→    let closest = 0
+   751→    let closestDist = Infinity
+   752→    cards.forEach((card, i) => {
+   753→      const dist = Math.abs(card.getBoundingClientRect().left - containerLeft)
+   754→      if (dist < closestDist) {
+   755→        closestDist = dist
+   756→        closest = i
+   757→      }
+   758→    })
+   759→    setActiveIndex(closest)
+   760→  }, [isRtl])
+   761→
+   762→  useEffect(() => {
+   763→    const el = scrollerRef.current
+   764→    if (!el) return
+   765→    // Defer the initial measurement so we don't trigger a cascading render
+   766→    // from inside the effect body.
+   767→    const raf = requestAnimationFrame(updateState)
+   768→    el.addEventListener('scroll', updateState, { passive: true })
+   769→    window.addEventListener('resize', updateState)
+   770→    return () => {
+   771→      cancelAnimationFrame(raf)
+   772→      el.removeEventListener('scroll', updateState)
+   773→      window.removeEventListener('resize', updateState)
+   774→    }
+   775→  }, [updateState])
+   776→
+   777→  const scrollByCards = useCallback(
+   778→    (dir: 1 | -1) => {
+   779→      const el = scrollerRef.current
+   780→      if (!el) return
+   781→      // dir=1 means "next" visually. In RTL the scrollLeft value is negative,
+   782→      // so we invert the sign to keep semantics consistent.
+   783→      const step = getStep() * dir
+   784→      el.scrollBy({ left: isRtl ? -step : step, behavior: 'smooth' })
+   785→    },
+   786→    [getStep, isRtl],
+   787→  )
+   788→
+   789→  const scrollToIndex = useCallback(
+   790→    (i: number) => {
+   791→      const el = scrollerRef.current
+   792→      if (!el) return
+   793→      const cards = el.querySelectorAll<HTMLElement>('[data-card]')
+   794→      const card = cards[i]
+   795→      if (!card) return
+   796→      el.scrollTo({
+   797→        left: isRtl ? -(card.offsetLeft + card.offsetWidth - el.clientWidth) : card.offsetLeft,
+   798→        behavior: 'smooth',
+   799→      })
+   800→    },
+   801→    [isRtl],
+   802→  )
+   803→
+   804→  const prev = () => scrollByCards(-1)
+   805→  const next = () => scrollByCards(1)
+   806→
+   807→  return (
+   808→    <div className="mt-8">
+   809→      {/* Toolbar: hint + arrows */}
+   810→      <div className="mb-4 flex items-center justify-between gap-3">
+   811→        {/* Swipe hint — mobile only */}
+   812→        <AnimatePresence>
+   813→          <motion.span
+   814→            key="swipe-hint"
+   815→            initial={{ opacity: 0, x: isRtl ? 8 : -8 }}
+   816→            animate={{ opacity: 1, x: 0 }}
+   817→            exit={{ opacity: 0 }}
+   818→            transition={{ duration: 0.3 }}
+   819→            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground sm:hidden"
+   820→          >
+   821→            <motion.span
+   822→              animate={{ x: isRtl ? [0, 5, 0] : [0, -5, 0] }}
+   823→              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+   824→              className="inline-flex"
+   825→            >
+   826→              {isRtl ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
+   827→            </motion.span>
+   828→            <span>Swipe to explore</span>
+   829→          </motion.span>
+   830→        </AnimatePresence>
+   831→
+   832→        {/* Arrows — desktop */}
+   833→        <div className="ml-auto hidden items-center gap-2 sm:flex">
+   834→          <button
+   835→            type="button"
+   836→            onClick={prev}
+   837→            disabled={!canPrev}
+   838→            aria-label={isRtl ? 'Next projects' : 'Previous projects'}
+   839→            className={cn(
+   840→              'group grid size-10 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all duration-300',
+   841→              'hover:-translate-y-0.5 hover:border-transparent hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-white hover:shadow-[0_8px_24px_-6px_rgba(20,184,166,0.55)]',
+   842→              'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-background disabled:hover:text-muted-foreground disabled:hover:shadow-none',
+   843→            )}
+   844→          >
+   845→            {isRtl ? <ChevronRight className="size-5 transition-transform group-hover:scale-110" /> : <ChevronLeft className="size-5 transition-transform group-hover:scale-110" />}
+   846→          </button>
+   847→          <button
+   848→            type="button"
+   849→            onClick={next}
+   850→            disabled={!canNext}
+   851→            aria-label={isRtl ? 'Previous projects' : 'Next projects'}
+   852→            className={cn(
+   853→              'group grid size-10 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all duration-300',
+   854→              'hover:-translate-y-0.5 hover:border-transparent hover:bg-gradient-to-br hover:from-primary hover:to-accent hover:text-white hover:shadow-[0_8px_24px_-6px_rgba(20,184,166,0.55)]',
+   855→              'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:bg-background disabled:hover:text-muted-foreground disabled:hover:shadow-none',
+   856→            )}
+   857→          >
+   858→            {isRtl ? <ChevronLeft className="size-5 transition-transform group-hover:scale-110" /> : <ChevronRight className="size-5 transition-transform group-hover:scale-110" />}
+   859→          </button>
+   860→        </div>
+   861→      </div>
+   862→
+   863→      {/* Carousel */}
+   864→      <div className="relative">
+   865→        <div
+   866→          ref={scrollerRef}
+   867→          className={cn(
+   868→            'related-scroller flex gap-6 overflow-x-auto scroll-smooth pb-4',
+   869→            'snap-x snap-mandatory',
+   870→            '[scrollbar-width:none] [-ms-overflow-style:none]',
+   871→            isRtl && 'flex-row-reverse',
+   872→          )}
+   873→          style={{ scrollbarWidth: 'none' }}
+   874→        >
+   875→          {items.map((r, i) => (
+   876→            <div
+   877→              key={r.id}
+   878→              data-card
+   879→              className="snap-start shrink-0"
+   880→            >
+   881→              <RelatedCard
+   882→                item={r}
+   883→                lang={lang}
+   884→                onClick={() => onOpen(r.slug)}
+   885→                index={i}
+   886→                active={i === activeIndex}
+   887→              />
+   888→            </div>
+   889→          ))}
+   890→        </div>
+   891→
+   892→        {/* Edge fade overlays */}
+   893→        <div
+   894→          aria-hidden
+   895→          className={cn(
+   896→            'pointer-events-none absolute inset-y-0 w-12 bg-gradient-to-r from-muted/30 to-transparent',
+   897→            isRtl ? 'left-0' : 'right-0',
+   898→          )}
+   899→        />
+   900→        <div
+   901→          aria-hidden
+   902→          className={cn(
+   903→            'pointer-events-none absolute inset-y-0 w-12 bg-gradient-to-l from-muted/30 to-transparent',
+   904→            isRtl ? 'right-0' : 'left-0',
+   905→          )}
+   906→        />
+   907→
+   908→        {/* Hide native scrollbar — webkit */}
+   909→        <style>{`
+   910→          .related-scroller::-webkit-scrollbar { display: none; }
+   911→        `}</style>
+   912→      </div>
+   913→
+   914→      {/* Progress dots */}
+   915→      <div className="mt-5 flex items-center justify-center gap-2 sm:justify-start">
+   916→        {items.map((r, i) => {
+   917→          const isActive = i === activeIndex
+   918→          return (
+   919→            <button
+   920→              key={r.id}
+   921→              type="button"
+   922→              onClick={() => scrollToIndex(i)}
+   923→              aria-label={`Go to project ${i + 1}`}
+   924→              aria-current={isActive ? 'true' : undefined}
+   925→              className="group p-1"
+   926→            >
+   927→              <span
+   928→                className={cn(
+   929→                  'block h-2 rounded-full transition-all duration-300',
+   930→                  isActive
+   931→                    ? 'w-6 bg-gradient-to-r from-primary to-accent'
+   932→                    : 'w-2 bg-border group-hover:bg-primary/40',
+   933→                )}
+   934→              />
+   935→            </button>
+   936→          )
+   937→        })}
+   938→        <span className="ml-2 text-xs font-medium tabular-nums text-muted-foreground">
+   939→          <span className="ltr-num text-foreground">{activeIndex + 1}</span>
+   940→          <span className="mx-1">/</span>
+   941→          <span className="ltr-num">{items.length}</span>
+   942→        </span>
+   943→      </div>
+   944→    </div>
+   945→  )
+   946→}
+   947→
+   948→/* ------------------------- Related card ------------------------- */
+   949→
+   950→function RelatedCard({
+   951→  item,
+   952→  lang,
+   953→  onClick,
+   954→  index = 0,
+   955→  active = false,
+   956→}: {
+   957→  item: Portfolio
+   958→  lang: 'en' | 'fa'
+   959→  onClick: () => void
+   960→  index?: number
+   961→  active?: boolean
+   962→}) {
+   963→  const t = useT()
+   964→  const title = tc('portfolio', item.slug, 'title', item.title, lang)
+   965→  const summary = tc('portfolio', item.slug, 'summary', item.summary, lang)
+   966→  return (
+   967→    <motion.button
+   968→      type="button"
+   969→      onClick={onClick}
+   970→      whileHover={{ y: -6 }}
+   971→      whileTap={{ scale: 0.98 }}
+   972→      transition={{ duration: 0.25, ease: 'easeOut' }}
+   973→      className={cn(
+   974→        'group relative block h-full w-72 shrink-0 cursor-pointer overflow-hidden rounded-2xl border bg-card text-left shadow-soft transition-all duration-300 focus-visible:outline-none',
+   975→        active ? 'border-primary/40 ring-2 ring-primary/20' : 'border-border/60 hover:shadow-glow',
+   976→      )}
+   977→    >
+   978→      {/* Cover image */}
+   979→      <div className="relative aspect-[16/10] overflow-hidden">
+   980→        <img
+   981→          src={item.coverImage}
+   982→          alt={`${title} cover`}
+   983→          loading="lazy"
+   984→          className="size-full object-cover transition-transform duration-500 group-hover:scale-110"
+   985→        />
+   986→        {/* Gradient overlay */}
+   987→        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100" />
+   988→        {/* Top row: category + index */}
+   989→        <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
+   990→          {item.category ? (
+   991→            <Badge className="border-0 bg-white/90 text-foreground backdrop-blur">
+   992→              {item.category.name}
+   993→            </Badge>
+   994→          ) : (
+   995→            <span />
+   996→          )}
+   997→          <span className="rounded-full bg-slate-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur">
+   998→            <span className="ltr-num">{String(index + 1).padStart(2, '0')}</span>
+   999→          </span>
+  1000→        </div>
+  1001→        {/* Bottom title over image */}
+  1002→        <div className="absolute inset-x-0 bottom-0 p-4">
+  1003→          <h3 className="line-clamp-2 text-base font-semibold leading-snug text-white drop-shadow-sm">
+  1004→            {title}
+  1005→          </h3>
+  1006→        </div>
+  1007→      </div>
+  1008→
+  1009→      {/* Body */}
+  1010→      <div className="flex flex-col gap-3 p-4">
+  1011→        <p className="line-clamp-2 text-sm text-muted-foreground">{summary}</p>
+  1012→        <span
+  1013→          className={cn(
+  1014→            'inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary transition-all duration-200',
+  1015→            'group-hover:border-primary/50 group-hover:bg-primary group-hover:text-primary-foreground',
+  1016→          )}
+  1017→        >
+  1018→          {t('portfolio.viewProject')}
+  1019→          <ArrowRight className={cn('size-3.5 transition-transform group-hover:translate-x-1', lang === 'fa' && 'rtl-flip group-hover:translate-x-1')} />
+  1020→        </span>
+  1021→      </div>
+  1022→    </motion.button>
+  1023→  )
+  1024→}
+  1025→
+  1026→/* ------------------------- Loading / Not found ------------------------- */
+  1027→
+  1028→function DetailSkeleton() {
+  1029→  return (
+  1030→    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+  1031→      <div className="pt-6">
+  1032→        <Skeleton className="h-6 w-32" />
+  1033→        <Skeleton className="mt-6 h-12 w-3/4" />
+  1034→        <Skeleton className="mt-4 h-5 w-full max-w-2xl" />
+  1035→        <Skeleton className="mt-2 h-5 w-5/6 max-w-2xl" />
+  1036→        <div className="mt-6 flex gap-3">
+  1037→          <Skeleton className="h-10 w-40" />
+  1038→          <Skeleton className="h-10 w-40" />
+  1039→        </div>
+  1040→        <Skeleton className="mt-8 aspect-[16/9] w-full rounded-2xl" />
+  1041→      </div>
+  1042→      <div className="grid grid-cols-1 gap-5 py-16 md:grid-cols-3">
+  1043→        {Array.from({ length: 3 }).map((_, i) => (
+  1044→          <Skeleton key={i} className="h-40 w-full rounded-2xl" />
+  1045→        ))}
+  1046→      </div>
+  1047→    </div>
+  1048→  )
+  1049→}
+  1050→
+  1051→function NotFoundState({ onBack }: { onBack: () => void }) {
+  1052→  const t = useT()
+  1053→  const lang = useLang((s) => s.lang)
+  1054→  return (
+  1055→    <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+  1056→      <div className="mx-auto flex max-w-md flex-col items-center rounded-2xl border border-dashed bg-muted/30 px-6 py-16 text-center">
+  1057→        <div className="flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+  1058→          <FileQuestion className="size-8" />
+  1059→        </div>
+  1060→        <h2 className="mt-5 text-xl font-semibold">{t('portfolioDetail.notFound')}</h2>
+  1061→        <p className="mt-2 text-sm text-muted-foreground">
+  1062→          The project you're looking for may have been moved or unpublished.
+  1063→        </p>
+  1064→        <Button className="mt-6" onClick={onBack}>
+  1065→          <ArrowLeft className={cn('size-4', lang === 'fa' && 'rtl-flip')} />
+  1066→          {t('portfolioDetail.back')}
+  1067→        </Button>
+  1068→      </div>
+  1069→    </div>
+  1070→  )
+  1071→}
+  1072→

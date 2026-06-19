@@ -12,6 +12,7 @@ import {
   Calendar,
   Twitter,
   Linkedin,
+  Github,
   Facebook,
   Link2,
   Share2,
@@ -474,37 +475,46 @@ function CompactCard({ post }: { post: BlogPost }) {
   return (
     <motion.article
       onClick={() => openDetail('blog', post.slug)}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -6 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="group relative cursor-pointer rounded-2xl p-px"
+      className="group relative h-full cursor-pointer rounded-2xl p-px"
     >
       {/* Gradient border on hover */}
       <span
         className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-primary to-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         aria-hidden
       />
-      <div className="relative flex gap-4 rounded-2xl border border-border/60 bg-card p-3 shadow-xs transition-shadow duration-300 group-hover:shadow-soft">
-        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl">
+      <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-xs transition-shadow duration-300 group-hover:shadow-soft">
+        <div className="relative aspect-[16/10] w-full overflow-hidden">
           <img
             src={post.coverImage}
             alt={title}
             loading="lazy"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col py-0.5">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           {post.category && (
-            <span className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary">
+            <span className="absolute left-3 top-3 rounded-full bg-background/90 px-2.5 py-0.5 text-[0.7rem] font-semibold uppercase tracking-wider text-primary backdrop-blur">
               {post.category.name}
             </span>
           )}
+        </div>
+        <div className="flex flex-1 flex-col p-4">
           <h4 className="line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
             {title}
           </h4>
-          <p className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 pt-2">
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[0.7rem] font-medium text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
+            </span>
+            {post.createdAt && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[0.7rem] font-medium text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span className="ltr-num">{formatDate(post.createdAt)}</span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </motion.article>
@@ -792,24 +802,103 @@ export function BlogDetailView() {
               </div>
             )}
 
-            {/* author footer */}
-            <div className="relative mt-10 flex items-center gap-4 overflow-hidden rounded-2xl border border-border/60 p-5 shadow-soft">
+            {/* Premium author card */}
+            <div className="relative mt-12 overflow-hidden rounded-3xl border border-border/60 p-6 shadow-soft sm:p-8">
+              {/* Decorative gradient mesh background */}
               <div
-                className="pointer-events-none absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-transparent"
+                className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent"
                 aria-hidden
               />
-              <div className="relative">
-                <AuthorAvatar post={item} size="lg" />
-              </div>
-              <div className="relative">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Written by
-                </p>
-                <p className="text-base font-semibold">{item.authorName}</p>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  <span className="ltr-num">{item.views + 1}</span> {t('blogDetail.views')} ·{' '}
-                  <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
-                </p>
+              <div
+                className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/10 blur-3xl"
+                aria-hidden
+              />
+              <div
+                className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-accent/10 blur-3xl"
+                aria-hidden
+              />
+              <div className="pointer-events-none absolute inset-0 bg-grid opacity-[0.04]" aria-hidden />
+
+              <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                  {/* Avatar with gradient ring */}
+                  <div className="relative shrink-0">
+                    <span
+                      className="pointer-events-none absolute -inset-1.5 rounded-full bg-gradient-to-br from-primary to-accent opacity-70 blur-[2px]"
+                      aria-hidden
+                    />
+                    <span
+                      className="pointer-events-none absolute -inset-1 rounded-full bg-gradient-to-br from-primary to-accent"
+                      aria-hidden
+                    />
+                    <div className="relative rounded-full ring-4 ring-background">
+                      <AuthorAvatar post={item} size="lg" />
+                    </div>
+                    {/* Presence indicator */}
+                    <span
+                      className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-background bg-emerald-500"
+                      aria-hidden
+                    />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                      Written by
+                    </p>
+                    <p className="mt-0.5 text-xl font-bold">{item.authorName}</p>
+                    <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+                      Senior writer at DevStudio. Passionate about web development, performance, and
+                      developer experience.
+                    </p>
+                    {/* Social links row */}
+                    <div className="mt-4 flex items-center gap-2">
+                      <a
+                        href="#"
+                        onClick={(e) => e.preventDefault()}
+                        aria-label={`${item.authorName} on Twitter`}
+                        className="grid h-9 w-9 place-items-center rounded-full bg-muted text-muted-foreground transition-all duration-300 hover:bg-gradient-to-br hover:from-sky-500 hover:to-blue-600 hover:text-white hover:shadow-md"
+                      >
+                        <Twitter className="h-4 w-4" />
+                      </a>
+                      <a
+                        href="#"
+                        onClick={(e) => e.preventDefault()}
+                        aria-label={`${item.authorName} on LinkedIn`}
+                        className="grid h-9 w-9 place-items-center rounded-full bg-muted text-muted-foreground transition-all duration-300 hover:bg-gradient-to-br hover:from-blue-600 hover:to-blue-800 hover:text-white hover:shadow-md"
+                      >
+                        <Linkedin className="h-4 w-4" />
+                      </a>
+                      <a
+                        href="#"
+                        onClick={(e) => e.preventDefault()}
+                        aria-label={`${item.authorName} on GitHub`}
+                        className="grid h-9 w-9 place-items-center rounded-full bg-muted text-muted-foreground transition-all duration-300 hover:bg-gradient-to-br hover:from-slate-700 hover:to-slate-900 hover:text-white hover:shadow-md"
+                      >
+                        <Github className="h-4 w-4" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:items-end">
+                  <Button
+                    className="rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-md transition-opacity hover:opacity-90"
+                  >
+                    Follow
+                  </Button>
+                  <a
+                    href="#"
+                    onClick={(e) => e.preventDefault()}
+                    className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:underline"
+                  >
+                    View all posts by this author
+                    <ArrowRight className={cn('h-3.5 w-3.5', lang === 'fa' && 'rtl-flip')} />
+                  </a>
+                  <p className="text-xs text-muted-foreground">
+                    <span className="ltr-num">{item.views + 1}</span> {t('blogDetail.views')} ·{' '}
+                    <span className="ltr-num">{item.readingTime}</span> {t('blog.minRead')}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -851,15 +940,30 @@ export function BlogDetailView() {
             <SectionHeading
               align="left"
               eyebrow="Keep reading"
-              title={t('blogDetail.related')}
+              title={<span className="text-gradient">More from our blog</span>}
               description="More perspectives from our team."
             />
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {related.map((post, i) => (
                 <Reveal key={post.id} delay={Math.min(i * 0.06, 0.24)}>
                   <CompactCard post={post} />
                 </Reveal>
               ))}
+            </div>
+            <div className="mt-10 flex justify-center">
+              <Button
+                variant="outline"
+                onClick={() => setView('blog')}
+                className="group rounded-full border-primary/30 px-6 hover:border-primary hover:bg-primary/5"
+              >
+                View all articles
+                <ArrowRight
+                  className={cn(
+                    'ml-1.5 h-4 w-4 transition-transform group-hover:translate-x-0.5',
+                    lang === 'fa' && 'rtl-flip ml-0 mr-1.5 group-hover:-translate-x-0.5',
+                  )}
+                />
+              </Button>
             </div>
           </section>
         )}
