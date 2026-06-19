@@ -462,6 +462,25 @@ const en: Dict = {
 
   // ---------- Admin: newsletter resource ----------
   'admin.r.newsletter': 'Newsletter',
+
+  // ---------- Cookie Consent ----------
+  'cookie.title': 'We value your privacy',
+  'cookie.desc': 'We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking "Accept all", you consent to our use of cookies.',
+  'cookie.accept': 'Accept all',
+  'cookie.essential': 'Essential only',
+  'cookie.learnMore': 'Learn more',
+  'cookie.privacy': 'Privacy Policy',
+
+  // ---------- Trust Badges ----------
+  'trust.title': 'Why teams choose us',
+  'trust.guarantee': '100% Satisfaction Guarantee',
+  'trust.guaranteeDesc': 'Not happy with the first draft? You don\'t pay.',
+  'trust.support': '24/7 Priority Support',
+  'trust.supportDesc': 'We respond within hours, not days.',
+  'trust.nda': 'NDA Available',
+  'trust.ndaDesc': 'Your ideas stay confidential. Always.',
+  'trust.delivery': 'On-time Delivery',
+  'trust.deliveryDesc': 'We ship when we say we will. Period.',
 }
 
 const fa: Dict = {
@@ -914,6 +933,25 @@ const fa: Dict = {
 
   // ---------- مدیریت: خبرنامه ----------
   'admin.r.newsletter': 'خبرنامه',
+
+  // ---------- رضایت کوکی ----------
+  'cookie.title': 'حریم خصوصی شما برای ما مهم است',
+  'cookie.desc': 'ما از کوکی‌ها برای بهبود تجربه مرور شما، ارائه محتوای شخصی‌سازی‌شده و تحلیل ترافیک استفاده می‌کنیم. با کلیک روی «پذیرش همه»، به استفاده ما از کوکی‌ها رضایت می‌دهید.',
+  'cookie.accept': 'پذیرش همه',
+  'cookie.essential': 'فقط ضروری‌ها',
+  'cookie.learnMore': 'بیشتر بدانید',
+  'cookie.privacy': 'سیاست حریم خصوصی',
+
+  // ---------- نشان‌های اعتماد ----------
+  'trust.title': 'چرا تیم‌ها ما را انتخاب می‌کنند',
+  'trust.guarantee': 'تضمین ۱۰۰٪ رضایت',
+  'trust.guaranteeDesc': 'از پیش‌نویس اول راضی نیستید؟ پرداخت نمی‌کنید.',
+  'trust.support': 'پشتیبانی اولویت‌دار ۲۴/۷',
+  'trust.supportDesc': 'در ساعت‌ها پاسخ می‌دهیم، نه روزها.',
+  'trust.nda': 'NDA موجود',
+  'trust.ndaDesc': 'ایده‌های شما محرمانه می‌مانند. همیشه.',
+  'trust.delivery': 'تحویل به‌موقع',
+  'trust.deliveryDesc': 'وقتی می‌گوییم تحویل می‌دهیم. به همین سادگی.',
 }
 
 export const dictionaries: Record<Lang, Dict> = { en, fa }

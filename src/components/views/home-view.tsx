@@ -38,6 +38,7 @@ import {
 import { Reveal } from '@/components/site/reveal'
 import { SectionHeading } from '@/components/site/section-heading'
 import { Counter } from '@/components/site/counter'
+import { TrustBadges } from '@/components/site/trust-badges'
 import {
   useSite,
   usePortfolios,
@@ -245,6 +246,9 @@ export function HomeView() {
           </div>
         </div>
       </section>
+
+      {/* ===== TRUST BADGES ===== */}
+      <TrustBadges />
 
       {/* ===== STATISTICS ===== */}
       <section className="py-20 sm:py-28">

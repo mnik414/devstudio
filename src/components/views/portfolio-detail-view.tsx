@@ -29,6 +29,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog'
 import { Reveal } from '@/components/site/reveal'
 import { SectionHeading } from '@/components/site/section-heading'
@@ -75,7 +76,7 @@ export function PortfolioDetailView() {
           <Hero item={item} lang={lang} />
 
           {/* Overview (Problem / Solution / Result) */}
-          <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <section id="overview" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
             <SectionHeading
               eyebrow="Overview"
               title={t('portfolioDetail.overview')}
@@ -84,13 +85,13 @@ export function PortfolioDetailView() {
             <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
               <OverviewCard
                 icon={AlertCircle}
-                tone="rose"
+                tone="primary"
                 title={t('portfolioDetail.problem')}
                 text={item.problem}
               />
               <OverviewCard
                 icon={Lightbulb}
-                tone="amber"
+                tone="accent"
                 title={t('portfolioDetail.solution')}
                 text={item.solution}
               />
@@ -105,7 +106,7 @@ export function PortfolioDetailView() {
 
           {/* Technologies Used */}
           {item.technologies && item.technologies.length > 0 && (
-            <section className="border-y bg-muted/30">
+            <section id="technologies" className="scroll-mt-24 border-y bg-muted/30">
               <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
                 <SectionHeading
                   eyebrow="Tech Stack"
@@ -116,10 +117,11 @@ export function PortfolioDetailView() {
                   {item.technologies.map((techItem) => (
                     <div
                       key={techItem.id}
-                      className="inline-flex items-center gap-2.5 rounded-full border bg-background px-4 py-2 text-sm font-medium shadow-xs transition-colors hover:border-primary/40"
+                      title={techItem.name}
+                      className="group inline-flex items-center gap-2.5 rounded-full border bg-background px-4 py-2 text-sm font-medium shadow-xs transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:shadow-soft"
                     >
                       <span
-                        className="inline-block size-2.5 rounded-full"
+                        className="inline-block size-2.5 rounded-full ring-2 ring-transparent transition-all group-hover:ring-primary/20"
                         style={{ background: techItem.color ?? 'var(--accent)' }}
                       />
                       {techItem.name}
@@ -132,7 +134,7 @@ export function PortfolioDetailView() {
 
           {/* Features */}
           {parseList<string>(item.features).length > 0 && (
-            <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+            <section id="features" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
               <SectionHeading
                 eyebrow="Capabilities"
                 title={t('portfolioDetail.features')}
@@ -141,8 +143,8 @@ export function PortfolioDetailView() {
               <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {parseList<string>(item.features).map((feature, i) => (
                   <Reveal key={`${feature}-${i}`} delay={Math.min(i * 0.04, 0.3)}>
-                    <div className="group flex items-start gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-primary/30">
-                      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                    <div className="group flex items-start gap-3 rounded-xl border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-soft">
+                      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent ring-1 ring-accent/20 transition-all group-hover:bg-accent group-hover:text-accent-foreground">
                         <Check className="size-4" />
                       </span>
                       <span className="text-sm font-medium leading-relaxed">
@@ -165,13 +167,16 @@ export function PortfolioDetailView() {
 
           {/* Related Projects */}
           {related.length > 0 && (
-            <section className="border-t bg-muted/30">
+            <section id="related" className="scroll-mt-24 border-t bg-muted/30">
               <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
                 <SectionHeading
                   eyebrow="Keep exploring"
                   title={t('portfolioDetail.related')}
                   align="left"
                 />
+                <div className="relative mt-2">
+                  <span className="absolute -bottom-1 left-0 h-1 w-32 rounded-full bg-gradient-to-r from-primary to-accent" aria-hidden />
+                </div>
                 <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {related.map((r, i) => (
                     <Reveal key={r.id} delay={Math.min(i * 0.08, 0.3)}>
@@ -188,10 +193,12 @@ export function PortfolioDetailView() {
           )}
 
           {/* Final CTA */}
-          <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <section id="cta" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
             <Reveal>
-              <div className="relative overflow-hidden rounded-2xl bg-primary px-6 py-12 text-primary-foreground shadow-soft sm:px-12 sm:py-16">
+              <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-accent px-6 py-12 text-primary-foreground shadow-soft sm:px-12 sm:py-16">
                 <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+                <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+                <div className="pointer-events-none absolute -bottom-20 -left-20 size-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
                 <div className="relative flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
                   <div className="max-w-xl">
                     <h3 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -250,7 +257,7 @@ function Hero({ item, lang }: { item: Portfolio; lang: 'en' | 'fa' }) {
             )}
           </div>
 
-          <h1 className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-balance sm:text-5xl md:text-6xl">
+          <h1 className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-balance sm:text-5xl md:text-6xl lg:text-[4rem] lg:leading-[1.05]">
             {title}
           </h1>
 
@@ -322,6 +329,18 @@ function Hero({ item, lang }: { item: Portfolio; lang: 'en' | 'fa' }) {
               alt={`${title} main cover`}
               className="size-full object-cover"
             />
+            {/* Subtle gradient overlay for depth */}
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"
+              aria-hidden
+            />
+            <div className="pointer-events-none absolute bottom-4 left-4 right-4 flex flex-wrap items-center gap-2">
+              {item.category && (
+                <Badge className="border-0 bg-white/90 text-foreground backdrop-blur">
+                  {item.category.name}
+                </Badge>
+              )}
+            </div>
           </div>
         </motion.div>
       </div>
@@ -333,22 +352,37 @@ function Hero({ item, lang }: { item: Portfolio; lang: 'en' | 'fa' }) {
 
 const TONE_STYLES: Record<
   string,
-  { bg: string; ring: string; text: string }
+  { bg: string; ring: string; text: string; border: string }
 > = {
   rose: {
     bg: 'bg-rose-500/10',
     ring: 'ring-rose-500/20',
     text: 'text-rose-600 dark:text-rose-400',
+    border: 'border-l-rose-500',
   },
   amber: {
     bg: 'bg-amber-500/10',
     ring: 'ring-amber-500/20',
     text: 'text-amber-600 dark:text-amber-400',
+    border: 'border-l-amber-500',
   },
   emerald: {
     bg: 'bg-emerald-500/10',
     ring: 'ring-emerald-500/20',
     text: 'text-emerald-600 dark:text-emerald-400',
+    border: 'border-l-emerald-500',
+  },
+  primary: {
+    bg: 'bg-primary/10',
+    ring: 'ring-primary/20',
+    text: 'text-primary',
+    border: 'border-l-primary',
+  },
+  accent: {
+    bg: 'bg-accent/10',
+    ring: 'ring-accent/20',
+    text: 'text-accent',
+    border: 'border-l-accent',
   },
 }
 
@@ -366,7 +400,12 @@ function OverviewCard({
   const styles = TONE_STYLES[tone] ?? TONE_STYLES.amber
   return (
     <Reveal delay={0.05}>
-      <Card className="h-full gap-4 p-6">
+      <Card
+        className={cn(
+          'h-full gap-4 border-l-4 p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow',
+          styles.border,
+        )}
+      >
         <div className="flex items-center gap-3">
           <span
             className={cn(
@@ -448,6 +487,9 @@ function GallerySection({ raw }: { raw: string }) {
           showCloseButton
         >
           <DialogTitle className="sr-only">Screenshot preview</DialogTitle>
+          <DialogDescription className="sr-only">
+            Full-size project screenshot in a lightbox viewer
+          </DialogDescription>
           {active && (
             <div className="relative max-h-[85vh] w-full overflow-auto">
               <img
@@ -498,7 +540,7 @@ function CaseStudySection({ item }: { item: Portfolio }) {
   if (!hasAny) return null
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+    <section id="case-study" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
       <SectionHeading
         eyebrow="Case Study"
         title={t('portfolioDetail.caseStudy')}
@@ -513,7 +555,21 @@ function CaseStudySection({ item }: { item: Portfolio }) {
           const styles = TONE_STYLES[s.tone] ?? TONE_STYLES.amber
           return (
             <Reveal key={s.key} delay={Math.min(i * 0.08, 0.3)}>
-              <Card className="h-full gap-4 p-6">
+              <Card
+                className={cn(
+                  'relative h-full gap-4 border-l-4 p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow',
+                  styles.border,
+                )}
+              >
+                {/* Timeline connector dot */}
+                <span
+                  className={cn(
+                    'absolute -left-2.5 top-7 size-5 rounded-full border-4 border-background ring-1',
+                    styles.bg,
+                    styles.ring,
+                  )}
+                  aria-hidden
+                />
                 <div className="flex items-center gap-3">
                   <span
                     className={cn(
@@ -566,7 +622,7 @@ function RelatedCard({
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="group block h-full w-full cursor-pointer text-left focus-visible:outline-none"
     >
-      <Card className="h-full overflow-hidden p-0 transition-shadow duration-300 hover:shadow-soft">
+      <Card className="h-full overflow-hidden p-0 shadow-soft transition-all duration-300 hover:shadow-glow">
         <div className="relative aspect-video overflow-hidden">
           <img
             src={item.coverImage}

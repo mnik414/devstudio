@@ -40,16 +40,59 @@ interface SectionDef {
     'problem' | 'analysis' | 'architecture' | 'process' | 'challenges' | 'results' | 'lessons'
   >
   highlight?: boolean
+  tone: 'primary' | 'accent' | 'amber' | 'rose' | 'emerald' | 'violet'
+}
+
+const SECTION_TONES: Record<
+  SectionDef['tone'],
+  { border: string; bg: string; ring: string; text: string }
+> = {
+  primary: {
+    border: 'border-l-primary',
+    bg: 'bg-primary/10',
+    ring: 'ring-primary/20',
+    text: 'text-primary',
+  },
+  accent: {
+    border: 'border-l-accent',
+    bg: 'bg-accent/10',
+    ring: 'ring-accent/20',
+    text: 'text-accent',
+  },
+  amber: {
+    border: 'border-l-amber-500',
+    bg: 'bg-amber-500/10',
+    ring: 'ring-amber-500/20',
+    text: 'text-amber-600 dark:text-amber-400',
+  },
+  rose: {
+    border: 'border-l-rose-500',
+    bg: 'bg-rose-500/10',
+    ring: 'ring-rose-500/20',
+    text: 'text-rose-600 dark:text-rose-400',
+  },
+  emerald: {
+    border: 'border-l-emerald-500',
+    bg: 'bg-emerald-500/10',
+    ring: 'ring-emerald-500/20',
+    text: 'text-emerald-600 dark:text-emerald-400',
+  },
+  violet: {
+    border: 'border-l-violet-500',
+    bg: 'bg-violet-500/10',
+    ring: 'ring-violet-500/20',
+    text: 'text-violet-600 dark:text-violet-400',
+  },
 }
 
 const SECTIONS: SectionDef[] = [
-  { id: 'problem', labelKey: 'caseStudyDetail.problem', icon: AlertCircle, field: 'problem' },
-  { id: 'analysis', labelKey: 'caseStudyDetail.analysis', icon: Search, field: 'analysis' },
-  { id: 'architecture', labelKey: 'caseStudyDetail.architecture', icon: Network, field: 'architecture' },
-  { id: 'process', labelKey: 'caseStudyDetail.process', icon: GitBranch, field: 'process' },
-  { id: 'challenges', labelKey: 'caseStudyDetail.challenges', icon: AlertTriangle, field: 'challenges' },
-  { id: 'results', labelKey: 'caseStudyDetail.results', icon: TrendingUp, field: 'results', highlight: true },
-  { id: 'lessons', labelKey: 'caseStudyDetail.lessons', icon: Lightbulb, field: 'lessons' },
+  { id: 'problem', labelKey: 'caseStudyDetail.problem', icon: AlertCircle, field: 'problem', tone: 'rose' },
+  { id: 'analysis', labelKey: 'caseStudyDetail.analysis', icon: Search, field: 'analysis', tone: 'amber' },
+  { id: 'architecture', labelKey: 'caseStudyDetail.architecture', icon: Network, field: 'architecture', tone: 'primary' },
+  { id: 'process', labelKey: 'caseStudyDetail.process', icon: GitBranch, field: 'process', tone: 'violet' },
+  { id: 'challenges', labelKey: 'caseStudyDetail.challenges', icon: AlertTriangle, field: 'challenges', tone: 'amber' },
+  { id: 'results', labelKey: 'caseStudyDetail.results', icon: TrendingUp, field: 'results', highlight: true, tone: 'accent' },
+  { id: 'lessons', labelKey: 'caseStudyDetail.lessons', icon: Lightbulb, field: 'lessons', tone: 'emerald' },
 ]
 
 function Paragraphs({ text }: { text: string }) {
@@ -70,8 +113,12 @@ function Paragraphs({ text }: { text: string }) {
 
 function MetricStat({ metric }: { metric: CaseStudyMetric }) {
   return (
-    <div className="flex flex-col gap-1 rounded-2xl border border-border/60 bg-card p-5 text-center shadow-soft">
-      <span className="text-2xl font-extrabold tracking-tight text-accent sm:text-3xl">
+    <div className="group relative flex flex-col items-center gap-1 overflow-hidden rounded-2xl border border-border/60 bg-card p-5 text-center shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-glow">
+      <span className="pointer-events-none absolute -top-12 right-0 size-24 rounded-full bg-accent/10 opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100" aria-hidden />
+      <span className="mb-1 flex size-8 items-center justify-center rounded-full bg-accent/10 text-accent ring-1 ring-accent/20">
+        <TrendingUp className="h-4 w-4" />
+      </span>
+      <span className="text-gradient text-3xl font-extrabold tracking-tight sm:text-4xl">
         {metric.value}
       </span>
       <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -85,13 +132,15 @@ function SectionBlock({ section, content }: { section: SectionDef; content: stri
   const t = useT()
   const Icon = section.icon
   const highlight = section.highlight
+  const tone = SECTION_TONES[section.tone]
 
   return (
     <div id={section.id} className="scroll-mt-28">
       <Reveal>
         <section
           className={cn(
-            'rounded-2xl border p-6 sm:p-8',
+            'relative overflow-hidden rounded-2xl border border-l-4 p-6 shadow-soft transition-all duration-300 hover:shadow-glow sm:p-8',
+            tone.border,
             highlight
               ? 'border-accent/30 bg-accent/5'
               : 'border-border/60 bg-card',
@@ -100,10 +149,10 @@ function SectionBlock({ section, content }: { section: SectionDef; content: stri
           <div className="mb-4 flex items-center gap-3">
             <span
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-xl',
-                highlight
-                  ? 'bg-accent/15 text-accent'
-                  : 'bg-primary/10 text-primary',
+                'flex h-10 w-10 items-center justify-center rounded-xl ring-1',
+                tone.bg,
+                tone.ring,
+                tone.text,
               )}
             >
               <Icon className="h-5 w-5" />
@@ -138,18 +187,30 @@ function StickyToc({
       <ul className="space-y-1 border-l border-border/70">
         {SECTIONS.map((s) => {
           const isActive = activeId === s.id
+          const tone = SECTION_TONES[s.tone]
           return (
             <li key={s.id}>
               <button
                 onClick={() => onJump(s.id)}
                 className={cn(
-                  '-ml-px flex w-full items-center gap-2 border-l-2 px-3 py-1.5 text-left text-sm transition-colors',
+                  'group relative -ml-px flex w-full items-center gap-2 border-l-2 px-3 py-1.5 text-left text-sm transition-all duration-200',
                   isActive
-                    ? 'border-primary font-semibold text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground',
+                    ? 'border-transparent font-semibold text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:translate-x-0.5',
                 )}
               >
-                <s.icon className="h-3.5 w-3.5 shrink-0" />
+                {isActive && (
+                  <span
+                    className="absolute -left-0.5 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-gradient-to-b from-primary to-accent"
+                    aria-hidden
+                  />
+                )}
+                <s.icon
+                  className={cn(
+                    'h-3.5 w-3.5 shrink-0 transition-colors',
+                    isActive ? tone.text : 'text-muted-foreground group-hover:text-foreground',
+                  )}
+                />
                 {t(s.labelKey)}
               </button>
             </li>
@@ -287,7 +348,7 @@ export function CaseStudyDetailView() {
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               {item.industry}
             </Badge>
-            <h1 className="mt-4 text-3xl font-extrabold leading-tight tracking-tight text-balance sm:text-4xl md:text-5xl">
+            <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-balance sm:text-5xl md:text-6xl lg:leading-[1.05]">
               {title}
             </h1>
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
@@ -303,11 +364,23 @@ export function CaseStudyDetailView() {
           <Reveal delay={0.12} className="mt-8">
             <div className="relative overflow-hidden rounded-2xl border border-border/60 shadow-soft">
               {item.coverImage ? (
-                <img
-                  src={item.coverImage}
-                  alt={`${title} — cover`}
-                  className="aspect-video w-full object-cover"
-                />
+                <>
+                  <img
+                    src={item.coverImage}
+                    alt={`${title} — cover`}
+                    className="aspect-video w-full object-cover"
+                  />
+                  {/* Subtle gradient overlay for depth */}
+                  <div
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"
+                    aria-hidden
+                  />
+                  <div className="pointer-events-none absolute bottom-4 left-4">
+                    <Badge className="border-0 bg-white/90 text-foreground backdrop-blur">
+                      {item.industry}
+                    </Badge>
+                  </div>
+                </>
               ) : (
                 <div className="flex aspect-video w-full items-center justify-center bg-muted text-muted-foreground">
                   <Building2 className="h-12 w-12 opacity-30" />
@@ -351,21 +424,22 @@ export function CaseStudyDetailView() {
       {/* Final CTA */}
       <section className="mx-auto max-w-5xl px-4 pb-24 sm:px-6 lg:px-8">
         <Reveal>
-          <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-secondary px-6 py-12 text-center shadow-soft sm:px-12 sm:py-14">
-            <div className="pointer-events-none absolute inset-0 bg-grid opacity-10" />
-            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+          <div className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-accent px-6 py-12 text-center text-primary-foreground shadow-soft sm:px-12 sm:py-14">
+            <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
             <div className="relative">
-              <h2 className="text-2xl font-bold tracking-tight text-secondary-foreground sm:text-3xl">
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
                 {t('caseStudyDetail.ctaTitle')}
               </h2>
-              <p className="mx-auto mt-3 max-w-xl text-sm text-secondary-foreground/70 sm:text-base">
+              <p className="mx-auto mt-3 max-w-xl text-sm text-primary-foreground/80 sm:text-base">
                 Tell us about your problem. We&apos;ll bring the architecture,
                 the engineering, and the obsession with measurable outcomes.
               </p>
               <Button
                 onClick={() => setView('contact')}
                 size="lg"
+                variant="secondary"
                 className="mt-7"
               >
                 {t('caseStudyDetail.ctaButton')}

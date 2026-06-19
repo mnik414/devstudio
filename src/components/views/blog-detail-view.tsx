@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import { motion, useScroll, useSpring } from 'framer-motion'
 import { format } from 'date-fns'
@@ -193,7 +193,7 @@ function ShareButtons({ title }: { title: string }) {
           onClick={onClick}
           aria-label={label}
           title={label}
-          className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all hover:border-primary/40 hover:text-primary"
+          className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-background text-muted-foreground transition-all duration-200 hover:scale-110 hover:border-primary/40 hover:bg-primary/10 hover:text-primary hover:shadow-soft"
         >
           <Icon className="h-4 w-4" />
         </button>
@@ -201,7 +201,7 @@ function ShareButtons({ title }: { title: string }) {
       <button
         type="button"
         onClick={onCopy}
-        className="hidden items-center gap-1.5 rounded-full border border-border/60 bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/40 hover:text-primary sm:inline-flex"
+        className="hidden items-center gap-1.5 rounded-full border border-border/60 bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:text-primary sm:inline-flex"
       >
         <Copy className="h-3.5 w-3.5" />
         {t('blogDetail.copyLink')}
@@ -223,7 +223,7 @@ const markdownComponents: Components = {
     return (
       <h2
         id={id}
-        className="mt-12 scroll-mt-24 border-b border-border/40 pb-2 text-2xl font-bold tracking-tight md:text-3xl"
+        className="mt-12 scroll-mt-24 border-l-2 border-primary/30 pl-4 text-2xl font-bold tracking-tight md:text-3xl"
       >
         {children}
       </h2>
@@ -281,7 +281,7 @@ const markdownComponents: Components = {
     )
   },
   pre: ({ children }) => (
-    <pre className="overflow-x-auto rounded-xl border border-border/60 bg-secondary p-4 text-sm text-secondary-foreground shadow-sm">
+    <pre className="overflow-x-auto rounded-xl border border-border/60 bg-gradient-to-br from-secondary to-secondary/80 p-4 text-sm text-secondary-foreground shadow-soft">
       {children}
     </pre>
   ),
@@ -301,7 +301,13 @@ const markdownComponents: Components = {
 
 /* ------------------------------ TOC ------------------------------ */
 
-function TableOfContents({ items }: { items: { id: string; text: string }[] }) {
+function TableOfContents({
+  items,
+  activeId,
+}: {
+  items: { id: string; text: string }[]
+  activeId: string
+}) {
   const t = useT()
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault()
@@ -322,17 +328,31 @@ function TableOfContents({ items }: { items: { id: string; text: string }[] }) {
         {t('blogDetail.contents')}
       </p>
       <ul className="space-y-1 border-l border-border/60">
-        {items.map((item) => (
-          <li key={item.id}>
-            <a
-              href={`#${item.id}`}
-              onClick={(e) => handleClick(e, item.id)}
-              className="-ml-px block border-l border-transparent pl-4 py-1 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-            >
-              {item.text}
-            </a>
-          </li>
-        ))}
+        {items.map((item) => {
+          const isActive = activeId === item.id
+          return (
+            <li key={item.id} className="relative">
+              {isActive && (
+                <span
+                  className="absolute -left-px top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-gradient-to-b from-primary to-accent"
+                  aria-hidden
+                />
+              )}
+              <a
+                href={`#${item.id}`}
+                onClick={(e) => handleClick(e, item.id)}
+                className={cn(
+                  '-ml-px block border-l-2 pl-4 py-1 transition-all duration-200',
+                  isActive
+                    ? 'border-transparent font-semibold text-foreground'
+                    : 'border-transparent text-muted-foreground hover:translate-x-0.5 hover:border-primary hover:text-primary',
+                )}
+              >
+                {item.text}
+              </a>
+            </li>
+          )
+        })}
       </ul>
     </nav>
   )
@@ -346,33 +366,42 @@ function CompactCard({ post }: { post: BlogPost }) {
   const lang = useLang((s) => s.lang)
   const title = tc('blogPost', post.slug, 'title', post.title, lang)
   return (
-    <article
+    <motion.article
       onClick={() => openDetail('blog', post.slug)}
-      className="group flex cursor-pointer gap-4 rounded-2xl border border-border/60 bg-card p-3 transition-all hover:border-primary/30 hover:shadow-md"
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="group relative cursor-pointer rounded-2xl p-px"
     >
-      <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl">
-        <img
-          src={post.coverImage}
-          alt={title}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+      {/* Gradient border on hover */}
+      <span
+        className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-primary to-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        aria-hidden
+      />
+      <div className="relative flex gap-4 rounded-2xl border border-border/60 bg-card p-3 shadow-xs transition-shadow duration-300 group-hover:shadow-soft">
+        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl">
+          <img
+            src={post.coverImage}
+            alt={title}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col py-0.5">
+          {post.category && (
+            <span className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary">
+              {post.category.name}
+            </span>
+          )}
+          <h4 className="line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
+            {title}
+          </h4>
+          <p className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
+          </p>
+        </div>
       </div>
-      <div className="flex min-w-0 flex-1 flex-col py-0.5">
-        {post.category && (
-          <span className="mb-1 text-[0.7rem] font-semibold uppercase tracking-wider text-primary">
-            {post.category.name}
-          </span>
-        )}
-        <h4 className="line-clamp-2 text-sm font-semibold leading-snug transition-colors group-hover:text-primary">
-          {title}
-        </h4>
-        <p className="mt-auto flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          <span className="ltr-num">{post.readingTime}</span> {t('blog.minRead')}
-        </p>
-      </div>
-    </article>
+    </motion.article>
   )
 }
 
@@ -459,6 +488,28 @@ export function BlogDetailView() {
   const related = data?.related ?? []
   const content = item?.content ?? ''
   const toc = useMemo(() => extractTOC(content), [content])
+  const [activeTocId, setActiveTocId] = useState<string>('')
+
+  // Track active section for TOC highlighting (only when there is content to track)
+  useEffect(() => {
+    if (toc.length === 0) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)
+        if (visible[0]?.target.id) {
+          setActiveTocId(visible[0].target.id)
+        }
+      },
+      { rootMargin: '-20% 0px -65% 0px', threshold: [0, 0.25, 0.5, 1] },
+    )
+    toc.forEach((entry) => {
+      const el = document.getElementById(entry.id)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [toc])
 
   const handleBack = () => {
     closeDetail()
@@ -493,7 +544,7 @@ export function BlogDetailView() {
         aria-hidden
       />
 
-      <article ref={articleRef} className="mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
+      <article ref={articleRef} className="relative mx-auto max-w-6xl px-4 pb-24 pt-8 sm:px-6 lg:px-8">
         {/* back button */}
         <Reveal>
           <button
@@ -510,14 +561,17 @@ export function BlogDetailView() {
         <Reveal>
           <header className="mx-auto max-w-4xl">
             {item.category && (
-              <Badge variant="secondary" className="mb-4">
-                {item.category.name}
+              <Badge
+                variant="secondary"
+                className="mb-5 border-0 bg-primary/10"
+              >
+                <span className="text-gradient">{item.category.name}</span>
               </Badge>
             )}
-            <h1 className="text-balance text-3xl font-bold leading-[1.1] tracking-tight sm:text-4xl md:text-5xl">
+            <h1 className="text-balance text-3xl font-bold leading-[1.1] tracking-tight sm:text-4xl md:text-5xl lg:text-[3.4rem] lg:leading-[1.05]">
               {tc('blogPost', item.slug, 'title', item.title, lang)}
             </h1>
-            <p className="mt-5 text-balance text-lg leading-relaxed text-muted-foreground sm:text-xl">
+            <p className="mt-6 text-balance text-lg leading-relaxed text-muted-foreground sm:text-xl">
               {tc('blogPost', item.slug, 'excerpt', item.excerpt, lang)}
             </p>
 
@@ -550,7 +604,7 @@ export function BlogDetailView() {
 
         {/* cover image */}
         <Reveal delay={0.1}>
-          <div className="mt-10 overflow-hidden rounded-2xl border border-border/60 shadow-sm">
+          <div className="mt-10 overflow-hidden rounded-2xl border border-border/60 shadow-soft">
             <img
               src={item.coverImage}
               alt={tc('blogPost', item.slug, 'title', item.title, lang)}
@@ -585,9 +639,15 @@ export function BlogDetailView() {
             )}
 
             {/* author footer */}
-            <div className="mt-10 flex items-center gap-4 rounded-2xl border border-border/60 bg-muted/30 p-5">
-              <AuthorAvatar post={item} size="lg" />
-              <div>
+            <div className="relative mt-10 flex items-center gap-4 overflow-hidden rounded-2xl border border-border/60 p-5 shadow-soft">
+              <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-transparent"
+                aria-hidden
+              />
+              <div className="relative">
+                <AuthorAvatar post={item} size="lg" />
+              </div>
+              <div className="relative">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Written by
                 </p>
@@ -603,8 +663,8 @@ export function BlogDetailView() {
           {/* sticky TOC */}
           <aside className="lg:col-span-1">
             <div className="lg:sticky lg:top-24">
-              <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
-                <TableOfContents items={toc} />
+              <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-soft">
+                <TableOfContents items={toc} activeId={activeTocId} />
                 {toc.length === 0 && (
                   <p className="text-sm text-muted-foreground">
                     Use the headings above to navigate this article.
@@ -652,22 +712,25 @@ export function BlogDetailView() {
 
         {/* final CTA */}
         <section className="mt-20">
-          <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-secondary px-6 py-14 text-center md:px-12 md:py-16">
-            <div className="bg-radial-fade pointer-events-none absolute inset-0 opacity-40" />
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-accent px-6 py-14 text-center text-primary-foreground shadow-soft md:px-12 md:py-16">
+            <div className="bg-grid pointer-events-none absolute inset-0 opacity-20" />
+            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-16 -left-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" aria-hidden />
             <div className="relative mx-auto max-w-2xl">
-              <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent">
-                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+              <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur">
+                <span className="h-1.5 w-1.5 rounded-full bg-white" />
                 Let&apos;s build
               </span>
-              <h2 className="text-balance text-2xl font-bold tracking-tight text-secondary-foreground md:text-3xl">
+              <h2 className="text-balance text-2xl font-bold tracking-tight md:text-3xl">
                 {t('blogDetail.ctaTitle')}
               </h2>
-              <p className="mt-3 text-base text-secondary-foreground/70">
+              <p className="mt-3 text-base text-primary-foreground/80">
                 {t('blogDetail.ctaDesc')}
               </p>
               <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Button
                   size="lg"
+                  variant="secondary"
                   onClick={() => setView('contact')}
                   className="rounded-full"
                 >
@@ -678,7 +741,7 @@ export function BlogDetailView() {
                   size="lg"
                   variant="outline"
                   onClick={() => setView('estimate')}
-                  className="rounded-full border-white/20 bg-white/5 text-secondary-foreground hover:bg-white/10 hover:text-secondary-foreground"
+                  className="rounded-full border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
                 >
                   {t('cta.getEstimate')}
                 </Button>
@@ -689,7 +752,7 @@ export function BlogDetailView() {
                   e.preventDefault()
                   setView('contact')
                 }}
-                className="mt-6 inline-flex items-center gap-1 text-sm text-secondary-foreground/60 transition-colors hover:text-secondary-foreground"
+                className="mt-6 inline-flex items-center gap-1 text-sm text-primary-foreground/70 transition-colors hover:text-white"
               >
                 or subscribe to our newsletter
                 <ArrowUpRight className={cn('h-3.5 w-3.5', lang === 'fa' && 'rtl-flip')} />

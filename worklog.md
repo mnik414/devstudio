@@ -490,3 +490,77 @@ Stage Summary:
 - All new features are bilingual (en/fa) with RTL support
 - Admin panel now manages 15 resource types (added Newsletter)
 - Platform is stable, fully functional, and more premium than before
+
+---
+Task ID: 8-a
+Agent: full-stack-developer (detail views styling)
+Task: Add premium styling polish to the three detail views (portfolio, case study, blog) without changing functionality or translations
+Work Log:
+- Read existing worklog, design system (globals.css tokens: text-gradient, bg-grid, bg-radial-fade, shadow-soft, shadow-glow) and all three target detail view files
+- Enhanced `src/components/views/portfolio-detail-view.tsx`:
+  - Hero: larger title (lg:text-[4rem] lg:leading-[1.05]); added gradient overlay (from-black/60 via-black/10 to-transparent) on the cover image with a floating category badge
+  - Overview cards: extended TONE_STYLES with `primary` and `accent` tones plus a `border` field; cards now have colored left-border-4 (primary for Problem, accent for Solution, emerald for Result), shadow-soft, hover -translate-y-1 hover:shadow-glow lift
+  - Technologies badges: added hover:scale-105, hover:shadow-soft, hover:border-primary/40, hover ring on the dot, and `title={techItem.name}` tooltip attribute
+  - Features list: switched check icon to accent color circle (bg-accent/10 ring-accent/20), added hover lift + accent border tint
+  - Case Study section: each card now has a colored left-border-4 + a timeline connector dot (-left-2.5 top-7 size-5) tied to its tone, shadow-soft + hover:shadow-glow
+  - Related Projects: added a gradient underline accent (bg-gradient-to-r from-primary to-accent) below the section heading
+  - RelatedCard: now ships with shadow-soft + hover:shadow-glow
+  - Final CTA: replaced solid bg-primary with bg-gradient-to-r from-primary to-accent, kept bg-grid overlay, added two white/10 blur-3xl accent orbs
+  - Added scroll-mt-24 + id anchors to Overview, Technologies, Features, Case Study, Related, CTA sections
+- Enhanced `src/components/views/case-study-detail-view.tsx`:
+  - Hero: larger title (text-4xl sm:text-5xl md:text-6xl lg:leading-[1.05]); added gradient overlay on cover image with a floating industry badge
+  - Added SECTION_TONES map (primary / accent / amber / rose / emerald / violet) and assigned distinct tone per narrative section (problem→rose, analysis→amber, architecture→primary, process→violet, challenges→amber, results→accent, lessons→emerald)
+  - MetricStat: added TrendingUp icon in accent circle at top, text-gradient on the value, increased number size to text-3xl/sm:text-4xl, shadow-soft + hover lift + accent blur orb on hover
+  - SectionBlock: each section now has border-l-4 in its tone color, shadow-soft + hover:shadow-glow, colored icon circle using tone palette; Results section keeps bg-accent/5 highlight
+  - StickyToc: replaced solid border-primary active state with a gradient (from-primary to-accent) vertical indicator, smooth hover transitions (translate-x-0.5), icon inherits tone color when active
+  - Final CTA: replaced bg-secondary with bg-gradient-to-r from-primary to-accent, kept bg-grid overlay, added white/10 blur-3xl accent orbs, switched button to variant secondary
+- Enhanced `src/components/views/blog-detail-view.tsx`:
+  - Article hero: category badge uses bg-primary/10 with text-gradient on the label, better spacing (mb-5), larger title (lg:text-[3.4rem] lg:leading-[1.05])
+  - Cover image: upgraded shadow-sm → shadow-soft, kept border
+  - Markdown h2: replaced border-b with border-l-2 border-primary/30 pl-4 left accent
+  - Markdown pre (code blocks): subtle gradient background (from-secondary to-secondary/80) + shadow-soft
+  - TOC sidebar: added active section highlighting via IntersectionObserver + a gradient (from-primary to-accent) left-border indicator, smooth hover transitions; TOC card upgraded shadow-sm → shadow-soft
+  - Author footer card: added subtle gradient background overlay (from-primary/5 via-accent/5 to-transparent), shadow-soft
+  - Related articles (CompactCard): converted to motion.article with whileHover lift; added gradient border on hover (absolute inset-0 bg-gradient-to-r from-primary to-accent), shadow-xs → group-hover:shadow-soft
+  - Final CTA: replaced bg-secondary with bg-gradient-to-r from-primary to-accent, added bg-grid overlay + two white/10 blur-3xl accent orbs, restyled pill/button colors for the gradient background, switched primary button to variant secondary
+  - Share buttons: added hover:scale-110, hover:bg-primary/10, hover:shadow-soft transitions; copy-link button gets hover:scale-105
+- Ran `bun run lint` — no errors or warnings; dev server compiled all views successfully
+Stage Summary:
+- Three detail views (portfolio, case study, blog) now have a consistent premium visual language: gradient overlays on cover images, larger hero titles, colored left-border accents per section type, gradient-number metric cards, sticky TOC with gradient active indicators, hover-lift + shadow-glow interactions on cards, and full-width gradient CTA bands with bg-grid overlay
+- All functionality, data fetching, i18n keys, and component structure are preserved — changes are purely visual (className/element additions) plus one client-side IntersectionObserver for the blog TOC active state
+- Lint clean; dev server compiles all three views without errors
+
+---
+Task ID: 8
+Agent: Main (orchestrator) — cron review round
+Task: QA testing, bug fixes, new features (cookie consent, trust badges), detail view styling enhancements
+
+Work Log:
+- Comprehensive QA via agent-browser: Home, Portfolio (+detail with lightbox), Blog (+detail), Case Studies (+detail), Contact (form submit verified), About — all clean
+- Fixed accessibility warning: portfolio detail lightbox Dialog was missing DialogDescription → added sr-only description
+- Fixed blog detail scroll container warning: article element needed position: relative for framer-motion useScroll offset calculation
+- Created CookieConsent component (GDPR compliance):
+  * useSyncExternalStore for SSR-safe localStorage reading (avoids setState-in-effect lint error)
+  * Animated entrance (framer-motion slide-up), dual buttons (Accept all / Essential only)
+  * Persists choice in localStorage, dismisses on decision
+  * Full i18n (en + fa) with RTL support
+  * Added to page shell (appears on all views)
+- Created TrustBadges component (social proof):
+  * 4 trust indicators: Satisfaction Guarantee, 24/7 Support, NDA Available, On-time Delivery
+  * Each with icon, title, description, hover lift + icon scale animation
+  * Added to Home view between trusted-by marquee and stats section
+  * Full i18n (en + fa)
+- Added i18n keys: cookie.* (6 keys) + trust.* (9 keys) in both en and fa dictionaries
+- Dispatched subagent (Task 8-a) to enhance detail view styling:
+  * Portfolio detail: hero gradient overlay, overview card colored borders, tech badge hover scale, features 2-col grid with accent check circles, case study timeline border, related projects gradient underline, full-width gradient CTA with bg-grid
+  * Case study detail: hero gradient overlay, metrics with gradient numbers + icons, per-section colored left borders (6 tones), Results section accent tint, sticky TOC gradient indicator, gradient CTA band
+  * Blog detail: category badge gradient, cover shadow-soft, markdown h2 left-border accent, code block gradient bg, TOC active section highlighting via IntersectionObserver, author card gradient, related article hover lift + gradient border, share button hover scale, gradient CTA band
+- Verified all new features work in both English (LTR) and Persian (RTL) modes
+- Lint passes with 0 errors; all endpoints return 200
+
+Stage Summary:
+- 2 accessibility/UX warnings fixed (lightbox description, scroll container position)
+- 2 new features: Cookie consent banner (GDPR), Trust badges (social proof)
+- 3 detail views significantly enhanced with premium styling (portfolio, case study, blog)
+- All new features bilingual (en/fa) with RTL support
+- Platform continues to be stable, fully functional, and increasingly premium
