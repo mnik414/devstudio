@@ -1,23 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+// USD to Toman conversion rate (approximate, 1 USD ≈ 60,000 Toman)
+const USD_TO_TOMAN = 60000
+
+// Breakdown labels in English and Persian
+const LABELS_EN: Record<string, string> = {
+  base: 'Base project type',
+  baseDefault: 'Base',
+  extraPages: 'Extra pages ({n})',
+  adminPanel: 'Admin panel / CMS',
+  payment: 'Payment gateway',
+  auth: 'User registration & auth',
+  mobileApp: 'Mobile app (companion)',
+  ai: 'AI features integration',
+}
+
+const LABELS_FA: Record<string, string> = {
+  base: 'نوع پروژه پایه',
+  baseDefault: 'پایه',
+  extraPages: 'صفحات اضافی ({n})',
+  adminPanel: 'پنل مدیریت / CMS',
+  payment: 'درگاه پرداخت',
+  auth: 'ثبت‌نام کاربر و احراز هویت',
+  mobileApp: 'اپلیکیشن موبایل (همراه)',
+  ai: 'یکپارچه‌سازی هوش مصنوعی',
+}
+
 // Estimate cost calculation based on answers
-function calcEstimate(answers: {
-  projectType?: string
-  pages?: number
-  adminPanel?: boolean
-  payment?: boolean
-  auth?: boolean
-  mobileApp?: boolean
-  ai?: boolean
-}): { min: number; max: number; breakdown: { label: string; cost: number }[] } {
+function calcEstimate(
+  answers: {
+    projectType?: string
+    pages?: number
+    adminPanel?: boolean
+    payment?: boolean
+    auth?: boolean
+    mobileApp?: boolean
+    ai?: boolean
+  },
+  lang: 'en' | 'fa' = 'en',
+): {
+  min: number
+  max: number
+  breakdown: { label: string; cost: number }[]
+  currency: string
+  minDisplay: string
+  maxDisplay: string
+} {
+  const labels = lang === 'fa' ? LABELS_FA : LABELS_EN
   const breakdown: { label: string; cost: number }[] = []
-  let base = 1500
+  let base = 1500 // in USD
 
   const typeMap: Record<string, number> = {
     'landing-page': 1500,
     'corporate-site': 2500,
-    'ecommerce': 4000,
+    ecommerce: 4000,
     'web-app': 5000,
     saas: 7000,
     booking: 3500,
@@ -25,51 +62,71 @@ function calcEstimate(answers: {
   }
   if (answers.projectType && typeMap[answers.projectType]) {
     base = typeMap[answers.projectType]
-    breakdown.push({ label: 'Base project type', cost: base })
+    breakdown.push({ label: labels.base, cost: base })
   } else {
-    breakdown.push({ label: 'Base', cost: base })
+    breakdown.push({ label: labels.baseDefault, cost: base })
   }
 
   const pages = answers.pages ?? 5
   if (pages > 5) {
     const extra = (pages - 5) * 250
-    breakdown.push({ label: `Extra pages (${pages - 5})`, cost: extra })
+    breakdown.push({ label: labels.extraPages.replace('{n}', String(pages - 5)), cost: extra })
     base += extra
   }
 
   if (answers.adminPanel) {
-    breakdown.push({ label: 'Admin panel / CMS', cost: 1500 })
+    breakdown.push({ label: labels.adminPanel, cost: 1500 })
     base += 1500
   }
   if (answers.payment) {
-    breakdown.push({ label: 'Payment gateway', cost: 800 })
+    breakdown.push({ label: labels.payment, cost: 800 })
     base += 800
   }
   if (answers.auth) {
-    breakdown.push({ label: 'User registration & auth', cost: 1000 })
+    breakdown.push({ label: labels.auth, cost: 1000 })
     base += 1000
   }
   if (answers.mobileApp) {
-    breakdown.push({ label: 'Mobile app (companion)', cost: 4000 })
+    breakdown.push({ label: labels.mobileApp, cost: 4000 })
     base += 4000
   }
   if (answers.ai) {
-    breakdown.push({ label: 'AI features integration', cost: 2500 })
+    breakdown.push({ label: labels.ai, cost: 2500 })
     base += 2500
   }
 
   const min = Math.round(base * 0.85)
   const max = Math.round(base * 1.25)
-  return { min, max, breakdown }
+
+  // Convert to display format based on language
+  let minDisplay: string
+  let maxDisplay: string
+  let currency: string
+
+  if (lang === 'fa') {
+    // Convert to million Toman (divide by 1,000,000 to get millions)
+    const minToman = Math.round((min * USD_TO_TOMAN) / 1000000)
+    const maxToman = Math.round((max * USD_TO_TOMAN) / 1000000)
+    currency = 'میلیون تومان'
+    minDisplay = `${minToman.toLocaleString('fa-IR')}`
+    maxDisplay = `${maxToman.toLocaleString('fa-IR')}`
+  } else {
+    currency = '$'
+    minDisplay = `$${min.toLocaleString()}`
+    maxDisplay = `$${max.toLocaleString()}`
+  }
+
+  return { min, max, breakdown, currency, minDisplay, maxDisplay }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { answers, contact } = body
+    const lang: 'en' | 'fa' = body.lang === 'fa' ? 'fa' : 'en'
 
-    const est = calcEstimate(answers || {})
-    const estimatedCost = `$${est.min.toLocaleString()} - $${est.max.toLocaleString()}`
+    const est = calcEstimate(answers || {}, lang)
+    const estimatedCost = `${est.minDisplay} - ${est.maxDisplay}`
 
     let leadId: string | null = null
     if (contact && contact.name && contact.email) {
@@ -89,7 +146,19 @@ export async function POST(req: NextRequest) {
       leadId = lead.id
     }
 
-    return NextResponse.json({ ok: true, estimate: est, estimatedCost, leadId })
+    return NextResponse.json({
+      ok: true,
+      estimate: {
+        min: est.min,
+        max: est.max,
+        breakdown: est.breakdown,
+        currency: est.currency,
+        minDisplay: est.minDisplay,
+        maxDisplay: est.maxDisplay,
+      },
+      estimatedCost,
+      leadId,
+    })
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: 'Server error' }, { status: 500 })

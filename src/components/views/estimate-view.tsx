@@ -74,17 +74,17 @@ type PageRange = {
 
 type StepDef = {
   key: keyof Answers
-  hint: string
+  hintKey: string
 }
 
 const STEPS: StepDef[] = [
-  { key: 'projectType', hint: 'Pick the option that best describes your project.' },
-  { key: 'pages', hint: 'A rough estimate is fine — you can refine later.' },
-  { key: 'adminPanel', hint: 'A dashboard to manage content, users or data.' },
-  { key: 'payment', hint: 'Stripe, PayPal, or other online checkout.' },
-  { key: 'auth', hint: 'Accounts, login, roles and permissions.' },
-  { key: 'mobileApp', hint: 'A companion iOS / Android experience.' },
-  { key: 'ai', hint: 'Chatbots, recommendations, computer vision, etc.' },
+  { key: 'projectType', hintKey: 'estimate.hint1' },
+  { key: 'pages', hintKey: 'estimate.hint2' },
+  { key: 'adminPanel', hintKey: 'estimate.hint3' },
+  { key: 'payment', hintKey: 'estimate.hint4' },
+  { key: 'auth', hintKey: 'estimate.hint5' },
+  { key: 'mobileApp', hintKey: 'estimate.hint6' },
+  { key: 'ai', hintKey: 'estimate.hint7' },
 ]
 
 const TOTAL_STEPS = STEPS.length
@@ -213,8 +213,8 @@ export function EstimateView() {
   ]
 
   const YES_NO: { value: boolean; label: string; desc: string }[] = [
-    { value: true, label: t('estimate.yes'), desc: "I'll need this" },
-    { value: false, label: t('estimate.no'), desc: 'Not required' },
+    { value: true, label: t('estimate.yes'), desc: t('estimate.yesDesc') },
+    { value: false, label: t('estimate.no'), desc: t('estimate.noDesc') },
   ]
 
   /* --------------------------- step navigation --------------------------- */
@@ -243,7 +243,7 @@ export function EstimateView() {
       const res = await fetch('/api/estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers, lang }),
       })
       if (!res.ok) throw new Error('Failed to compute estimate')
       const data = await res.json()
@@ -251,7 +251,7 @@ export function EstimateView() {
       setStage('result')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong.'
-      toast.error('Could not compute estimate', { description: message })
+      toast.error(t('estimate.computeError'), { description: message })
       setStage('wizard')
     }
   }
@@ -293,7 +293,7 @@ export function EstimateView() {
     else if (!emailRegex.test(contact.email)) errs.email = t('contact.invalidEmail')
     setContactErrors(errs)
     if (Object.keys(errs).length) {
-      toast.error('Please fix the highlighted fields.')
+      toast.error(t('contact.requiredField'))
       return
     }
     setSavingLead(true)
@@ -301,7 +301,7 @@ export function EstimateView() {
       const res = await fetch('/api/estimate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers, contact }),
+        body: JSON.stringify({ answers, contact, lang }),
       })
       if (!res.ok) throw new Error('Failed to save your estimate')
       setStage('saved')
@@ -309,7 +309,7 @@ export function EstimateView() {
       toast.success(t('estimate.savedTitle'), { description: t('estimate.savedDesc') })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong.'
-      toast.error('Could not save estimate', { description: message })
+      toast.error(t('estimate.saveError'), { description: message })
     } finally {
       setSavingLead(false)
     }
@@ -358,18 +358,18 @@ export function EstimateView() {
                 </>
               ) : stage === 'result' || stage === 'saved' ? (
                 <span className="inline-flex items-center gap-1.5 font-semibold text-accent">
-                  <CheckCircle2 className="size-4" /> Estimate ready
+                  <CheckCircle2 className="size-4" /> {t('estimate.estimateReady')}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5">
                   <Loader2 className="size-3.5 animate-spin" />
-                  Crunching numbers…
+                  {t('estimate.crunching')}
                 </span>
               )}
             </span>
             <span className="text-xs font-medium text-muted-foreground">
-              <span className="ltr-num">{Math.round(stage === 'wizard' ? progress : 100)}%</span>{' '}
-              complete
+              <span className="ltr-num">{Math.round(stage === 'wizard' ? progress : 100)}</span>{' '}
+              {t('estimate.percentComplete')}
             </span>
           </div>
           <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -411,21 +411,16 @@ export function EstimateView() {
                       <RotateCcw className="size-5" />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold">Resume your estimate?</p>
+                      <p className="text-sm font-semibold">{t('estimate.resumeTitle')}</p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        You have an incomplete estimate (Step{' '}
-                        <span className="font-semibold text-foreground ltr-num">
-                          {savedProgress.step + 1}
-                        </span>{' '}
-                        of <span className="ltr-num">{TOTAL_STEPS}</span>). Continue where you left
-                        off or start over.
+                        {t('estimate.resumeDesc', { step: String(savedProgress.step + 1), total: String(TOTAL_STEPS) })}
                       </p>
                     </div>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <Button size="sm" onClick={handleResume} className="rounded-full">
                       <Play className={cn('size-4', lang === 'fa' ? 'ml-1.5' : 'mr-1.5')} />
-                      Resume
+                      {t('estimate.resumeBtn')}
                     </Button>
                     <Button
                       size="sm"
@@ -434,7 +429,7 @@ export function EstimateView() {
                       className="rounded-full"
                     >
                       <X className={cn('size-4', lang === 'fa' ? 'ml-1.5' : 'mr-1.5')} />
-                      Start over
+                      {t('estimate.startOver')}
                     </Button>
                   </div>
                 </div>
@@ -464,7 +459,7 @@ export function EstimateView() {
                     <StepHeader
                       index={step + 1}
                       question={t(`estimate.q${step + 1}`)}
-                      hint={currentDef.hint}
+                      hint={t(currentDef.hintKey)}
                     />
 
                     <div className="mt-6">
@@ -590,7 +585,7 @@ export function EstimateView() {
                       <span className="text-gradient">{t('estimate.calculating')}</span>
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Matching your answers against our pricing model.
+                      {t('estimate.matching')}
                     </p>
                   </motion.div>
                 )}
@@ -608,7 +603,7 @@ export function EstimateView() {
                     <div className="text-center">
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-accent">
                         <Sparkles className="size-3.5" />
-                        Your estimate
+                        {t('estimate.yourEstimate')}
                       </span>
 
                       {/* HUGE cost range with floating animation + glow */}
@@ -622,10 +617,10 @@ export function EstimateView() {
                         >
                           <div className="flex flex-col items-center">
                             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Min
+                              {t('estimate.min')}
                             </span>
-                            <span className="text-5xl font-bold tracking-tight text-gradient ltr-num sm:text-6xl lg:text-7xl">
-                              $<Counter to={estimate.min} duration={1.4} />
+                            <span className="text-3xl font-bold tracking-tight text-gradient ltr-num sm:text-5xl lg:text-6xl">
+                              {estimate.minDisplay}
                             </span>
                           </div>
                           <span className="pb-3 text-3xl font-light text-muted-foreground sm:pb-4 sm:text-4xl">
@@ -633,18 +628,21 @@ export function EstimateView() {
                           </span>
                           <div className="flex flex-col items-center">
                             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              Max
+                              {t('estimate.max')}
                             </span>
-                            <span className="text-5xl font-bold tracking-tight text-gradient ltr-num sm:text-6xl lg:text-7xl">
-                              $<Counter to={estimate.max} duration={1.6} />
+                            <span className="text-3xl font-bold tracking-tight text-gradient ltr-num sm:text-5xl lg:text-6xl">
+                              {estimate.maxDisplay}
                             </span>
                           </div>
                         </motion.div>
                       </div>
 
+                      <p className="mt-2 text-center text-sm font-medium text-accent">
+                        {estimate.currency}
+                      </p>
                       <p className="mt-4 text-sm text-muted-foreground">
-                        {t('estimate.estimatedCost')} · typical timeline{' '}
-                        <span className="ltr-num">4–12</span> weeks
+                        {t('estimate.estimatedCost')} · {t('estimate.timeline')}{' '}
+                        <span className="ltr-num">4–12</span> {t('estimate.weeks')}
                       </p>
                     </div>
 
@@ -675,7 +673,9 @@ export function EstimateView() {
                               {b.label}
                             </span>
                             <span className="font-mono text-sm font-semibold text-foreground ltr-num">
-                              ${b.cost.toLocaleString()}
+                              {lang === 'fa'
+                                ? `${Math.round((b.cost * 60000) / 1000000).toLocaleString('fa-IR')} م.ت`
+                                : `$${b.cost.toLocaleString()}`}
                             </span>
                           </motion.li>
                         ))}
@@ -697,12 +697,12 @@ export function EstimateView() {
                         <div className="flex items-center gap-2">
                           <span className="h-px flex-1 bg-border" />
                           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                            Save your estimate
+                            {t('estimate.saveYourEstimate')}
                           </span>
                           <span className="h-px flex-1 bg-border" />
                         </div>
                         <p className="text-center text-sm text-muted-foreground">
-                          Drop your details and we&apos;ll send a tailored proposal within 24 hours.
+                          {t('estimate.dropDetails')}
                         </p>
 
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -767,7 +767,7 @@ export function EstimateView() {
                         <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-between">
                           <Button type="button" variant="ghost" onClick={restart}>
                             <RotateCcw className="size-4" />
-                            Start over
+                            {t('estimate.startOver')}
                           </Button>
                           <Button
                             type="submit"
@@ -779,7 +779,7 @@ export function EstimateView() {
                               {savingLead ? (
                                 <>
                                   <Loader2 className="size-4 animate-spin" />
-                                  Saving…
+                                  {t('estimate.saving')}
                                 </>
                               ) : (
                                 <>
@@ -908,13 +908,13 @@ export function EstimateView() {
         <Reveal delay={0.15} className="mt-8">
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
-              <ShieldCheck className="size-3.5 text-accent" /> No spam, ever
+              <ShieldCheck className="size-3.5 text-accent" /> {t('estimate.noSpam')}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <CreditCard className="size-3.5 text-accent" /> No payment required
+              <CreditCard className="size-3.5 text-accent" /> {t('estimate.noPayment')}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Users className="size-3.5 text-accent" /> Real humans review every request
+              <Users className="size-3.5 text-accent" /> {t('estimate.realHumans')}
             </span>
           </div>
         </Reveal>
@@ -978,8 +978,8 @@ function YesNoCards({
 }) {
   const t = useT()
   const YES_NO: { value: boolean; label: string; desc: string }[] = [
-    { value: true, label: t('estimate.yes'), desc: "I'll need this" },
-    { value: false, label: t('estimate.no'), desc: 'Not required' },
+    { value: true, label: t('estimate.yes'), desc: t('estimate.yesDesc') },
+    { value: false, label: t('estimate.no'), desc: t('estimate.noDesc') },
   ]
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
