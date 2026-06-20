@@ -1472,3 +1472,43 @@ Stage Summary:
 - security headers برای محافظت XSS/CSRF/clickjacking اضافه شد
 - honeypot spam protection برای فرم تماس
 - راهنمای راه‌اندازی پروداکشن در .env.example
+
+---
+Task ID: 23
+Agent: Main (orchestrator)
+Task: سیستم احراز هویت یوزرنیم/پسورد + مدیریت ادمین‌ها
+
+Work Log:
+- ایجاد مدل AdminUser در Prisma (username, passwordHash, displayName, role, active)
+- بازنویسی admin-auth.ts برای استفاده از دیتابیس (نه env variable):
+  * verifyAdminCredentials(username, password) — بررسی از دیتابیس
+  * createSession/verifySession — session با userId و username
+  * hashPassword/verifyPassword با scrypt
+  * raw query fallback برای Prisma client stale
+- ایجاد API /api/admin/users:
+  * GET — لیست همه ادمین‌ها
+  * POST — ایجاد ادمین جدید (با اعتبارسنجی: حداقل ۶ کاراکتر رمز، نام کاربری یکتا)
+  * DELETE — حذف ادمین (جلوگیری از حذف آخرین superadmin)
+- به‌روزرسانی /api/admin/login برای پذیرش username + password
+- ایجاد کاربر پیش‌فرض: username=admin, password=admin123, role=superadmin
+- به‌روزرسانی LoginCard در admin-view.tsx:
+  * فیلد نام کاربری + فیلد رمز عبور
+  * نمایش راهنمای حساب پیش‌فرض
+  * پیام‌های خطای فارسی
+- افزودن بخش "مدیریت ادمین‌ها" به داشبورد:
+  * لیست همه ادمین‌ها با نام، نقش و وضعیت
+  * دکمه "ادمین جدید" با فرم ایجاد (نام نمایشی، نام کاربری، رمز عبور، نقش)
+  * دکمه حذف برای هر ادمین
+  * نقش‌ها: ادمین / مدیر اصلی
+- تست شده:
+  * ورود با admin/admin123 ✓
+  * ساخت ادمین جدید "سارا احمدی" (sara/sara123) ✓
+  * ورود با sara/sara123 ✓
+  * نمایش لیست ادمین‌ها در داشبورد ✓
+- Lint passes with 0 errors
+
+Stage Summary:
+- سیستم احراز هویت اکنون مبتنی بر دیتابیس است (یوزرنیم + پسورد)
+- ادمین می‌تواند از داشبورد اکانت برای ادمین‌های دیگر بسازد
+- هر ادمین یوزرنیم و پسورد اختصاصی خود را دارد
+- حساب پیش‌فرض: admin / admin123

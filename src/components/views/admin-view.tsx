@@ -16,6 +16,8 @@ import {
   Lock,
   ShieldCheck,
   Search,
+  User,
+  UserPlus,
   FolderKanban,
   Tags,
   Cpu,
@@ -647,12 +649,13 @@ function useAdminMutations(model: ModelKey, t: TFunc) {
 
 function LoginCard({ onLogin }: { onLogin: () => void }) {
   const t = useT()
+  const [username, setUsername] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [loading, setLoading] = React.useState(false)
 
   const submit = async () => {
-    if (!password.trim()) {
-      toast.error(t('admin.invalidToken'))
+    if (!username.trim() || !password.trim()) {
+      toast.error('نام کاربری و رمز عبور را وارد کنید')
       return
     }
     setLoading(true)
@@ -660,19 +663,19 @@ function LoginCard({ onLogin }: { onLogin: () => void }) {
       const res = await fetch(`/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: password.trim() }),
+        body: JSON.stringify({ username: username.trim(), password: password.trim() }),
       })
       const data = await res.json()
       if (res.status === 401) {
-        toast.error(t('admin.invalidToken'))
+        toast.error(data.error || 'نام کاربری یا رمز عبور اشتباه است')
         return
       }
       if (res.status === 429) {
-        toast.error(data.error || 'Too many attempts')
+        toast.error(data.error || 'تلاش‌های زیادی')
         return
       }
       if (!res.ok) {
-        toast.error(`${t('admin.loginFailed')} (${res.status})`)
+        toast.error(data.error || 'ورود ناموفق')
         return
       }
       toast.success(t('admin.authSuccess'))
@@ -696,9 +699,26 @@ function LoginCard({ onLogin }: { onLogin: () => void }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="admin-username" className="flex items-center gap-1.5">
+              <User className="size-3.5 text-muted-foreground" />
+              نام کاربری
+            </Label>
+            <Input
+              id="admin-username"
+              type="text"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submit()
+              }}
+              placeholder="admin"
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="admin-password" className="flex items-center gap-1.5">
               <KeyRound className="size-3.5 text-muted-foreground" />
-              {t('admin.tokenLabel')}
+              رمز عبور
             </Label>
             <Input
               id="admin-password"
@@ -709,12 +729,11 @@ function LoginCard({ onLogin }: { onLogin: () => void }) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') submit()
               }}
-              placeholder={t('admin.tokenLabel')}
+              placeholder="••••••••"
             />
             <p className="text-xs text-muted-foreground">
-              {process.env.NODE_ENV === 'production'
-                ? 'رمز عبور را وارد کنید'
-                : 'رمز عبور پیش‌فرض (محیط توسعه): devstudio-admin'}
+              نام کاربری پیش‌فرض: <code className="rounded bg-muted px-1 py-0.5 font-mono">admin</code>
+              {' '}— رمز عبور: <code className="rounded bg-muted px-1 py-0.5 font-mono">admin123</code>
             </p>
           </div>
         </CardContent>
@@ -1465,8 +1484,6 @@ function DashboardOverview({
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['admin', 'dashboard-stats'],
     queryFn: async (): Promise<DashboardStats> => {
-      if (!token) throw new Error('Not authenticated')
-      const headers = {} as Record<string, string>
       const models: ModelKey[] = [
         'portfolio',
         'blogPost',
@@ -1477,8 +1494,8 @@ function DashboardOverview({
       ]
       const responses = await Promise.all(
         models.map((m) =>
-          fetch(`/api/admin?model=${encodeURIComponent(m)}`, { headers }).then(async (r) => {
-            if (r.status === 401) throw new Error('Unauthorized — check your admin token.')
+          fetch(`/api/admin?model=${encodeURIComponent(m)}`, { credentials: 'include' }).then(async (r) => {
+            if (r.status === 401) throw new Error('Unauthorized')
             if (!r.ok) throw new Error(`Failed to load ${m} (${r.status})`)
             const json = await r.json()
             return { model: m, items: (json.items ?? []) as RecordData[] }
@@ -1724,7 +1741,162 @@ function DashboardOverview({
           />
         </div>
       </section>
+
+      {/* Admin Users Management */}
+      <AdminUsersSection />
     </div>
+  )
+}
+
+/* ----------------------- Admin Users Management ----------------------- */
+
+function AdminUsersSection() {
+  const t = useT()
+  const qc = useQueryClient()
+  const [showCreate, setShowCreate] = React.useState(false)
+  const [newUser, setNewUser] = React.useState({ username: '', password: '', displayName: '', role: 'admin' })
+  const [creating, setCreating] = React.useState(false)
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: async () => {
+      const res = await fetch('/api/admin/users', { credentials: 'include' })
+      if (!res.ok) throw new Error('Failed to load')
+      const json = await res.json()
+      return json.items as { id: string; username: string; displayName: string; role: string; active: boolean; createdAt: string }[]
+    },
+  })
+
+  const deleteUser = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/users?id=${id}`, { method: 'DELETE', credentials: 'include' })
+      if (!res.ok) {
+        const j = await res.json()
+        throw new Error(j.error || 'Failed')
+      }
+    },
+    onSuccess: () => {
+      toast.success('کاربر حذف شد')
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const handleCreate = async () => {
+    if (!newUser.username.trim() || !newUser.password.trim() || !newUser.displayName.trim()) {
+      toast.error('همه فیلدها الزامی است')
+      return
+    }
+    setCreating(true)
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(newUser),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'خطا در ایجاد کاربر')
+        return
+      }
+      toast.success('کاربر ادمین جدید ایجاد شد')
+      setNewUser({ username: '', password: '', displayName: '', role: 'admin' })
+      setShowCreate(false)
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+    } catch {
+      toast.error('خطا در ایجاد کاربر')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  return (
+    <section className="mt-8">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold flex items-center gap-2">
+          <UserPlus className="size-5 text-primary" />
+          مدیریت ادمین‌ها
+        </h3>
+        <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
+          <Plus className="size-4" />
+          ادمین جدید
+        </Button>
+      </div>
+
+      {showCreate && (
+        <div className="mb-4 rounded-xl border border-border/60 bg-card p-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label className="text-xs">نام نمایشی</Label>
+              <Input value={newUser.displayName} onChange={(e) => setNewUser({ ...newUser, displayName: e.target.value })} placeholder="مثلاً: علی رضایی" />
+            </div>
+            <div>
+              <Label className="text-xs">نام کاربری</Label>
+              <Input value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} placeholder="ali" />
+            </div>
+            <div>
+              <Label className="text-xs">رمز عبور</Label>
+              <Input type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} placeholder="حداقل ۶ کاراکتر" />
+            </div>
+            <div>
+              <Label className="text-xs">نقش</Label>
+              <select
+                value={newUser.role}
+                onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+              >
+                <option value="admin">ادمین</option>
+                <option value="superadmin">مدیر اصلی</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" onClick={handleCreate} disabled={creating}>
+              {creating ? <Loader2 className="size-4 animate-spin" /> : null}
+              ایجاد کاربر
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowCreate(false)}>انصراف</Button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="py-8 text-center text-muted-foreground">در حال بارگذاری...</div>
+      ) : (
+        <div className="grid gap-2">
+          {data?.map((u) => (
+            <div key={u.id} className="flex items-center justify-between rounded-lg border border-border/60 bg-card p-3">
+              <div className="flex items-center gap-3">
+                <div className="grid size-9 place-items-center rounded-full bg-primary/10 text-primary">
+                  <User className="size-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">{u.displayName}</p>
+                  <p className="text-xs text-muted-foreground">@{u.username} · {u.role === 'superadmin' ? 'مدیر اصلی' : 'ادمین'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {u.active ? (
+                  <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">فعال</span>
+                ) : (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">غیرفعال</span>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    if (confirm(`حذف کاربر @${u.username}؟`)) deleteUser.mutate(u.id)
+                  }}
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   )
 }
 
