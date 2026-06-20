@@ -223,6 +223,12 @@ html.lang-fa .ltr-num {
   unicode-bidi: embed;
 }
 
+/* Force LTR text direction (for code blocks, URLs, etc.) */
+.ltr-text {
+  direction: ltr;
+  text-align: left;
+}
+
 /* RTL-aware utility: mirror transforms that use translateX */
 html[dir="rtl"] .rtl-flip {
   transform: scaleX(-1);

@@ -48,6 +48,11 @@ const en: Dict = {
   'hero.secondsAgo': '2s ago',
   'hero.justNow': 'Just now',
   'hero.goal': 'Goal',
+  'hero.codeFile': 'app/Http/Controllers/ProjectController.php',
+  'hero.buildSuccess': 'Build successful',
+  'hero.deployed': 'Deployed to production',
+  'hero.testsPassed': 'All 42 tests passed',
+  'hero.codeLines': 'lines of clean code',
 
   // ---------- Trusted by ----------
   'trusted.title': 'Trusted by teams at fast-growing companies',
@@ -583,6 +588,11 @@ const fa: Dict = {
   'hero.secondsAgo': '۲ ثانیه پیش',
   'hero.justNow': 'همین حالا',
   'hero.goal': 'هدف',
+  'hero.codeFile': 'app/Http/Controllers/ProjectController.php',
+  'hero.buildSuccess': 'ساخت با موفقیت',
+  'hero.deployed': 'در محیط عملیاتی استقرار یافت',
+  'hero.testsPassed': 'تمام ۴۲ تست با موفقیت گذرانده شد',
+  'hero.codeLines': 'خط کد تمیز',
 
   // ---------- اعتماد ----------
   'trusted.title': 'مورد اعتماد تیم‌های شرکت‌های رو به رشد',

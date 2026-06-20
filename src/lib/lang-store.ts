@@ -12,7 +12,7 @@ interface LangState {
 export const useLang = create<LangState>()(
   persist(
     (set, get) => ({
-      lang: 'en',
+      lang: 'fa',
       setLang: (l) => set({ lang: l }),
       toggle: () => set({ lang: get().lang === 'en' ? 'fa' : 'en' }),
       t: (key, vars) => translate(get().lang, key, vars),
