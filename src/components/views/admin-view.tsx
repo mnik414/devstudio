@@ -555,25 +555,23 @@ function serializeForm(model: ModelKey, form: Record<string, unknown>): Record<s
 // API helpers
 // ---------------------------------------------------------------------------
 
-function useAdminFetch(model: ModelKey, token: string | null, t: TFunc) {
+function useAdminFetch(model: ModelKey, t: TFunc) {
   return useQuery({
     queryKey: ['admin', model],
     queryFn: async () => {
-      if (!token) throw new Error(t('admin.unauthorized'))
       const res = await fetch(`/api/admin?model=${encodeURIComponent(model)}`, {
-        headers: { 'X-Admin-Token': token },
+        credentials: 'include',
       })
       if (res.status === 401) throw new Error(t('admin.unauthorized'))
       if (!res.ok) throw new Error(`${resourceLabel(t, model)} (${res.status})`)
       const json = await res.json()
       return (json.items ?? []) as RecordData[]
     },
-    enabled: !!token,
     staleTime: 30_000,
   })
 }
 
-function useAdminMutations(model: ModelKey, token: string | null, t: TFunc) {
+function useAdminMutations(model: ModelKey, t: TFunc) {
   const qc = useQueryClient()
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['admin', model] })
@@ -583,7 +581,8 @@ function useAdminMutations(model: ModelKey, token: string | null, t: TFunc) {
     mutationFn: async (data: Record<string, unknown>) => {
       const res = await fetch('/api/admin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token! },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ model, data }),
       })
       if (!res.ok) {
@@ -603,7 +602,8 @@ function useAdminMutations(model: ModelKey, token: string | null, t: TFunc) {
     mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
       const res = await fetch('/api/admin', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token! },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ model, id, data }),
       })
       if (!res.ok) {
@@ -623,7 +623,7 @@ function useAdminMutations(model: ModelKey, token: string | null, t: TFunc) {
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin?model=${encodeURIComponent(model)}&id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
-        headers: { 'X-Admin-Token': token! },
+        credentials: 'include',
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
@@ -645,23 +645,30 @@ function useAdminMutations(model: ModelKey, token: string | null, t: TFunc) {
 // Login gate
 // ---------------------------------------------------------------------------
 
-function LoginCard({ onLogin }: { onLogin: (token: string) => void }) {
+function LoginCard({ onLogin }: { onLogin: () => void }) {
   const t = useT()
-  const [token, setToken] = React.useState('devstudio-admin')
+  const [password, setPassword] = React.useState('')
   const [loading, setLoading] = React.useState(false)
 
   const submit = async () => {
-    if (!token.trim()) {
+    if (!password.trim()) {
       toast.error(t('admin.invalidToken'))
       return
     }
     setLoading(true)
     try {
-      const res = await fetch(`/api/admin?model=setting`, {
-        headers: { 'X-Admin-Token': token.trim() },
+      const res = await fetch(`/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: password.trim() }),
       })
+      const data = await res.json()
       if (res.status === 401) {
         toast.error(t('admin.invalidToken'))
+        return
+      }
+      if (res.status === 429) {
+        toast.error(data.error || 'Too many attempts')
         return
       }
       if (!res.ok) {
@@ -669,7 +676,7 @@ function LoginCard({ onLogin }: { onLogin: (token: string) => void }) {
         return
       }
       toast.success(t('admin.authSuccess'))
-      onLogin(token.trim())
+      onLogin()
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
@@ -689,23 +696,25 @@ function LoginCard({ onLogin }: { onLogin: (token: string) => void }) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="admin-token" className="flex items-center gap-1.5">
+            <Label htmlFor="admin-password" className="flex items-center gap-1.5">
               <KeyRound className="size-3.5 text-muted-foreground" />
               {t('admin.tokenLabel')}
             </Label>
             <Input
-              id="admin-token"
+              id="admin-password"
               type="password"
-              autoComplete="off"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') submit()
               }}
               placeholder={t('admin.tokenLabel')}
             />
             <p className="text-xs text-muted-foreground">
-              Default token: <code className="rounded bg-muted px-1 py-0.5 font-mono">devstudio-admin</code>
+              {process.env.NODE_ENV === 'production'
+                ? 'رمز عبور را وارد کنید'
+                : 'رمز عبور پیش‌فرض (محیط توسعه): devstudio-admin'}
             </p>
           </div>
         </CardContent>
@@ -736,12 +745,10 @@ function DynamicForm({
   model,
   values,
   onChange,
-  token,
 }: {
   model: ModelKey
   values: Record<string, unknown>
   onChange: (k: string, v: unknown) => void
-  token: string
 }) {
   const config = MODEL_CONFIGS[model]
   return (
@@ -758,7 +765,6 @@ function DynamicForm({
               <ImageUpload
                 value={typeof val === 'string' ? val : ''}
                 onChange={(url) => onChange(f.key, url)}
-                token={token}
                 placeholder={f.placeholder}
               />
             </div>
@@ -886,7 +892,7 @@ function RecordTable({
   onDeleteRequest: (record: RecordData) => void
 }) {
   const t = useT()
-  const { data, isLoading, isError, error, refetch, isFetching } = useAdminFetch(model, token, t)
+  const { data, isLoading, isError, error, refetch, isFetching } = useAdminFetch(model, t)
   const config = MODEL_CONFIGS[model]
   const [query, setQuery] = React.useState('')
 
@@ -1045,7 +1051,7 @@ function EditDialog({
   const isEdit = !!record?.id
   const [values, setValues] = React.useState<Record<string, unknown>>(() => buildInitialForm(model))
   const [submitting, setSubmitting] = React.useState(false)
-  const { create, update } = useAdminMutations(model, token, t)
+  const { create, update } = useAdminMutations(model, t)
 
   React.useEffect(() => {
     if (open) {
@@ -1093,7 +1099,7 @@ function EditDialog({
           </DialogDescription>
         </DialogHeader>
         <Separator />
-        <DynamicForm model={model} values={values} onChange={handleChange} token={token} />
+        <DynamicForm model={model} values={values} onChange={handleChange} />
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             {t('admin.cancel')}
@@ -1178,7 +1184,7 @@ function DeleteDialog({
   record: RecordData | null
 }) {
   const t = useT()
-  const { remove } = useAdminMutations(model, token, t)
+  const { remove } = useAdminMutations(model, t)
   const [deleting, setDeleting] = React.useState(false)
 
   React.useEffect(() => {
@@ -1460,7 +1466,7 @@ function DashboardOverview({
     queryKey: ['admin', 'dashboard-stats'],
     queryFn: async (): Promise<DashboardStats> => {
       if (!token) throw new Error('Not authenticated')
-      const headers = { 'X-Admin-Token': token }
+      const headers = {} as Record<string, string>
       const models: ModelKey[] = [
         'portfolio',
         'blogPost',
@@ -1949,13 +1955,37 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 // ---------------------------------------------------------------------------
 
 export function AdminView() {
-  const [token, setToken] = React.useState<string | null>(null)
+  const [authed, setAuthed] = React.useState<boolean | null>(null) // null = loading
 
-  if (!token) {
-    return <LoginCard onLogin={setToken} />
+  // Check existing session on mount
+  React.useEffect(() => {
+    fetch('/api/admin/me')
+      .then((res) => setAuthed(res.ok))
+      .catch(() => setAuthed(false))
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' })
+    } catch {
+      // ignore
+    }
+    setAuthed(false)
   }
 
-  return <Dashboard token={token} onLogout={() => setToken(null)} />
+  if (authed === null) {
+    return (
+      <div dir="rtl" className="flex min-h-screen items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (!authed) {
+    return <LoginCard onLogin={() => setAuthed(true)} />
+  }
+
+  return <Dashboard token="" onLogout={handleLogout} />
 }
 
 export default AdminView

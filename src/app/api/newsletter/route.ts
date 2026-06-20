@@ -1,8 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+// Simple rate limiting (5 per minute per IP)
+const newsletterRateLimit = new Map<string, { count: number; resetAt: number }>()
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, val] of newsletterRateLimit) {
+    if (val.resetAt < now) newsletterRateLimit.delete(key)
+  }
+}, 5 * 60 * 1000)
+
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiting
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
+    const rateLimitKey = `newsletter-${ip}`
+    const attempts = newsletterRateLimit.get(rateLimitKey) || { count: 0, resetAt: Date.now() + 60000 }
+
+    if (attempts.resetAt < Date.now()) {
+      attempts.count = 0
+      attempts.resetAt = Date.now() + 60000
+    }
+
+    if (attempts.count >= 5) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 },
+      )
+    }
+
+    attempts.count++
+    newsletterRateLimit.set(rateLimitKey, attempts)
+
     const body = await req.json()
     const { email, source = 'footer' } = body
 

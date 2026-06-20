@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-// Simple admin "auth" via header X-Admin-Token (shared secret). Default open in dev.
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'devstudio-admin'
-
-function checkAuth(req: NextRequest) {
-  const token = req.headers.get('x-admin-token')
-  return token === ADMIN_TOKEN
-}
+import { getAuthFromRequest } from '@/lib/auth/admin-auth'
 
 const MODELS = [
   'portfolio',
@@ -52,7 +45,7 @@ function getDelegate(name: string) {
 
 // GET /api/admin?model=portfolio
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!getAuthFromRequest(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { searchParams } = new URL(req.url)
   const model = searchParams.get('model') as ModelName
   if (!MODELS.includes(model)) return NextResponse.json({ error: 'Invalid model' }, { status: 400 })
@@ -76,7 +69,7 @@ export async function GET(req: NextRequest) {
 
 // POST create
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!getAuthFromRequest(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await req.json()
   const { model, data } = body as { model: ModelName; data: Record<string, unknown> }
   if (!MODELS.includes(model)) return NextResponse.json({ error: 'Invalid model' }, { status: 400 })
@@ -88,7 +81,7 @@ export async function POST(req: NextRequest) {
 
 // PATCH update
 export async function PATCH(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!getAuthFromRequest(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const body = await req.json()
   const { model, id, data } = body as { model: ModelName; id: string; data: Record<string, unknown> }
   if (!MODELS.includes(model)) return NextResponse.json({ error: 'Invalid model' }, { status: 400 })
@@ -100,7 +93,7 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE
 export async function DELETE(req: NextRequest) {
-  if (!checkAuth(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!getAuthFromRequest(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { searchParams } = new URL(req.url)
   const model = searchParams.get('model') as ModelName
   const id = searchParams.get('id')

@@ -1420,3 +1420,55 @@ Stage Summary:
 - نمایش ارز فارسی اکنون هوشمند و درست است
 - مبالغ بزرگ به میلیارد تومان، مبالغ متوسط به میلیون تومان نمایش داده می‌شوند
 - قیمت لحظه‌ای تتر زیر نتیجه نمایش داده می‌شود
+
+---
+Task ID: 22
+Agent: Main (orchestrator)
+Task: آماده‌سازی پروداکشن — امنیت احراز هویت ادمین، rate limiting، security headers
+
+Work Log:
+- بازطراحی کامل احراز هویت ادمین برای پروداکشن:
+  * ایجاد src/lib/auth/admin-auth.ts با scrypt password hashing (Node.js crypto)
+  * ایجاد API /api/admin/login: احراز هویت با رمز عبور + rate limiting (۵ تلاش در دقیقه)
+  * ایجاد API /api/admin/logout: پاک کردن session
+  * ایجاد API /api/admin/me: بررسی وضعیت احراز هویت
+  * استفاده از httpOnly cookie (secure, sameSite=strict) برای session — امن در برابر XSS
+  * session store در حافظه (24 ساعت اعتبار)
+  * fallback به dev password فقط در محیط توسعه
+  * در پروداکشن: ADMIN_PASSWORD_HASH از env variable خوانده می‌شود
+- به‌روزرسانی admin-view.tsx:
+  * LoginCard اکنون از /api/admin/login استفاده می‌کند (نه header X-Admin-Token)
+  * AdminView با /api/admin/me بررسی می‌کند (session persist after refresh)
+  * تمام fetch ها اکنون credentials: 'include' استفاده می‌کنند (cookie auto-sent)
+  * حذف prop token از DynamicForm و ImageUpload
+  * نمایش spinner هنگام بررسی session اولیه
+  * خروج با /api/admin/logout
+- به‌روزرسانی /api/admin/route.ts: استفاده از getAuthFromRequest (cookie + dev fallback)
+- ایجاد /api/upload/route.ts با auth مبتنی بر cookie
+- افزودن rate limiting به فرم تماس (۳ در دقیقه) و خبرنامه (۵ در دقیقه)
+- افزودن honeypot spam protection به فرم تماس
+- افزودن security headers به next.config.ts:
+  * X-Content-Type-Options: nosniff
+  * X-Frame-Options: DENY
+  * X-XSS-Protection: 1; mode=block
+  * Referrer-Policy: strict-origin-when-cross-origin
+  * Permissions-Policy: camera=(), microphone=(), geolocation=()
+  * poweredByHeader: false (پنهان کردن Next.js)
+- به‌روزرسانی robots.txt: Disallow /api/upload, /api/admin/login, /api/admin/logout, /api/admin/me
+- ایجاد .env.example با راهنمای راه‌اندازی پروداکشن
+- تست شده:
+  * /api/admin/me (بدون cookie): 401 ✓
+  * /api/admin/login (رمز اشتباه): 401 ✓
+  * /api/admin/login (رمز صحیح): 200 + Set-Cookie ✓
+  * /api/admin/me (با cookie): authenticated: true ✓
+  * /api/admin?model=setting (با cookie): داده‌ها ✓
+  * session persist بعد از refresh ✓
+  * logout ✓
+- Lint passes with 0 errors; all endpoints return correct status codes
+
+Stage Summary:
+- احراز هویت ادمین کاملاً امن و آماده پروداکشن شد (scrypt hash + httpOnly cookie + rate limiting)
+- rate limiting برای فرم تماس و خبرنامه اضافه شد
+- security headers برای محافظت XSS/CSRF/clickjacking اضافه شد
+- honeypot spam protection برای فرم تماس
+- راهنمای راه‌اندازی پروداکشن در .env.example

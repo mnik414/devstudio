@@ -14,5 +14,9 @@ User-agent: *
 Allow: /
 
 Disallow: /api/admin
+Disallow: /api/upload
+Disallow: /api/admin/login
+Disallow: /api/admin/logout
+Disallow: /api/admin/me
 
 Sitemap: https://devstudio.example.com/sitemap.xml

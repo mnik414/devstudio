@@ -9,12 +9,11 @@ import { cn } from '@/lib/utils'
 interface ImageUploadProps {
   value: string
   onChange: (url: string) => void
-  token: string
   label?: string
   placeholder?: string
 }
 
-export function ImageUpload({ value, onChange, token, label, placeholder }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, label, placeholder }: ImageUploadProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<'upload' | 'url'>(value ? 'url' : 'upload')
@@ -29,7 +28,7 @@ export function ImageUpload({ value, onChange, token, label, placeholder }: Imag
         formData.append('file', file)
         const res = await fetch('/api/upload', {
           method: 'POST',
-          headers: { 'X-Admin-Token': token },
+          credentials: 'include',
           body: formData,
         })
         const data = await res.json()
@@ -44,7 +43,7 @@ export function ImageUpload({ value, onChange, token, label, placeholder }: Imag
         setLoading(false)
       }
     },
-    [token, onChange],
+    [onChange],
   )
 
   const handleDrop = useCallback(
