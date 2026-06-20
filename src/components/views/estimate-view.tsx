@@ -679,7 +679,15 @@ export function EstimateView() {
                             </span>
                             <span className="font-mono text-sm font-semibold text-foreground ltr-num">
                               {lang === 'fa'
-                                ? `${Math.round((b.cost * (estimate.usdToToman || 160000)) / 1000000).toLocaleString('fa-IR')} م.ت`
+                                ? (() => {
+                                    const toman = b.cost * (estimate.usdToToman || 160000)
+                                    if (toman >= 1_000_000_000) {
+                                      return `${(Math.round((toman / 1_000_000_000) * 100) / 100).toLocaleString('fa-IR')} میلیارد`
+                                    } else if (toman >= 1_000_000) {
+                                      return `${Math.round(toman / 1_000_000).toLocaleString('fa-IR')} میلیون`
+                                    }
+                                    return `${toman.toLocaleString('fa-IR')} تومان`
+                                  })()
                                 : `$${b.cost.toLocaleString()}`}
                             </span>
                           </motion.li>

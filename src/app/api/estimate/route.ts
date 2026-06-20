@@ -136,12 +136,42 @@ async function calcEstimate(
   let currency: string
 
   if (lang === 'fa') {
-    // Convert to million Toman (divide by 1,000,000 to get millions)
-    const minToman = Math.round((min * usdToToman) / 1000000)
-    const maxToman = Math.round((max * usdToToman) / 1000000)
-    currency = 'میلیون تومان'
-    minDisplay = `${minToman.toLocaleString('fa-IR')}`
-    maxDisplay = `${maxToman.toLocaleString('fa-IR')}`
+    // Convert USD to Toman
+    const minToman = min * usdToToman
+    const maxToman = max * usdToToman
+
+    // Smart display: use میلیارد (billion) for amounts >= 1,000,000,000 Toman,
+    // otherwise use میلیون (million) for amounts >= 1,000,000 Toman,
+    // otherwise show raw Toman
+    const formatToman = (toman: number): { display: string; unit: string } => {
+      if (toman >= 1_000_000_000) {
+        // Show as میلیارد تومان with 2 decimal places
+        const value = toman / 1_000_000_000
+        const rounded = Math.round(value * 100) / 100
+        return {
+          display: rounded.toLocaleString('fa-IR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+          unit: 'میلیارد تومان',
+        }
+      } else if (toman >= 1_000_000) {
+        // Show as میلیون تومان with 0 decimal places
+        const value = Math.round(toman / 1_000_000)
+        return {
+          display: value.toLocaleString('fa-IR'),
+          unit: 'میلیون تومان',
+        }
+      } else {
+        return {
+          display: toman.toLocaleString('fa-IR'),
+          unit: 'تومان',
+        }
+      }
+    }
+
+    const minFormatted = formatToman(minToman)
+    const maxFormatted = formatToman(maxToman)
+    currency = minFormatted.unit === maxFormatted.unit ? minFormatted.unit : `${minFormatted.unit} - ${maxFormatted.unit}`
+    minDisplay = minFormatted.display
+    maxDisplay = maxFormatted.display
   } else {
     currency = '$'
     minDisplay = `$${min.toLocaleString()}`
