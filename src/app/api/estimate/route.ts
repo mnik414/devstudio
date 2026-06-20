@@ -1,8 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-// USD to Toman conversion rate (approximate, 1 USD ≈ 60,000 Toman)
-const USD_TO_TOMAN = 60000
+// Fallback rate if API is unavailable (1 USD ≈ 160,000 Toman as of recent)
+const FALLBACK_USD_TO_TOMAN = 160000
+
+// Cached tether price (refreshed every 5 min via /api/tether-price)
+let cachedTetherPrice: { price: number; timestamp: number } | null = null
+const CACHE_TTL = 5 * 60 * 1000
+
+async function getUsdToTomanRate(): Promise<number> {
+  // Return cached price if fresh
+  if (cachedTetherPrice && Date.now() - cachedTetherPrice.timestamp < CACHE_TTL) {
+    return cachedTetherPrice.price
+  }
+
+  try {
+    const res = await fetch('http://localhost:3000/api/tether-price', {
+      signal: AbortSignal.timeout(8000),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.ok && data.price > 0) {
+        cachedTetherPrice = { price: data.price, timestamp: Date.now() }
+        return data.price
+      }
+    }
+  } catch {
+    // fall through to fallback
+  }
+
+  return FALLBACK_USD_TO_TOMAN
+}
 
 // Breakdown labels in English and Persian
 const LABELS_EN: Record<string, string> = {
@@ -28,7 +56,7 @@ const LABELS_FA: Record<string, string> = {
 }
 
 // Estimate cost calculation based on answers
-function calcEstimate(
+async function calcEstimate(
   answers: {
     projectType?: string
     pages?: number
@@ -39,14 +67,15 @@ function calcEstimate(
     ai?: boolean
   },
   lang: 'en' | 'fa' = 'en',
-): {
+): Promise<{
   min: number
   max: number
   breakdown: { label: string; cost: number }[]
   currency: string
   minDisplay: string
   maxDisplay: string
-} {
+  usdToToman: number
+}> {
   const labels = lang === 'fa' ? LABELS_FA : LABELS_EN
   const breakdown: { label: string; cost: number }[] = []
   let base = 1500 // in USD
@@ -98,6 +127,9 @@ function calcEstimate(
   const min = Math.round(base * 0.85)
   const max = Math.round(base * 1.25)
 
+  // Get live USD to Toman rate from tether price API
+  const usdToToman = await getUsdToTomanRate()
+
   // Convert to display format based on language
   let minDisplay: string
   let maxDisplay: string
@@ -105,8 +137,8 @@ function calcEstimate(
 
   if (lang === 'fa') {
     // Convert to million Toman (divide by 1,000,000 to get millions)
-    const minToman = Math.round((min * USD_TO_TOMAN) / 1000000)
-    const maxToman = Math.round((max * USD_TO_TOMAN) / 1000000)
+    const minToman = Math.round((min * usdToToman) / 1000000)
+    const maxToman = Math.round((max * usdToToman) / 1000000)
     currency = 'میلیون تومان'
     minDisplay = `${minToman.toLocaleString('fa-IR')}`
     maxDisplay = `${maxToman.toLocaleString('fa-IR')}`
@@ -116,7 +148,7 @@ function calcEstimate(
     maxDisplay = `$${max.toLocaleString()}`
   }
 
-  return { min, max, breakdown, currency, minDisplay, maxDisplay }
+  return { min, max, breakdown, currency, minDisplay, maxDisplay, usdToToman }
 }
 
 export async function POST(req: NextRequest) {
@@ -125,7 +157,7 @@ export async function POST(req: NextRequest) {
     const { answers, contact } = body
     const lang: 'en' | 'fa' = body.lang === 'fa' ? 'fa' : 'en'
 
-    const est = calcEstimate(answers || {}, lang)
+    const est = await calcEstimate(answers || {}, lang)
     const estimatedCost = `${est.minDisplay} - ${est.maxDisplay}`
 
     let leadId: string | null = null
@@ -155,6 +187,7 @@ export async function POST(req: NextRequest) {
         currency: est.currency,
         minDisplay: est.minDisplay,
         maxDisplay: est.maxDisplay,
+        usdToToman: est.usdToToman,
       },
       estimatedCost,
       leadId,

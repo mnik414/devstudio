@@ -1359,3 +1359,36 @@ Stage Summary:
 - برآوردگر کاملاً فارسی شد — تمام متن‌ها، hints، پیام‌های خطا، و labels
 - تبدیل ارز هوشمند: فارسی = تومان، انگلیسی = دلار
 - ایرانیان هزینه‌ها را به تومان می‌بینند (میلیون تومان)
+
+---
+Task ID: 20
+Agent: Main (orchestrator)
+Task: دریافت قیمت لحظه‌ای تتر از API و محاسبه برآورد با نرخ زنده
+
+Work Log:
+- ایجاد API route /api/tether-price برای دریافت قیمت لحظه‌ای تتر به تومان:
+  * استفاده از Wallex API (https://api.wallex.ir/v1/markets) — قیمت USDT/TMN
+  * fallback به Nobitex API (https://api.nobitex.ir/market/stats) — قیمت USDT/RLS (تبدیل ریال به تومان)
+  * اگر هر دو API در دسترس نباشند، از قیمت fallback ۱۶۰٬۰۰۰ تومان استفاده می‌شود
+  * کش کردن قیمت برای ۵ دقیقه (جلوگیری از درخواست‌های مکرر)
+  * برگرداندن قیمت، منبع (wallex/nobitex/average/fallback)، و timestamp
+- به‌روزرسانی API /api/estimate برای استفاده از قیمت زنده تتر:
+  * تابع getUsdToTomanRate() که از /api/tether-price قیمت را دریافت می‌کند
+  * کش کردن نرخ برای ۵ دقیقه
+  * تبدیل calcEstimate به async برای دریافت نرخ زنده
+  * افزودن usdToToman به پاسخ API
+- به‌روزرسانی estimate-view.tsx:
+  * نمایش نرخ لحظه‌ای تتر در صفحه نتیجه: "۱۶۰٬۵۳۴ تومان به ازای هر دلار (قیمت لحظه‌ای تتر)"
+  * استفاده از estimate.usdToToman برای محاسبه هزینه‌های breakdown (به جای نرخ ثابت ۶۰٬۰۰۰)
+  * fallback به ۱۶۰٬۰۰۰ اگر usdToToman موجود نباشد
+- تست شده:
+  * /api/tether-price: قیمت ۱۶۰٬۵۳۴ تومان از Wallex دریافت شد ✓
+  * /api/estimate با lang=fa: برآورد ۱٬۹۱۷ - ۲٬۸۱۹ میلیون تومان با نرخ ۱۶۰٬۵۳۴ ✓
+  * /api/estimate با lang=en: برآورد $11,943 - $17,563 ✓
+- Lint passes with 0 errors; all endpoints return 200
+
+Stage Summary:
+- قیمت تتر اکنون به‌صورت لحظه‌ای از Wallex API دریافت می‌شود (با fallback به Nobitex)
+- برآورد هزینه در فارسی با نرخ زنده تتر محاسبه می‌شود (نه نرخ ثابت)
+- قیمت برای ۵ دقیقه کش می‌شود تا APIها کمتر درگیر شوند
+- کاربران قیمت دقیق و آپدیت‌شده را در زمان واقعی می‌بینند

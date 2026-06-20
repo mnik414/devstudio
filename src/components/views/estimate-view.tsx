@@ -640,6 +640,11 @@ export function EstimateView() {
                       <p className="mt-2 text-center text-sm font-medium text-accent">
                         {estimate.currency}
                       </p>
+                      {lang === 'fa' && estimate.usdToToman && (
+                        <p className="mt-1 text-center text-[10px] text-muted-foreground">
+                          <span className="ltr-num">{estimate.usdToToman.toLocaleString('fa-IR')}</span> تومان به ازای هر دلار (قیمت لحظه‌ای تتر)
+                        </p>
+                      )}
                       <p className="mt-4 text-sm text-muted-foreground">
                         {t('estimate.estimatedCost')} · {t('estimate.timeline')}{' '}
                         <span className="ltr-num">4–12</span> {t('estimate.weeks')}
@@ -674,7 +679,7 @@ export function EstimateView() {
                             </span>
                             <span className="font-mono text-sm font-semibold text-foreground ltr-num">
                               {lang === 'fa'
-                                ? `${Math.round((b.cost * 60000) / 1000000).toLocaleString('fa-IR')} م.ت`
+                                ? `${Math.round((b.cost * (estimate.usdToToman || 160000)) / 1000000).toLocaleString('fa-IR')} م.ت`
                                 : `$${b.cost.toLocaleString()}`}
                             </span>
                           </motion.li>
