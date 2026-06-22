@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     await writeFile(filepath, Buffer.from(bytes))
 
     // Return the public URL
-    const url = `/uploads/${filename}`
+    const url = `/api/uploads/${filename}`
     return NextResponse.json({ ok: true, url })
   } catch (e) {
     console.error('Upload error:', e)
