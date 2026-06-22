@@ -443,4 +443,5 @@ main()
   })
   .finally(async () => {
     await db.$disconnect()
+    process.exit(0)
   })
