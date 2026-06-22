@@ -52,4 +52,4 @@ EXPOSE 3000
 
 # On first run, copy the seeded database to the persistent volume
 # Then synchronize the schema and start Next.js
-CMD ["sh", "-c", "cp -n /app/seed-dev.db /data/prisma/dev.db && npx prisma@6 db push --schema=/app/prisma/schema.prisma && node server.js"]
+CMD ["sh", "-c", "cp -n /app/seed-dev.db /data/prisma/dev.db && chown -R nextjs:nodejs /app/public/uploads && npx prisma@6 db push --schema=/app/prisma/schema.prisma && node server.js"]
