@@ -731,10 +731,6 @@ function LoginCard({ onLogin }: { onLogin: () => void }) {
               }}
               placeholder="••••••••"
             />
-            <p className="text-xs text-muted-foreground">
-              نام کاربری پیش‌فرض: <code className="rounded bg-muted px-1 py-0.5 font-mono">admin</code>
-              {' '}— رمز عبور: <code className="rounded bg-muted px-1 py-0.5 font-mono">admin123</code>
-            </p>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-2">

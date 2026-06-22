@@ -3,12 +3,27 @@
 import { Logo } from './logo'
 import { Newsletter } from './newsletter'
 import { useNav, type ViewKey } from '@/lib/store'
-import { useT } from '@/lib/lang-store'
+import { useT, useLang } from '@/lib/lang-store'
+import { useQuery } from '@tanstack/react-query'
+import { getBilingualValue, fetchSettings, type SiteSettings } from '@/lib/settings'
 import { Github, Linkedin, Twitter, Mail, MapPin, Phone, ArrowUpRight } from 'lucide-react'
 
 export function Footer() {
   const { setView } = useNav()
   const t = useT()
+  const lang = useLang((s) => s.lang)
+
+  const { data: settings = {} as SiteSettings } = useQuery({
+    queryKey: ['site-settings'],
+    queryFn: fetchSettings,
+    staleTime: 60_000,
+  })
+
+  const getVal = (key: string, fallback: string) => {
+    const raw = settings[key]
+    if (!raw) return fallback
+    return getBilingualValue(raw, lang)
+  }
 
   const FOOTER_LINKS: { title: string; links: { label: string; view?: ViewKey }[] }[] = [
     {
@@ -39,6 +54,12 @@ export function Footer() {
     },
   ]
 
+  const contactInfo = [
+    { icon: Mail, value: getVal('email', 'hello@devstudio.com'), ltr: true },
+    { icon: Phone, value: getVal('phone', '+1 (555) 123-4567'), ltr: true },
+    { icon: MapPin, value: getVal('address', t('footer.address')), ltr: false },
+  ]
+
   return (
     <footer className="mt-auto border-t border-border/60 bg-secondary text-secondary-foreground">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
@@ -66,7 +87,6 @@ export function Footer() {
                 </a>
               ))}
             </div>
-            {/* Newsletter signup */}
             <div className="mt-6 max-w-sm">
               <p className="text-sm font-semibold text-secondary-foreground">{t('newsletter.title')}</p>
               <p className="mt-1 text-xs leading-relaxed text-secondary-foreground/60">{t('newsletter.desc')}</p>
@@ -99,22 +119,16 @@ export function Footer() {
         </div>
 
         <div className="mt-12 grid gap-4 border-t border-white/10 pt-8 text-sm text-secondary-foreground/70 sm:grid-cols-3">
-          <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4 shrink-0 text-accent" />
-            hello@devstudio.com
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 shrink-0 text-accent" />
-            <span className="ltr-num">+1 (555) 123-4567</span>
-          </div>
-          <div className="flex items-center gap-2 sm:justify-end">
-            <MapPin className="h-4 w-4 shrink-0 text-accent" />
-            {t('footer.address')}
-          </div>
+          {contactInfo.map((item, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <item.icon className="h-4 w-4 shrink-0 text-accent" />
+              <span className={item.ltr ? 'ltr-num' : ''}>{item.value}</span>
+            </div>
+          ))}
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-secondary-foreground/60 sm:flex-row">
-          <p>© {new Date().getFullYear()} DevStudio. {t('footer.rights')}</p>
+          <p>© {new Date().getFullYear()} {getVal('site_name', 'DevStudio')}. {t('footer.rights')}</p>
           <div className="flex items-center gap-4">
             <p>{t('footer.crafted')}</p>
             <button

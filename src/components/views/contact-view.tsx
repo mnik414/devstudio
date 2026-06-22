@@ -19,6 +19,7 @@ import {
   Rocket,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -35,6 +36,7 @@ import { Reveal } from '@/components/site/reveal'
 import { SectionHeading } from '@/components/site/section-heading'
 import { cn } from '@/lib/utils'
 import { useT, useLang } from '@/lib/lang-store'
+import { getBilingualValue, fetchSettings, type SiteSettings } from '@/lib/settings'
 
 type FormState = {
   fullName: string
@@ -55,7 +57,6 @@ const SOCIALS = [
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// Confetti dot trajectories for the success state animation
 const CONFETTI = [
   { x: -110, y: -30, rotate: -40, color: 'bg-primary' },
   { x: -80, y: -90, rotate: -25, color: 'bg-accent' },
@@ -74,6 +75,18 @@ const CONFETTI = [
 export function ContactView() {
   const t = useT()
   const lang = useLang((s) => s.lang)
+
+  const { data: settings = {} as SiteSettings } = useQuery({
+    queryKey: ['site-settings'],
+    queryFn: fetchSettings,
+    staleTime: 60_000,
+  })
+
+  const getVal = (key: string, fallback: string) => {
+    const raw = settings[key]
+    if (!raw) return fallback
+    return getBilingualValue(raw, lang)
+  }
 
   const [form, setForm] = useState<FormState>({
     fullName: '',
@@ -99,21 +112,21 @@ export function ContactView() {
     {
       icon: Mail,
       label: t('contact.email'),
-      value: 'hello@devstudio.com',
-      href: 'mailto:hello@devstudio.com',
+      value: getVal('email', 'hello@devstudio.com'),
+      href: `mailto:${getVal('email', 'hello@devstudio.com')}`,
       ltr: true,
     },
     {
       icon: Phone,
       label: t('contact.phone'),
-      value: '+1 (415) 555-0192',
-      href: 'tel:+14155550192',
+      value: getVal('phone', '+98 21 1234 5678'),
+      href: `tel:${getVal('phone', '+982112345678')}`,
       ltr: true,
     },
     {
       icon: MapPin,
       label: t('contact.address'),
-      value: '535 Mission St, San Francisco, CA',
+      value: getVal('address', t('contact.address')),
       href: 'https://maps.google.com',
       ltr: false,
     },
@@ -124,6 +137,13 @@ export function ContactView() {
     { icon: FileText, title: t('contact.step2'), desc: t('contact.step2Desc') },
     { icon: Rocket, title: t('contact.step3'), desc: t('contact.step3Desc') },
   ]
+
+  const isFa = lang === 'fa'
+
+  const sampleName = isFa ? 'علی رضایی' : 'Jane Doe'
+  const sampleCompany = isFa ? 'شرکت نمونه' : 'Acme Inc.'
+  const sampleEmail = isFa ? 'ali@example.com' : 'jane@acme.com'
+  const samplePhone = isFa ? '۰۹۱۲ ۳۴۵ ۶۷۸۹' : '+1 (415) 555-0192'
 
   const update = (field: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -150,7 +170,7 @@ export function ContactView() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!validate()) {
-      toast.error('Please fix the highlighted fields.')
+      toast.error(t('contact.fixErrors'))
       return
     }
     setSubmitting(true)
@@ -168,7 +188,7 @@ export function ContactView() {
       toast.success(t('contact.successTitle'), { description: t('contact.successDesc') })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong.'
-      toast.error('Could not send message', { description: message })
+      toast.error(t('contact.sendFailed'), { description: message })
     } finally {
       setSubmitting(false)
     }
@@ -182,7 +202,6 @@ export function ContactView() {
 
   return (
     <section className="relative overflow-hidden py-20 sm:py-28">
-      {/* ambient backdrop */}
       <div
         className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40"
         style={{
@@ -193,7 +212,6 @@ export function ContactView() {
         }}
       />
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] bg-radial-fade" />
-      {/* floating accent blobs */}
       <div className="pointer-events-none absolute -top-20 left-[8%] -z-10 size-72 rounded-full bg-primary/15 blur-3xl animate-float" />
       <div
         className="pointer-events-none absolute top-44 right-[6%] -z-10 size-72 rounded-full bg-accent/15 blur-3xl animate-float"
@@ -208,7 +226,6 @@ export function ContactView() {
         />
 
         <div className="mt-16 grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-14">
-          {/* LEFT — info / illustration */}
           <Reveal className="flex flex-col gap-8">
             <div className="space-y-4">
               <h3 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -219,7 +236,6 @@ export function ContactView() {
               </p>
             </div>
 
-            {/* contact details — wrapped with decorative gradient backdrop + floating accent blobs */}
             <div className="relative">
               <div className="pointer-events-none absolute -inset-4 -z-10 rounded-3xl bg-gradient-to-br from-primary/10 via-accent/5 to-transparent" />
               <div className="pointer-events-none absolute -left-6 top-1/3 -z-10 size-32 rounded-full bg-primary/10 blur-2xl animate-float" />
@@ -255,7 +271,6 @@ export function ContactView() {
               </div>
             </div>
 
-            {/* response time promise */}
             <div className="relative flex items-center gap-3 overflow-hidden rounded-2xl border border-accent/30 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent p-4 shadow-soft">
               <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-accent/15 blur-2xl" />
               <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent ring-1 ring-inset ring-accent/20">
@@ -266,13 +281,11 @@ export function ContactView() {
               </p>
             </div>
 
-            {/* what happens next */}
             <div className="space-y-4">
               <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('contact.whatsNext')}
               </h4>
               <ol className="relative space-y-3">
-                {/* vertical gradient connector line on the left */}
                 <span
                   className={cn(
                     'pointer-events-none absolute top-5 bottom-5 w-px bg-gradient-to-b from-primary/60 via-accent/40 to-transparent',
@@ -305,9 +318,8 @@ export function ContactView() {
               </ol>
             </div>
 
-            {/* socials */}
             <div className="flex items-center gap-3 pt-2">
-              <span className="text-sm font-medium text-muted-foreground">Follow us</span>
+              <span className="text-sm font-medium text-muted-foreground">{t('contact.followUs')}</span>
               <div className="flex gap-2">
                 {SOCIALS.map((s) => (
                   <a
@@ -325,16 +337,14 @@ export function ContactView() {
             </div>
           </Reveal>
 
-          {/* RIGHT — form / success */}
           <Reveal delay={0.1}>
             <Card className="group relative overflow-hidden border-border/60 shadow-soft transition-all duration-300 focus-within:-translate-y-0.5 focus-within:shadow-glow">
-              {/* gradient top border that brightens on focus-within */}
               <span className="absolute inset-x-0 top-0 z-10 h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-60 transition-opacity duration-300 group-focus-within:opacity-100" />
               <CardHeader className="relative border-b bg-gradient-to-br from-muted/40 to-muted/10 pb-6">
                 <CardTitle className="text-xl">
-                  <span className="text-gradient">Start your project</span>
+                  <span className="text-gradient">{t('contact.startProject')}</span>
                 </CardTitle>
-                <CardDescription>Fill in the form and we&apos;ll be in touch shortly.</CardDescription>
+                <CardDescription>{t('contact.formDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 {submitted ? (
@@ -344,7 +354,6 @@ export function ContactView() {
                     transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     className="relative flex flex-col items-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary/5 via-accent/5 to-transparent px-6 py-10 text-center"
                   >
-                    {/* confetti dots */}
                     {CONFETTI.map((c, i) => (
                       <motion.span
                         key={i}
@@ -364,7 +373,6 @@ export function ContactView() {
                         style={{ left: '50%' }}
                       />
                     ))}
-                    {/* glowing backdrop */}
                     <span className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_30%,color-mix(in_oklch,var(--accent)_22%,transparent),transparent_60%)]" />
                     <motion.span
                       initial={{ scale: 0, rotate: -30 }}
@@ -379,7 +387,6 @@ export function ContactView() {
                       >
                         <CheckCircle2 className="size-14" strokeWidth={2.5} />
                       </motion.span>
-                      {/* pulse ring */}
                       <motion.span
                         initial={{ scale: 1, opacity: 0.6 }}
                         animate={{ scale: 1.6, opacity: 0 }}
@@ -435,7 +442,7 @@ export function ContactView() {
                           id="fullName"
                           value={form.fullName}
                           onChange={(e) => update('fullName', e.target.value)}
-                          placeholder="Jane Doe"
+                          placeholder={sampleName}
                           autoComplete="name"
                           aria-invalid={!!errors.fullName}
                         />
@@ -445,7 +452,7 @@ export function ContactView() {
                           id="company"
                           value={form.company}
                           onChange={(e) => update('company', e.target.value)}
-                          placeholder="Acme Inc."
+                          placeholder={sampleCompany}
                           autoComplete="organization"
                         />
                       </Field>
@@ -463,7 +470,7 @@ export function ContactView() {
                           type="email"
                           value={form.email}
                           onChange={(e) => update('email', e.target.value)}
-                          placeholder="jane@acme.com"
+                          placeholder={sampleEmail}
                           autoComplete="email"
                           aria-invalid={!!errors.email}
                         />
@@ -474,7 +481,7 @@ export function ContactView() {
                           type="tel"
                           value={form.phone}
                           onChange={(e) => update('phone', e.target.value)}
-                          placeholder="+1 (415) 555-0192"
+                          placeholder={samplePhone}
                           autoComplete="tel"
                         />
                       </Field>
@@ -486,7 +493,7 @@ export function ContactView() {
                           id="budget"
                           className="h-12 w-full bg-card text-base font-medium shadow-sm transition-all hover:border-primary/40 hover:shadow-soft"
                         >
-                          <SelectValue placeholder="Select a range" />
+                          <SelectValue placeholder={t('contact.selectRange')} />
                         </SelectTrigger>
                         <SelectContent>
                           {BUDGET_OPTIONS.map((opt) => (
@@ -516,7 +523,7 @@ export function ContactView() {
 
                     <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-xs text-muted-foreground">
-                        By submitting, you agree to our privacy policy. We never share your data.
+                        {t('contact.privacy')}
                       </p>
                       <Button
                         type="submit"
@@ -547,7 +554,6 @@ export function ContactView() {
           </Reveal>
         </div>
 
-        {/* bottom CTA strip */}
         <Reveal delay={0.15} className="mt-16">
           <div className="relative flex flex-col items-center justify-between gap-4 overflow-hidden rounded-2xl border border-border/60 bg-secondary px-6 py-6 text-center text-secondary-foreground shadow-soft transition-all hover:shadow-glow sm:flex-row sm:text-left">
             <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-10" />
@@ -556,20 +562,18 @@ export function ContactView() {
             <div className="flex items-center gap-3">
               <ArrowRight className={cn('size-5 text-accent', lang === 'fa' && 'rtl-flip')} />
               <div>
-                <p className="text-base font-semibold">Not sure where to start?</p>
+                <p className="text-base font-semibold">{t('contact.notSure')}</p>
                 <p className="text-sm text-secondary-foreground/70">
-                  Use our project estimator to get an instant ballpark cost.
+                  {t('contact.notSureDesc')}
                 </p>
               </div>
             </div>
             <a
               href="#estimate-cta"
-              onClick={() => {
-                // soft nudge: smooth scroll handled by anchor
-              }}
+              onClick={() => {}}
               className="group inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-accent to-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-glow"
             >
-              Get an estimate
+              {t('contact.getEstimate')}
               <ArrowRight
                 className={cn(
                   'size-4 transition-transform group-hover:translate-x-0.5',
