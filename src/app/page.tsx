@@ -1,11 +1,12 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Navbar } from '@/components/site/navbar'
 import { Footer } from '@/components/site/footer'
 import { ScrollProgress } from '@/components/site/scroll-progress'
 import { BackToTop } from '@/components/site/back-to-top'
 import { CookieConsent } from '@/components/site/cookie-consent'
-import { useNav } from '@/lib/store'
+import { useNav, parseHash } from '@/lib/store'
 import { HomeView } from '@/components/views/home-view'
 import { PortfolioView } from '@/components/views/portfolio-view'
 import { PortfolioDetailView } from '@/components/views/portfolio-detail-view'
@@ -21,6 +22,20 @@ import { AnimatePresence, motion } from 'framer-motion'
 
 export default function Page() {
   const { view, detailSlug } = useNav()
+
+  // Sync zustand store with URL hash on mount + handle browser back/forward
+  useEffect(() => {
+    const { view: hashView, detailSlug: hashSlug } = parseHash()
+    if (hashView !== 'home' || hashSlug) {
+      useNav.setState({ view: hashView, detailSlug: hashSlug ?? null })
+    }
+    const onPop = () => {
+      const { view: v, detailSlug: s } = parseHash()
+      useNav.setState({ view: v, detailSlug: s ?? null })
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
 
   const renderView = () => {
     if (view === 'portfolio' && detailSlug) return <PortfolioDetailView />

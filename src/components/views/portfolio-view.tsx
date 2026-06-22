@@ -87,6 +87,7 @@ export function PortfolioView() {
   const [sort, setSort] = useState<SortKey>('newest')
   const [savedOnly, setSavedOnly] = useState(false)
   const [stuck, setStuck] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const favoriteIds = useFavorites((s) => s.ids)
 
   const filterSentinelRef = useRef<HTMLDivElement>(null)
@@ -177,12 +178,12 @@ export function PortfolioView() {
             : 'border-border/40 bg-background/70',
         )}
       >
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-2">
             {/* Search */}
             <div
               className={cn(
-                'relative w-full max-w-sm rounded-md transition-all duration-300',
+                'relative flex-1 rounded-md transition-all duration-300 sm:max-w-xs',
                 searchFocused && 'ring-2 ring-primary/20 ring-offset-0',
               )}
             >
@@ -198,39 +199,56 @@ export function PortfolioView() {
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
                 placeholder={t('portfolio.search')}
-                className="pl-9"
+                className="pl-9 h-9 text-sm"
                 aria-label={t('portfolio.search')}
               />
             </div>
 
-            {/* Sort + Saved + Compare */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Filters toggle + Sort + Saved */}
+            <div className="flex items-center gap-1.5">
+              {/* Filters toggle (mobile only) */}
+              {(categories.length > 0 || technologies.length > 0) && (
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen((v) => !v)}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition sm:hidden',
+                    filtersOpen || category || tech
+                      ? 'border-accent/40 bg-accent/10 text-accent'
+                      : 'border-border/60 bg-background text-muted-foreground hover:text-foreground hover:border-foreground/20',
+                  )}
+                >
+                  <SlidersHorizontal className="size-3.5" />
+                  Filters
+                  {(category || tech) && (
+                    <span className="flex size-4 items-center justify-center rounded-full bg-accent text-[9px] font-bold text-accent-foreground">
+                      {(category ? 1 : 0) + (tech ? 1 : 0)}
+                    </span>
+                  )}
+                </button>
+              )}
               <button
                 onClick={() => setSavedOnly((v) => !v)}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition',
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-medium transition',
                   savedOnly
                     ? 'border-accent/40 bg-accent/10 text-accent'
                     : 'border-border/60 bg-background text-muted-foreground hover:text-foreground hover:border-foreground/20',
                 )}
                 aria-pressed={savedOnly}
               >
-                <Bookmark className={cn('h-4 w-4', savedOnly && 'fill-current')} />
+                <Bookmark className={cn('h-3.5 w-3.5', savedOnly && 'fill-current')} />
                 <span className="hidden sm:inline">{t('favorites.saved')}</span>
                 {favoriteIds.length > 0 && (
-                  <span className="ltr-num rounded-full bg-accent/20 px-1.5 text-xs font-bold">
+                  <span className="ltr-num rounded-full bg-accent/20 px-1.5 text-[10px] font-bold">
                     {favoriteIds.length}
                   </span>
                 )}
               </button>
               <CompareButton />
-              <span className="hidden items-center gap-2 text-sm font-medium text-muted-foreground sm:inline-flex">
-                <SlidersHorizontal className="size-4" />
-                {t('portfolio.sort')}
-              </span>
               <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
                 <SelectTrigger
-                  className="w-[180px] border-primary/20 bg-gradient-to-r from-primary/10 to-accent/10 font-medium hover:from-primary/15 hover:to-accent/15"
+                  className="h-9 w-32 border-primary/20 bg-gradient-to-r from-primary/10 to-accent/10 text-xs font-medium hover:from-primary/15 hover:to-accent/15 sm:w-[160px]"
                   aria-label="Sort projects"
                 >
                   <SelectValue />
@@ -246,53 +264,56 @@ export function PortfolioView() {
             </div>
           </div>
 
-          {/* Category chips */}
-          {categories.length > 0 && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Category
-              </span>
-              <FilterChip groupId="cat" active={category === ''} onClick={() => setCategory('')}>
-                {t('portfolio.allCategories')}
-              </FilterChip>
-              {categories.map((c) => (
-                <FilterChip
-                  key={c.id}
-                  groupId="cat"
-                  active={category === c.slug}
-                  onClick={() => setCategory(c.slug)}
-                >
-                  {tcCategory(c.slug, c.name, lang)}
+          {/* Collapsible chips (mobile) / always visible (desktop) */}
+          <div className={cn(filtersOpen || 'hidden', 'sm:block')}>
+            {/* Category chips */}
+            {categories.length > 0 && (
+              <div className="mt-3 flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <span className="shrink-0 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                  Category
+                </span>
+                <FilterChip groupId="cat" active={category === ''} onClick={() => setCategory('')}>
+                  {t('portfolio.allCategories')}
                 </FilterChip>
-              ))}
-            </div>
-          )}
+                {categories.map((c) => (
+                  <FilterChip
+                    key={c.id}
+                    groupId="cat"
+                    active={category === c.slug}
+                    onClick={() => setCategory(c.slug)}
+                  >
+                    {tcCategory(c.slug, c.name, lang)}
+                  </FilterChip>
+                ))}
+              </div>
+            )}
 
-          {/* Technology chips */}
-          {technologies.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Tech
-              </span>
-              <FilterChip groupId="tech" active={tech === ''} onClick={() => setTech('')}>
-                {t('portfolio.allTech')}
-              </FilterChip>
-              {technologies.map((techItem) => (
-                <FilterChip
-                  key={techItem.id}
-                  groupId="tech"
-                  active={tech === techItem.slug}
-                  onClick={() => setTech(techItem.slug)}
-                >
-                  <span
-                    className="inline-block size-2 rounded-full"
-                    style={{ background: techItem.color ?? 'var(--accent)' }}
-                  />
-                  {techItem.name}
+            {/* Technology chips */}
+            {technologies.length > 0 && (
+              <div className="mt-2 flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <span className="shrink-0 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                  Tech
+                </span>
+                <FilterChip groupId="tech" active={tech === ''} onClick={() => setTech('')}>
+                  {t('portfolio.allTech')}
                 </FilterChip>
-              ))}
-            </div>
-          )}
+                {technologies.map((techItem) => (
+                  <FilterChip
+                    key={techItem.id}
+                    groupId="tech"
+                    active={tech === techItem.slug}
+                    onClick={() => setTech(techItem.slug)}
+                  >
+                    <span
+                      className="inline-block size-2 rounded-full shrink-0"
+                      style={{ background: techItem.color ?? 'var(--accent)' }}
+                    />
+                    {techItem.name}
+                  </FilterChip>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

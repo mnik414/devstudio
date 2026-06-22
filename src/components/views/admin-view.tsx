@@ -79,6 +79,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { ImageUpload } from '@/components/admin/image-upload'
+import { GalleryUpload } from '@/components/admin/gallery-upload'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -103,7 +104,7 @@ type ModelKey =
 
 type ActiveView = ModelKey | 'dashboard'
 
-type FieldType = 'text' | 'textarea' | 'number' | 'switch' | 'json' | 'select' | 'image'
+type FieldType = 'text' | 'textarea' | 'number' | 'switch' | 'json' | 'select' | 'image' | 'gallery'
 
 interface FieldConfig {
   key: string
@@ -149,7 +150,7 @@ const MODEL_CONFIGS: Record<ModelKey, ModelConfig> = {
       { key: 'summary', label: 'Summary', type: 'textarea' },
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'coverImage', label: 'Cover Image', type: 'image' },
-      { key: 'gallery', label: 'Gallery (JSON array)', type: 'json', placeholder: '["/img/1.jpg", "/img/2.jpg"]' },
+      { key: 'gallery', label: 'Gallery', type: 'gallery' },
       { key: 'liveUrl', label: 'Live URL', type: 'text' },
       { key: 'repoUrl', label: 'Repo URL', type: 'text' },
       { key: 'clientName', label: 'Client Name', type: 'text' },
@@ -493,6 +494,7 @@ function buildInitialForm(model: ModelKey): Record<string, unknown> {
     if (f.type === 'switch') form[f.key] = f.default ?? false
     else if (f.type === 'number') form[f.key] = f.default ?? 0
     else if (f.type === 'json') form[f.key] = ''
+    else if (f.type === 'gallery') form[f.key] = '[]'
     else if (f.type === 'select') form[f.key] = f.default ?? f.options?.[0]?.value ?? ''
     else form[f.key] = f.default ?? ''
   }
@@ -513,6 +515,14 @@ function hydrateFormFromRecord(model: ModelKey, record: RecordData): Record<stri
         form[f.key] = JSON.stringify(raw, null, 2)
       } else {
         form[f.key] = ''
+      }
+    } else if (f.type === 'gallery') {
+      if (typeof raw === 'string' && raw.length > 0) {
+        form[f.key] = raw
+      } else if (Array.isArray(raw)) {
+        form[f.key] = JSON.stringify(raw)
+      } else {
+        form[f.key] = '[]'
       }
     } else if (f.type === 'select') {
       form[f.key] = typeof raw === 'string' ? raw : (f.default ?? '')
@@ -543,6 +553,14 @@ function serializeForm(model: ModelKey, form: Record<string, unknown>): Record<s
         } catch {
           throw new Error(`Field "${f.label}" must be valid JSON.`)
         }
+      }
+    } else if (f.type === 'gallery') {
+      const s = (val as string) ?? ''
+      try {
+        const arr = JSON.parse(s)
+        out[f.key] = Array.isArray(arr) ? JSON.stringify(arr) : '[]'
+      } catch {
+        out[f.key] = '[]'
       }
     } else if (f.type === 'textarea' || f.type === 'text' || f.type === 'select') {
       out[f.key] = (val as string) ?? ''
@@ -781,6 +799,17 @@ function DynamicForm({
                 value={typeof val === 'string' ? val : ''}
                 onChange={(url) => onChange(f.key, url)}
                 placeholder={f.placeholder}
+              />
+            </div>
+          )
+        }
+        if (f.type === 'gallery') {
+          return (
+            <div key={f.key} className="space-y-1.5">
+              <Label className="text-sm font-medium">{f.label}</Label>
+              <GalleryUpload
+                value={typeof val === 'string' ? val : '[]'}
+                onChange={(v) => onChange(f.key, v)}
               />
             </div>
           )

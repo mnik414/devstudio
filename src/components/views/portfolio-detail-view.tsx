@@ -80,6 +80,19 @@ export function PortfolioDetailView() {
           {/* Sticky section nav (desktop only, floating) */}
           <PortfolioSectionNav t={t} lang={lang} item={item} relatedCount={related.length} />
 
+          {/* Description */}
+          <section className="mx-auto max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
+            <Reveal>
+              <div className="text-base leading-relaxed text-muted-foreground sm:text-lg">
+                {tc('portfolio', item.slug, 'description', item.description, lang)
+                  .split('\n')
+                  .map((p, i) => (
+                    <p key={i} className={i > 0 ? 'mt-4' : ''}>{p || '\u00A0'}</p>
+                  ))}
+              </div>
+            </Reveal>
+          </section>
+
           {/* Overview (Problem / Solution / Result) */}
           <section id="overview" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
             <SectionHeading
@@ -418,7 +431,7 @@ function OverviewCard({
           </span>
           <h3 className="text-base font-semibold">{title}</h3>
         </div>
-        <p className="text-sm leading-relaxed text-muted-foreground">
+        <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
           {text || `No ${title.toLowerCase()} documented for this project.`}
         </p>
       </Card>
@@ -454,8 +467,6 @@ function GallerySection({ raw }: { raw: string }) {
   }
 
   // Keyboard navigation with RTL awareness
-  // In LTR: ArrowLeft → prev, ArrowRight → next
-  // In RTL: ArrowLeft → next, ArrowRight → prev (mirrored)
   useEffect(() => {
     if (active === null) return
     const handler = (e: KeyboardEvent) => {
@@ -465,6 +476,8 @@ function GallerySection({ raw }: { raw: string }) {
       } else if (e.key === 'ArrowRight') {
         if (isRTL) goPrev()
         else goNext()
+      } else if (e.key === 'Escape') {
+        setActive(null)
       }
     }
     window.addEventListener('keydown', handler)
@@ -473,12 +486,13 @@ function GallerySection({ raw }: { raw: string }) {
 
   if (images.length === 0) return null
 
-  // Framer-motion variants — fade + slight horizontal slide driven by direction
   const variants = {
     enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 40 : -40 }),
     center: { opacity: 1, x: 0 },
     exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -40 : 40 }),
   }
+
+  const firstBig = (i: number) => images.length >= 5 && (i === 0 || i === 4)
 
   return (
     <section className="border-y bg-muted/30">
@@ -494,8 +508,8 @@ function GallerySection({ raw }: { raw: string }) {
               key={`${src}-${i}`}
               delay={Math.min(i * 0.05, 0.3)}
               className={cn(
-                'group cursor-pointer overflow-hidden rounded-xl border shadow-xs transition-shadow hover:shadow-soft',
-                i % 5 === 0 ? 'sm:col-span-2 sm:row-span-1' : '',
+                'group cursor-pointer overflow-hidden rounded-xl border bg-card shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-soft',
+                firstBig(i) ? 'sm:col-span-2 sm:row-span-1' : '',
               )}
             >
               <button
@@ -504,21 +518,29 @@ function GallerySection({ raw }: { raw: string }) {
                   setDirection(0)
                   setActive(i)
                 }}
-                className="block w-full"
+                className="relative block w-full"
                 aria-label={`Open image ${i + 1} in lightbox`}
               >
-                <div className="relative aspect-video overflow-hidden">
+                <div className={cn('relative overflow-hidden', firstBig(i) ? 'aspect-video' : 'aspect-[4/3]')}>
                   <img
                     src={src}
                     alt={`Project screenshot ${i + 1}`}
                     loading="lazy"
                     className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23e2e8f0"><rect width="24" height="24"/><text x="12" y="14" text-anchor="middle" font-size="3" fill="%2394a3b8">Error</text></svg>'
+                    }}
                   />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/30 group-hover:opacity-100">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-foreground">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-foreground shadow-xs backdrop-blur-xs transition-transform duration-300 group-hover:scale-105">
                       <ExternalLink className="size-3.5" />
                       View
                     </span>
+                  </div>
+                  <div className="absolute bottom-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-[11px] font-medium text-white/80 backdrop-blur-xs">
+                    {i + 1}/{total}
                   </div>
                 </div>
               </button>
@@ -538,68 +560,94 @@ function GallerySection({ raw }: { raw: string }) {
             Full-size project screenshot in a lightbox viewer
           </DialogDescription>
           {active !== null && images[active] && (
-            <div className="relative flex max-h-[85vh] items-center justify-center">
-              {/* Prev button — in RTL it visually sits on the right and points to next */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (isRTL) goNext()
-                  else goPrev()
-                }}
-                disabled={isRTL ? active >= total - 1 : active <= 0}
-                aria-label={isRTL ? 'Next image' : 'Previous image'}
-                className={cn(
-                  'absolute z-20 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur transition-all duration-200',
-                  'hover:border-white/30 hover:bg-gradient-to-br hover:from-white/25 hover:to-white/5',
-                  'disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-white/15 disabled:hover:from-transparent disabled:hover:to-transparent',
-                  isRTL ? 'right-3' : 'left-3',
-                )}
-              >
-                <ChevronLeft className="size-6" />
-              </button>
-              {/* Next button — in RTL it visually sits on the left and points to prev */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (isRTL) goPrev()
-                  else goNext()
-                }}
-                disabled={isRTL ? active <= 0 : active >= total - 1}
-                aria-label={isRTL ? 'Previous image' : 'Next image'}
-                className={cn(
-                  'absolute z-20 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur transition-all duration-200',
-                  'hover:border-white/30 hover:bg-gradient-to-br hover:from-white/25 hover:to-white/5',
-                  'disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-white/15 disabled:hover:from-transparent disabled:hover:to-transparent',
-                  isRTL ? 'left-3' : 'right-3',
-                )}
-              >
-                <ChevronRight className="size-6" />
-              </button>
+            <div className="flex flex-col">
+              <div className="relative flex max-h-[75vh] items-center justify-center">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (isRTL) goNext()
+                    else goPrev()
+                  }}
+                  disabled={isRTL ? active >= total - 1 : active <= 0}
+                  aria-label={isRTL ? 'Next image' : 'Previous image'}
+                  className={cn(
+                    'absolute z-20 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur transition-all duration-200',
+                    'hover:border-white/30 hover:bg-gradient-to-br hover:from-white/25 hover:to-white/5',
+                    'disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-white/15 disabled:hover:from-transparent disabled:hover:to-transparent',
+                    isRTL ? 'right-3' : 'left-3',
+                  )}
+                >
+                  <ChevronLeft className="size-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (isRTL) goPrev()
+                    else goNext()
+                  }}
+                  disabled={isRTL ? active <= 0 : active >= total - 1}
+                  aria-label={isRTL ? 'Previous image' : 'Next image'}
+                  className={cn(
+                    'absolute z-20 flex size-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white backdrop-blur transition-all duration-200',
+                    'hover:border-white/30 hover:bg-gradient-to-br hover:from-white/25 hover:to-white/5',
+                    'disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:border-white/15 disabled:hover:from-transparent disabled:hover:to-transparent',
+                    isRTL ? 'left-3' : 'right-3',
+                  )}
+                >
+                  <ChevronRight className="size-6" />
+                </button>
 
-              {/* Image with framer-motion fade + slide transition */}
-              <AnimatePresence mode="wait" custom={direction}>
-                <motion.img
-                  key={active}
-                  src={images[active]}
-                  alt={`Project screenshot ${active + 1} of ${total}`}
-                  custom={direction}
-                  variants={variants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
-                  className="mx-auto h-auto w-full max-h-[85vh] object-contain"
-                />
-              </AnimatePresence>
+                <AnimatePresence mode="wait" custom={direction}>
+                  <motion.img
+                    key={active}
+                    src={images[active]}
+                    alt={`Project screenshot ${active + 1} of ${total}`}
+                    custom={direction}
+                    variants={variants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                    className="mx-auto h-auto w-full max-h-[75vh] object-contain"
+                  />
+                </AnimatePresence>
 
-              {/* Image counter badge — bottom center */}
+                {total > 1 && (
+                  <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/15 bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+                    <span className="ltr-num">{active + 1}</span>
+                    <span className="opacity-60">/</span>
+                    <span className="ltr-num">{total}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Thumbnails strip */}
               {total > 1 && (
-                <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/15 bg-black/60 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-                  <span className="ltr-num">{active + 1}</span>
-                  <span className="opacity-60">/</span>
-                  <span className="ltr-num">{total}</span>
+                <div className="flex items-center gap-2 overflow-x-auto border-t border-white/10 px-4 py-3">
+                  {images.map((src, i) => (
+                    <button
+                      key={`thumb-${i}`}
+                      type="button"
+                      onClick={() => {
+                        setDirection(i > active ? 1 : -1)
+                        setActive(i)
+                      }}
+                      className={cn(
+                        'size-14 shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-200',
+                        i === active
+                          ? 'border-white opacity-100 ring-1 ring-white/30'
+                          : 'border-transparent opacity-60 hover:opacity-90',
+                      )}
+                    >
+                      <img
+                        src={src}
+                        alt={`Thumbnail ${i + 1}`}
+                        className="size-full object-cover"
+                      />
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
