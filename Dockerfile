@@ -45,7 +45,7 @@ COPY --from=builder /app/prisma ./prisma
 # Copy the pre-seeded database
 COPY --from=builder /app/seed-dev.db /app/seed-dev.db
 
-RUN mkdir -p /data/prisma && chown -R nextjs:nodejs /data/prisma /app/node_modules
+RUN mkdir -p /data/prisma /app/public/uploads && chown -R nextjs:nodejs /data/prisma /app/public/uploads /app/node_modules
 
 USER nextjs
 EXPOSE 3000

@@ -7,6 +7,7 @@ services:
       - "3000:3000"
     volumes:
       - portfolio-data:/data/prisma
+      - portfolio-uploads:/app/public/uploads
     environment:
       - DATABASE_URL=file:/data/prisma/dev.db
     restart: unless-stopped
@@ -19,3 +20,4 @@ services:
 
 volumes:
   portfolio-data:
+  portfolio-uploads:
